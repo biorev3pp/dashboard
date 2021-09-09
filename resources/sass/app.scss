@@ -1171,13 +1171,13 @@ table span.badge {
 }
 
 .filter-btns {
-    position: relative;
     border: 1px solid #ccc;
     display: inline-block;
     height: 32px;
     border-radius: 2px;
     line-height: 25px;
-    margin-right: 4px;
+    margin-right: 10px;
+    margin-left: -5px;
 }
 
 .filter-btns span {
@@ -1186,12 +1186,15 @@ table span.badge {
     overflow: hidden;
     white-space: nowrap;
     font-weight: 400;
+    float: left;
+    line-height: 30px;
 }
 
 .filter-btns i {
     position: relative;
-    top: 2px;
+    top: 4px;
     font-size: 18px;
+    color: #f00;
 }
 
 .left--65 {
@@ -1321,7 +1324,7 @@ table span.badge {
     border: 1px solid #e4e4e4;
     position: absolute;
     z-index: 11111;
-    top: 30px;
+    top: 32px;
     background: #fff;
     i.close {
         position: relative;
@@ -1652,6 +1655,25 @@ table span.badge {
 
 .radlabl .mselect-bs label {
     text-transform: uppercase;
+}
+
+.selectedOptions {
+    margin-bottom: 10px;
+    span {
+        color: #0c5460;
+        background-color: #d1ecf1;
+        border-color: #bee5eb;
+        font-weight: 500;
+        letter-spacing: 0.5px;
+        border: 1px solid;
+        padding: 3px 5px;
+        border-radius: 2px;
+        font-size: 11px;
+        cursor: pointer;
+        cursor: pointer;
+        margin: 3px;
+        display: inline-flex;
+    }
 }
 
 @media only screen and (max-width: 414px) {

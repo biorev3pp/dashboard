@@ -35,15 +35,80 @@ class DatasetsController extends Controller
                         if(strpos($value["textCondition"],  ",")):
                             $ids = explode(",", $value["textCondition"]);
                             $q->whereIn($value["condition"], $ids);
+                            // foreach($ids as $IdValue):
+                            //     $q->orWhere($value["condition"], 'like', $IdValue);
+                            // endforeach;
                         else:
-                            $q->where($value["condition"], 'like', $value["textCondition"]);
+                            //($value["condition"] == 'mobilePhones') || ($value["condition"] == 'workPhones') || ($value["condition"] == 'homePhones')
+                            if(in_array($value["condition"], ["mobilePhones", "workPhones", "homePhones"])){
+                                $string = $this->__NumberFormater($value["textCondition"]);                            
+                                $v1 = substr($string, 0, 4);
+                                $v2 = substr($string, 4, 3);
+                                $v3 = substr($string, 7, 3);
+    
+                                $r1 = $v1.$v2.$v3;
+                                
+                                $r2 = "$v1-$v2-$v3";
+    
+                                $r3 = "$v1 $v2 $v3";
+    
+                                $r4 = "($v1)-$v2-$v3";
+                                $r5 = "($v1)-$v2-$v3";
+                                $r6 = "($v1)-$v2-$v3";
+                                $r7 = "($v1)-$v2-$v3";
+    
+                                $r8 = "($v1)-($v2)-$v3";
+                                $r9 = "($v1)-($v2)-$v3";
+                                $r10 = "($v1)-($v2)-$v3";
+                                $r11 = "($v1)-($v2)-$v3";
+    
+                                $r12 = "($v1)-($v2)-($v3)";
+                                $r13 = "($v1)-($v2)-($v3)";
+                                $r14 = "($v1)-($v2)-($v3)";
+                                $r15 = "($v1)-($v2)-($v3)";
+    
+                                $r16 = "($v1)-$v2-($v3)";
+                                $r17 = "($v1)-$v2-($v3)";
+                                $r18 = "($v1)-$v2-($v3)";
+                                $r19 = "($v1)-$v2-($v3)";
+                                
+                                //
+
+                                $r20 = "($v1) $v2 $v3";
+                                $r21 = "($v1) $v2 $v3";
+                                $r22 = "($v1) $v2 $v3";
+                                $r23 = "($v1) $v2 $v3";
+    
+                                $r24 = "($v1) ($v2) $v3";
+                                $r25 = "($v1) ($v2) $v3";
+                                $r26 = "($v1) ($v2) $v3";
+                                $r27 = "($v1) ($v2) $v3";
+    
+                                $r28 = "($v1) ($v2) ($v3)";
+                                $r29 = "($v1) ($v2) ($v3)";
+                                $r30 = "($v1) ($v2) ($v3)";
+                                $r31 = "($v1) ($v2) ($v3)";
+    
+                                $r32 = "($v1) $v2 ($v3)";
+                                $r33 = "($v1) $v2 ($v3)";
+                                $r34 = "($v1) $v2 ($v3)";
+                                $r35 = "($v1) $v2 ($v3)";
+
+                                    //dd($r1);
+                                $q->orWhere($value["condition"], 'like', "%$r1%")->orWhere($value["condition"], 'like', "%$r2%")->orWhere($value["condition"], 'like', "%$r3%")->orWhere($value["condition"], 'like', "%$r4%")->orWhere($value["condition"], 'like', "%$r5%")->orWhere($value["condition"], 'like', "%$r6%")->orWhere($value["condition"], 'like', "%$r7%")->orWhere($value["condition"], 'like', "%$r8%")->orWhere($value["condition"], 'like', "%$r9%")->orWhere($value["condition"], 'like', "%$r10%")->orWhere($value["condition"], 'like', "%$r11%")->orWhere($value["condition"], 'like', "%$r12%")->orWhere($value["condition"], 'like', "%$r13%")->orWhere($value["condition"], 'like', "%$r14%")->orWhere($value["condition"], 'like', "%$r15%")->orWhere($value["condition"], 'like', "%$r16%")->orWhere($value["condition"], 'like', "%$r17%")->orWhere($value["condition"], 'like', "%$r18%")->orWhere($value["condition"], 'like', "%$r19%")->orWhere($value["condition"], 'like', "%$r20%")->orWhere($value["condition"], 'like', "%$r21%")->orWhere($value["condition"], 'like', "%$r22%")->orWhere($value["condition"], 'like', "%$r23%")->orWhere($value["condition"], 'like', "%$r24%")->orWhere($value["condition"], 'like', "%$r25%")->orWhere($value["condition"], 'like', "%$r26%")->orWhere($value["condition"], 'like', "%$r27%")->orWhere($value["condition"], 'like', "%$r27%")->orWhere($value["condition"], 'like', "%$r28%")->orWhere($value["condition"], 'like', "%$r29%")->orWhere($value["condition"], 'like', "%$r30%")->orWhere($value["condition"], 'like', "%$r31%")->orWhere($value["condition"], 'like', "%$r32%")->orWhere($value["condition"], 'like', "%$r33%")->orWhere($value["condition"], 'like', "%$r34%")->orWhere($value["condition"], 'like', "%$r35%");
+                            }else{
+                                $q->where($value["condition"], '=', $value["textCondition"]);
+                            }
                         endif;
                     elseif($value['formula'] == 'is not'):
                         if(strpos($value["textCondition"],  ",")):
                             $ids = explode(",", $value["textCondition"]);
                             $q->whereNotIn($value["condition"], $ids);
+                            // foreach($ids as $IdValue):
+                            //     $q->orWhere($value["condition"], 'not like', $IdValue);
+                            // endforeach;
                         else:
-                            $q->where($value["condition"], 'not like', $value["textCondition"]);
+                            $q->where($value["condition"], 'not like', $value["textCondition"])->orWhereNull($value["condition"])->orWhere($value["condition"], '=', '');
                         endif;
                     elseif($value['formula'] == 'starts with'):
                         if(strpos($value["textCondition"],  ",")):
@@ -54,27 +119,21 @@ class DatasetsController extends Controller
                         else:
                             $q->where($value["condition"], 'like', $value["textCondition"].'%');
                         endif;
-                    elseif($value['formula'] == 'is empty'):  
-                        $q->where(function($inq) use($value) {
-                            $inq->where($value["condition"], 0);
-                            $inq->orWhere($value["condition"], null);
-                        });                   
+                    elseif($value['formula'] == 'is empty'):                        
+                        $q->whereNull($value["condition"])->orWhere($value["condition"], '=', '');
                     elseif($value['formula'] == 'is not empty'):
-                        $q->whereNotNull($value["condition"]);
-                        $q->where($value["condition"], '!=', '');
+                        if(($value["condition"] == "mobilePhones") || ($value["condition"] == "workPhones") || ($value["condition"] == "homePhones")){
+                            $q->orWhere($value["condition"], '!=', '');
+                        }else{
+                            $q->whereNotNull($value["condition"])->orWhere($value["condition"], '!=', '');
+                        }
                     elseif($value['formula'] == 'contains'):
                         $q->where($value["condition"], 'like', '%'.$value["textCondition"].'%');
                     elseif($value['formula'] == 'not contains'):
                         $q->where($value["condition"], 'not like', '%'.$value["textCondition"].'%');
+                        //->orWhereNotNull($value["condition"])->orWhere($value["condition"], '=', '');
                     elseif($value['formula'] == 'ends with'):
-                        if(strpos($value["textCondition"],  ",")):
-                            $ids = explode(",", $value["textCondition"]);
-                            foreach($ids as $IdValue):
-                                $q->orWhere($value["condition"], 'like', $IdValue);
-                            endforeach;
-                        else:
-                            $q->where($value["condition"], 'like', '%'.$value["textCondition"]);
-                        endif;
+                        $q->where($value["condition"], '=', '%'.$value["textCondition"]);
                     endif;
                 elseif($value['type'] == 'calendar'):
                     $date = explode('--', $value["textCondition"]);
@@ -120,7 +179,7 @@ class DatasetsController extends Controller
                             $inq->orWhere('email_delivered', null);
                         });
                         $q->where(function($inq) {
-                            $inq->where('email_bounced', 0);
+                            $inq->orWhere('email_bounced', 0);
                             $inq->orWhere('email_bounced', null);
                         });
                     endif;
@@ -149,7 +208,7 @@ class DatasetsController extends Controller
                             $inq->orWhere('mcall_attempts', null);
                         });
                         $q->where(function($inq) {
-                            $inq->where('mcall_received', 0);
+                            $inq->orWhere('mcall_received', 0);
                             $inq->orWhere('mcall_received', null);
                         });
                     endif;
@@ -178,7 +237,7 @@ class DatasetsController extends Controller
                             $inq->orWhere('hcall_attempts', null);
                         });
                         $q->where(function($inq) {
-                            $inq->where('hcall_received', 0);
+                            $inq->orWhere('hcall_received', 0);
                             $inq->orWhere('hcall_received', null);
                         });
                     endif;
@@ -207,7 +266,7 @@ class DatasetsController extends Controller
                             $inq->orWhere('wcall_attempts', null);
                         });
                         $q->where(function($inq) {
-                            $inq->where('wcall_received', 0);
+                            $inq->orWhere('wcall_received', 0);
                             $inq->orWhere('wcall_received', null);
                         });
                     endif;
@@ -232,6 +291,32 @@ class DatasetsController extends Controller
         return $records;
     }
 
+    private function __NumberFormater($var = null)
+    {
+        $string = str_replace(' ', '', $var); // Replaces all spaces.
+        $string = str_replace('-', '', $string); // Replaces all hyphens.
+        $string = str_replace('.', '', $string); // Replaces all hyphens.
+        $string = str_replace('(', '', $string); // Replaces all hyphens.
+        $string = str_replace(')', '', $string); // Replaces all hyphens.
+        $string = preg_replace('/[^A-Za-z0-9\-]/', '', $string); // Removes special chars.
+        if(strpos($string, 'ext') > 0){
+           $d = explode("ext", $string);
+           $string = $d[0];
+        }
+        if(strpos($string, 'EXT') > 0){
+            $d = explode("EXT", $string);
+            $string = $d[0];
+        }
+        if(strlen($string) > 10) {
+            $string = strrev($string);
+            $string = substr($string, 0, 10);
+            $string = strrev($string);
+        } else {
+            $string = substr($string, 0, 10);
+        }
+        $string = (int) $string;
+        return $string;
+    }
     public function datacheck(Request $request)
     {
         $recordPerPage  = $request->recordPerPage;

@@ -35,6 +35,9 @@ class DatasetsController extends Controller
                         if(strpos($value["textCondition"],  ",")):
                             $ids = explode(",", $value["textCondition"]);
                             $q->whereIn($value["condition"], $ids);
+                            // foreach($ids as $IdValue):
+                            //     $q->orWhere($value["condition"], 'like', $IdValue);
+                            // endforeach;
                         else:
                             $q->where($value["condition"], 'like', $value["textCondition"]);
                         endif;
@@ -42,6 +45,9 @@ class DatasetsController extends Controller
                         if(strpos($value["textCondition"],  ",")):
                             $ids = explode(",", $value["textCondition"]);
                             $q->whereNotIn($value["condition"], $ids);
+                            // foreach($ids as $IdValue):
+                            //     $q->orWhere($value["condition"], 'not like', $IdValue);
+                            // endforeach;
                         else:
                             $q->where($value["condition"], 'not like', $value["textCondition"]);
                         endif;
@@ -65,7 +71,7 @@ class DatasetsController extends Controller
                     elseif($value['formula'] == 'contains'):
                         $q->where($value["condition"], 'like', '%'.$value["textCondition"].'%');
                     elseif($value['formula'] == 'not contains'):
-                        $q->where($value["condition"], 'not like', '%'.$value["textCondition"].'%');
+                            $q->whereNot($value["condition"], 'like', '%'.$value["textCondition"].'%');
                     elseif($value['formula'] == 'ends with'):
                         if(strpos($value["textCondition"],  ",")):
                             $ids = explode(",", $value["textCondition"]);

@@ -16,16 +16,18 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-6 col-12 p-0">
-                        <span v-for="(filter,index) in form.filterConditionsArray" :key="'filter-'+filter.conditionText+'-'+filter.formula+'-'+filter.textCondition" class="filter-btns" v-show="filter_expand">
+                    <div class="col-md-6 col-12 p-0 filter-btns-holder">
+                        <span v-for="(filter,index) in form.filterConditionsArray" :key="'filter-'+filter.conditionText+'-'+filter.formula+'-'+filter.textCondition" class="filter-btns row" v-show="filter_expand" :class="'filterbtn-'+index">
                             <span v-title="filter.textConditionLabel"  class="text-dark mx-1 pointer-hand" @click="showFilterDetails(filter, index)"> {{ filter.textConditionLabel }}</span>
                             <i class="bi bi-x pr-1  pointer-hand" @click="removeFilter(index)"></i>
                         </span>
-                        <span class="filter-btns" v-show="(filter == true) && (typeof form.filter == 'object')">
-                            <span  class="text-dark mx-1 pointer-hand"> {{ (form.filter)?form.filter.filter:'-' }}</span>
-                            <i class="bi bi-x pr-1  pointer-hand"></i>
+                        <span class="filtertemp">
+                            <span class="filter-btns row" v-show="(filter == true) && (typeof form.filter == 'object')" >
+                                <span  class="text-dark mx-1 pointer-hand"> {{ (form.filter)?form.filter.filter:'-' }}</span>
+                                <i class="bi bi-x pr-1  pointer-hand"></i>
+                            </span>
                         </span>
-                        <div class="stage-select-box selection-box" v-show="filter">
+                        <div class="stage-select-box selection-box filteration-box" v-show="filter" :style="'left:'+leftpos">
                             <div class="stage-box-header">
                                 <i class="bi bi-x close" @click="filter = false; form.filter=''"></i>
                                 <span class="control-label text-uppercase">Select Options</span>
@@ -37,8 +39,10 @@
                                         <label class="btn" :for="form.filter.filter_key +'-email-all'">All</label>
                                         <input type="radio" name="outreach-email" v-model="queryType" value="any" class="btn-check" :id="form.filter.filter_key +'-email-any'" autocomplete="off">
                                         <label class="btn" :for="form.filter.filter_key +'-email-any'">Any</label>
+                                        <input type="radio" name="outreach-email" v-model="queryType" value="none" class="btn-check" :id="form.filter.filter_key +'-email-none'" autocomplete="off">
+                                        <label class="btn" :for="form.filter.filter_key +'-email-none'">None</label>
                                         <br>
-                                        <span v-for="filterOption in filterOptions" :key="'select-'+filterOption" :value="filterOption" class="mselect-bs">
+                                        <span v-for="filterOption in filterOptions" :key="'select-'+filterOption" :value="filterOption" class="mselect-bs" v-show="queryType != 'none'">
                                             <input type="checkbox" v-model="searchfilterEmailMoreOption" :id="form.filter.filter_key +'-'+filterOption" :value="filterOption"/>
                                             <label class="" :for="form.filter.filter_key +'-'+filterOption">{{ filterOption }}</label><br>
                                         </span>
@@ -50,8 +54,10 @@
                                         <label class="btn" :for="form.filter.filter_key +'-phone-all'">All</label>
                                         <input type="radio" name="outreach-mobile" v-model="queryType" value="any" class="btn-check" :id="form.filter.filter_key +'-phone-any'" autocomplete="off">
                                         <label class="btn" :for="form.filter.filter_key +'-phone-any'">Any</label>
+                                        <input type="radio" name="outreach-mobile" v-model="queryType" value="none" class="btn-check" :id="form.filter.filter_key +'-phone-none'" autocomplete="off">
+                                        <label class="btn" :for="form.filter.filter_key +'-phone-none'">None</label>
                                         <br>
-                                        <span v-for="filterOption in filterOptions" :key="'select-'+filterOption" :value="filterOption" class="mselect-bs">
+                                        <span v-for="filterOption in filterOptions" :key="'select-'+filterOption" :value="filterOption" class="mselect-bs" v-show="queryType != 'none'">
                                             <input type="checkbox" v-model="searchfilterPhoneMoreOption" :id="form.filter.filter_key +'--'+filterOption" :value="filterOption"/>
                                             <label class="" :for="form.filter.filter_key +'--'+filterOption">{{ filterOption }}</label><br>
                                         </span>
@@ -69,7 +75,7 @@
                                         </div>
                                         <div v-show="filterDropdown">
                                             <div class="selectedOptions">
-                                                <span class="badge bg-primary text-white p-2 m-1 pointer-hand" v-for="(option, index) in selectedOptions" :key="'option-'+index" @click="removeSelectedOption(index)">{{ option }} </span> 
+                                                <span v-for="(option, index) in selectedOptions" :key="'option-'+index" @click="removeSelectedOption(index)">{{ option }} </span> 
                                             </div>
                                             <select class="form-control" v-model="form.dropdown" @change="getSelectedOptions">
                                                 <option v-for="select in selects" :key="'select-'+select.oid" :value="select.oid">{{ select.name }}</option>
@@ -90,7 +96,7 @@
                                     </date-range-picker>
                                 </div>
                             </div>
-                            <div class="stage-box-footer text-center border-top p-2 mb-2">
+                            <div class="stage-box-footer text-center border-top p-2">
                                 <button v-show="filterBtn" v-if="filterInput || filterDropdown || filterDateRange || filterEmail || filterPhone" class="btn btn-primary btn-sm" @click="createFilter">Done</button>
                                 <button v-show="!filterBtn" v-if="filterInput || filterDropdown || filterDateRange || filterEmail || filterPhone" class="btn btn-primary btn-sm" @click="updateFilter">Update</button>
                             </div> 
@@ -112,7 +118,7 @@
                                         <input type="text" placeholder="Search Your Field" v-model="filter_keyword">
                                     </p>
                                     <div class="fh-250">
-                                    <a href="javascript:;" class="stage-link" v-for="(fitem, fk) in filterScanItems" :key="'fkey-'+fk" @click="showFilterOption(fitem)">{{ fitem.filter }}</a>
+                                        <a href="javascript:;" class="stage-link" v-for="(fitem, fk) in filterScanItems" :key="'fkey-'+fk" @click="showFilterOption(fitem)">{{ fitem.filter }}</a>
                                     </div>
                                 </div> 
                             </div>
@@ -250,6 +256,7 @@ export default {
             searchfilterEmailMoreOption:[],
             searchfilterPhoneMoreOption:[],
             queryType : "",
+            leftpos:'0px',
             form: new Form({
                 sortType:'outreach_touched_at',
                 sortBy:'desc',
@@ -312,7 +319,7 @@ export default {
             }
             else {
                 return this.filterItems.filter(item => {
-                    return item.filter_key.toLowerCase().indexOf(this.filter_keyword.toLowerCase()) > -1
+                    return item.filter.toLowerCase().indexOf(this.filter_keyword.toLowerCase()) > -1
                 })
             }
         },
@@ -321,6 +328,8 @@ export default {
         removeAllFilter() {
             this.form.filterConditionsArray = [];
             this.filterBtn = true
+            this.showView = false
+            this.filter = false
             this.getDatasets(1);
         },
         setInputTestOrDropdown(){
@@ -342,16 +351,26 @@ export default {
             this.filterPhone = false
             this.showView = true
             this.filter = false
+            this.filter_keyword = ''
         },
         showFilterOption(fitem){
             this.filter = true
             this.showView = false
             this.form.filterOption = ''
+            this.form.filterText = ''
             if(this.form.filter == null){
                 this.filterInput = false;
                 this.filterDropdown = false;
                 this.filterDateRange = false;
             }else{
+                var isConExist = this.form.filterConditionsArray.filter(function(e){
+                    return ((e.type == fitem.filter_type) && (e.condition == fitem.filter_key))
+                });
+                if(isConExist.length > 0){               
+                    this.showFilterDetails(isConExist[0], this.form.filterConditionsArray.indexOf(isConExist[0]))
+                    return false;
+                }
+                this.offset('.filtertemp', 5);
                 this.form.filter = fitem;
                 this.filterOptions = this.form.filter.filter_option.split(',')
                 this.form.filterOption = this.filterOptions[0]
@@ -364,7 +383,7 @@ export default {
                         return ((e.type == filterType) && (e.condition == filterKey))
                     })
                     if(oldData.length > 0){                        
-                        this.showFilterDetails(oldData[0], 1)
+                        this.showFilterDetails(oldData[0], this.form.filterConditionsArray.indexOf(oldData[0]))
                     }
                 }
                 if(this.form.filter.filter_type == 'calendar'){
@@ -380,7 +399,7 @@ export default {
                         return ((e.type == filterType) && (e.condition == filterKey))
                     })
                     if(oldData.length > 0){                        
-                        this.showFilterDetails(oldData[0], 1)
+                        this.showFilterDetails(oldData[0], this.form.filterConditionsArray.indexOf(oldData[0]))
                     }
                     this.selects = []
                     this.filterInput = false;
@@ -491,10 +510,16 @@ export default {
 
                 if(this.queryType == 'all'){
                     var query = 'and'
-                }else{
+                }else if(this.queryType == 'any'){
                     var query = 'or'
-                }               
-                var textConditionLabel = this.form.filter.filter + " with " + this.searchfilterEmailMoreOption.join(", " + query +' ')
+                } else {
+                    var query = 'empty'
+                }
+                if(query == 'empty') {
+                    var textConditionLabel = this.form.filter.filter + " is empty "
+                } else {
+                    var textConditionLabel = this.form.filter.filter + " with " + this.searchfilterEmailMoreOption.join(", " + query +' ')
+                }
                 oldformula = this.form.filter.filter_option
                 this.form.filterOption = this.queryType
 
@@ -504,10 +529,16 @@ export default {
                 var textCondition = this.searchfilterPhoneMoreOption.join(", ")
                 if(this.queryType == 'all'){
                     var query = 'and'
-                }else{
+                }else if(this.queryType == 'any'){
                     var query = 'or'
+                } else {
+                    var query = 'empty'
+                } 
+                if(query == 'empty') {
+                    var textConditionLabel = this.form.filter.filter + " is empty "
+                } else {
+                    var textConditionLabel = this.form.filter.filter + " with " + this.searchfilterPhoneMoreOption.join(", " + query +' ')
                 }
-                var textConditionLabel = this.form.filter.filter + " with " + this.searchfilterPhoneMoreOption.join(", " + query +' ')
 
                 oldformula = this.form.filter.filter_option
                 this.form.filterOption = this.queryType
@@ -539,9 +570,10 @@ export default {
             this.getDatasets(1)
         },        
         showFilterDetails(filter, index){
-            
+            this.showView = false
+            this.offset('.filterbtn-'+index, 0);
             if(filter.type == 'textbox'){
-                this.form.filter = filter.condition                
+                this.form.filter = filter.conditionText                
                 this.form.filterOption = filter.formula
                 this.form.filterText = filter.textCondition
                 this.filterOptions = []
@@ -553,7 +585,7 @@ export default {
                 this.filterEmail = false
                 this.filterPhone = false
             } else if(filter.type == 'dropdown'){
-                this.form.filter = filter.condition
+                this.form.filter = filter.conditionText
                 this.form.filterOption = filter.formula
                 this.form.dropdown = filter.textCondition
                 this.filterOptions = []
@@ -575,13 +607,13 @@ export default {
                     })
                     if(newStage.length > 0){
                         this.selectedOptionsId.push(newRecords[i])
-                        this.selectedOptions.push(newStage[0].stage)
+                        this.selectedOptions.push(newStage[0].name)
                     }
                 }
                 this.filterEmail = false
                 this.filterPhone = false
             } else if(filter.type == 'calendar'){
-                this.form.filter = filter.condition
+                this.form.filter = filter.conditionText
                 this.form.filterOption = filter.formula
                 this.form.filterText = filter.textCondition
                 this.filterOptions = []
@@ -642,7 +674,7 @@ export default {
         updateFilter(){
             for(const i in this.form.filterConditionsArray){
                 
-                if(this.form.filterConditionsArray[i]["condition"] == this.form.filter || this.form.filterConditionsArray[i]["condition"] == this.bypassFIlterKey){
+                if(this.form.filterConditionsArray[i]["conditionText"] == this.form.filter || this.form.filterConditionsArray[i]["condition"] == this.bypassFIlterKey){
                     
                     if(this.form.filterConditionsArray[i]["type"] == "textbox"){
                         this.form.filterConditionsArray[i]["formula"] = this.form.filterOption
@@ -679,8 +711,10 @@ export default {
 
                         if(this.queryType == 'all'){
                             this.form.filterConditionsArray[i]['textConditionLabel'] = this.form.filter +  " with " + this.searchfilterEmailMoreOption.join(",  and ")
-                        }else{
+                        }else if(this.queryType == 'any'){
                             this.form.filterConditionsArray[i]['textConditionLabel'] = this.form.filter +  " with " + this.searchfilterEmailMoreOption.join(",  or ")
+                        } else {
+                            this.form.filterConditionsArray[i]['textConditionLabel'] = this.form.filter +  " is empty "
                         }
 
                         
@@ -718,6 +752,8 @@ export default {
         removeFilter(index){
             this.form.filterConditionsArray.splice(index, 1)
             this.filterBtn = true
+            this.showView = false
+            this.filter = false
             this.getDatasets(1);
         },        
         dateFormat(classes, date) {
@@ -750,6 +786,16 @@ export default {
             this.totalNumberOfRecords = '-';    
             this.getDatasets(1);
         },
+        offset(dv, es) {
+            var el = document.querySelector(dv); 
+            var rect = el.getBoundingClientRect();
+            var el2 = document.querySelector('.filter-btns-holder'); 
+            var rect2 = el2.getBoundingClientRect();
+            var fleft = rect.left - rect2.left - es;
+            this.leftpos = fleft+'px';
+            
+        }
+        
     },
     beforeMount() {
         if(this.datasets == '') {
