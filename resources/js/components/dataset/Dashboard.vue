@@ -6,7 +6,7 @@
             </div>
             <div class="filterbox">
                 <div class="row mx-0 mb-2">
-                    <div class="col-md-3 pl-0">
+                    <div class="col-md-4 col-12 pl-0">
                         <div class="input-group in-search-group">
                             <input type="text" class="form-control" v-model="form.textSearch" placeholder="Search by name, email or company">
                             <div class="input-group-append">
@@ -16,7 +16,37 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-6 col-12 p-0 filter-btns-holder">
+                    <div class="col-md-4 col-12">
+                    </div>
+                    <div class="col-md-4 col-12 pr-0 text-right form-inline d-block">
+                        <span class="mr-2">
+                            <label class="form-control  pr-0  border-none"> Sort By : </label>
+                            <select class="form-control" v-model="form.sortType" @change="getDatasets(1)">
+                                <option value="outreach_touched_at">Last Contacted</option>
+                                <option value="last_outreach_engage">Last Engaged</option>
+                                <option value="last_update_at">Last Updated</option>
+                                <option value="outreach_created_at">Last Created</option>
+                                <option value="engage_score">Engagement</option>
+                                <option value="first_name">First Name</option>
+                                <option value="last_name">Last Name</option>
+                                <option value="company">Comapany Name</option>
+                                <option value="title">Title</option>
+                            </select>
+                        </span>
+                        <span class="mr-2">
+                            <i class="bi bi-arrow-down active pointer-hand" v-if="form.sortBy == 'desc'" @click="updateSorting('asc')"></i>
+                            <i class="bi bi-arrow-up active pointer-hand" v-else  @click="updateSorting('desc')"></i>
+                        </span>
+                        <span class="ml-4">
+                            <button class="btn btn-sm btn-default" @click="refreshAll"> 
+                                <i class="bi bi-bootstrap-reboot"></i> Refresh
+                            </button>
+                            
+                        </span>
+                    </div>
+                </div>
+                <div class="row mx-0 mb-2">
+                    <div class="col-md-9 col-12 p-0 filter-btns-holder">
                         <span v-for="(filter,index) in form.filterConditionsArray" :key="'filter-'+filter.conditionText+'-'+filter.formula+'-'+filter.textCondition" class="filter-btns row" v-show="filter_expand" :class="'filterbtn-'+index">
                             <span v-title="filter.textConditionLabel"  class="text-dark mx-1 pointer-hand" @click="showFilterDetails(filter, index)"> {{ filter.textConditionLabel }}</span>
                             <i class="bi bi-x pr-1  pointer-hand" @click="removeFilter(index)"></i>
@@ -27,7 +57,7 @@
                                 <i class="bi bi-x pr-1  pointer-hand"></i>
                             </span>
                         </span>
-                        <div class="stage-select-box selection-box filteration-box" v-show="filter" :style="'left:'+leftpos">
+                        <div class="stage-select-box selection-box filteration-box" v-show="filter" :style="'left:'+leftpos+';top:'+toppos">
                             <div class="stage-box-header">
                                 <i class="bi bi-x close" @click="filter = false; form.filter=''"></i>
                                 <span class="control-label text-uppercase">Select Options</span>
@@ -102,12 +132,7 @@
                             </div> 
                         </div>
                         <div class="position-relative d-inline-block">
-                            <div class="btn-group" role="group">
-                                <button type="button" class="btn btn-outline-dark btn-sm text-capitalize" @click="showFilter()"><i class="bi bi-plus"></i> Add filter</button>
-                                <button type="button" class="btn btn-secondary btn-sm" @click="removeAllFilter">
-                                    <i class="bi bi-x"></i>
-                                </button>
-                            </div>
+                            <button type="button" class="btn btn-outline-dark btn-sm text-capitalize" @click="showFilter()"><i class="bi bi-plus"></i> Add filter</button>
                             <div class="stage-select-box selection-box" v-show="showView">
                                 <div class="stage-box-header">
                                     <i class="bi bi-x close" @click="showView = false"></i>
@@ -124,6 +149,7 @@
                             </div>
                             <span class="text-secondary cursor-pointer ml-1" v-if="filter_expand" @click="filter_expand = false">Hide Filters</span>
                             <span class="text-secondary cursor-pointer ml-1" v-else @click="filter_expand = true">{{ form.filterConditionsArray.length }} Hidden Filters</span>
+                            <span class="text-danger cursor-pointer ml-1" v-show="form.filterConditionsArray.length >= 1" @click="removeAllFilter">Clear All</span>
                         </div>
                     </div>
                     <div class="col-md-3 col-12 p-0 text-right pt-2">
@@ -145,6 +171,9 @@
                         </div>
                         <div class="divthead-elem mwf-200">
                             Name                            
+                        </div>
+                        <div class="divthead-elem wf-175">
+                            Tag                        
                         </div>
                         <div class="divthead-elem wf-175">
                             Stage                        
@@ -175,6 +204,11 @@
                             <br>
                             <small class="fw-500" v-title="record.title" v-if="record.title">{{ record.title }}  in </small> 
                             <span class="company-sm" v-title="record.company" v-if="record.company">{{ record.company }}</span>
+                        </div>
+                        <div class="divtbody-elem wf-175">
+                            <span v-if="record.outreach_tag">
+                                <label class=" alert alert-primary m-1 py-1 px-2" v-for="(tag, ti) in (record.outreach_tag.split(','))" v-title="tag" :key="'otg'+ti">{{ tag }}</label>
+                            </span>    
                         </div>
                         <div class="divtbody-elem wf-175">
                             <span v-if="record.stage_name" :class="record.stage_css" v-title="record.stage_name">
@@ -257,6 +291,7 @@ export default {
             searchfilterPhoneMoreOption:[],
             queryType : "",
             leftpos:'0px',
+            toppos:'0px',
             form: new Form({
                 sortType:'outreach_touched_at',
                 sortBy:'desc',
@@ -792,9 +827,17 @@ export default {
             var el2 = document.querySelector('.filter-btns-holder'); 
             var rect2 = el2.getBoundingClientRect();
             var fleft = rect.left - rect2.left - es;
+            var ftop = rect.top - rect2.top + 32;
             this.leftpos = fleft+'px';
-            
-        }
+            this.toppos = ftop+'px';
+        },
+         updateSorting(by) {
+            this.form.sortBy = by;
+            this.getDatasets(1);
+        },
+        refreshAll() {
+            this.getDatasets(1);
+        },
         
     },
     beforeMount() {

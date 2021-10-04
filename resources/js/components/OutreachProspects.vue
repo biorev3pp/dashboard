@@ -4,7 +4,7 @@
             <div class="row m-0">
                 <div class="col-md-9 pl-0  px-2  mt-2">      
                     <b-tabs content-class="detail-tabber" nav-class="link-tabber">
-                        <b-tab title="Overview" active >
+                        <b-tab title="Overview" :active="active_view == 'overview'">
                             <div class="row m-0">
                                 <div class="col-md-12">
 
@@ -133,7 +133,7 @@
                                 </div> 
                             </div>
                         </b-tab>
-                        <b-tab title="Calls" >
+                        <b-tab title="Calls" :active="active_view == 'call'" >
                                 <div class="full-width text-center" v-if="callLoader">
                                     <div class="spinner-border" role="status">
                                     <span class="sr-only">Loading...</span>
@@ -183,7 +183,7 @@
                                     </table>
                                 </div>
                         </b-tab>
-                        <b-tab title="Emails">
+                        <b-tab title="Emails" :active="active_view == 'email'">
                             <div class="full-width text-center" v-if="emailLoader">
                                 <div class="spinner-border" role="status">
                                 <span class="sr-only">Loading...</span>
@@ -321,6 +321,7 @@ export default {
             callStage : {},
             callCounted : 0,
             users : [],
+            active_view:'overview'
         }
     },
     computed: {
@@ -424,6 +425,11 @@ export default {
         showAllCalls(){
             this.callStageCounter =  'all'
             $(".call-dispo").css("display", "table-row")
+        }
+    },
+    beforeMount() {
+        if(this.$route.query.hasOwnProperty('view')) {
+            this.active_view = this.$route.query.view;
         }
     },
     created() {

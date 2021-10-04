@@ -6,13 +6,30 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
+Route::post('/get-dashboard-chart-with-filter',[App\Http\Controllers\API\ChartsController::class, 'index']);
+Route::any('/get-dashboard-chart1',[App\Http\Controllers\API\ChartsController::class, 'chart1']);
+Route::any('/get-dataset-graph-filter',[App\Http\Controllers\API\DatasetsController::class, 'chartFilter']);
+Route::any('/get-graph-search-criteria',[App\Http\Controllers\API\DatasetsController::class, 'getGraphSearchCriteria']);
+Route::get('/get-stage-oid',[App\Http\Controllers\API\DatasetsController::class, 'getStageOid']);
+
+
+Route::get('/get-report-records', [App\Http\Controllers\API\ReportController::class, 'index']);
+Route::post('/get-log-details', [App\Http\Controllers\API\ReportController::class, 'logRecords']);
+
+Route::get('/get-all-purchase-authorization', [App\Http\Controllers\API\FilterController::class, 'getAllPurchaseAuthorization']);
+Route::get('/get-all-departments', [App\Http\Controllers\API\FilterController::class, 'getAllDepartments']);
+Route::get('/get-all-industry', [App\Http\Controllers\API\FilterController::class, 'getAllIndustry']);
+Route::get('/get-all-primary-industry', [App\Http\Controllers\API\FilterController::class, 'getAllPrimaryIndustry']);
+Route::get('/get-all-company-revenue', [App\Http\Controllers\API\FilterController::class, 'getAllCompanyRevenue']);
+Route::get('/get-all-company-rev-range', [App\Http\Controllers\API\FilterController::class, 'getAllCompanyRevRange']);
 
 Route::apiResource('/dataset-values', App\Http\Controllers\API\DatasetsController::class);
+Route::apiResource('/dashboard-designs', App\Http\Controllers\API\DashboardDesignsController::class);
+
 Route::get('/data-check', [App\Http\Controllers\API\DatasetsController::class, 'datacheck']);
+Route::post('/dataset-values-data', [App\Http\Controllers\API\DatasetsController::class, 'getAllData']);
 Route::get('/reset-dataset', [App\Http\Controllers\API\DatasetsController::class, 'resetDataset']);
 Route::get('/get-dataset', [App\Http\Controllers\API\DatasetsController::class, 'getDataset']);
-
-Route::post('/dataset-values-data', [App\Http\Controllers\API\DatasetsController::class, 'getAllData']);
 
 // Common API
 Route::any('/get-job-history', [App\Http\Controllers\API\JobHistoryController::class, 'index']);
@@ -27,6 +44,7 @@ Route::get('/get-f9-countries', [App\Http\Controllers\API\FiveNineController::cl
 Route::get('/get-mapping-range', [App\Http\Controllers\API\SettingsController::class, 'MappingRange']);
 Route::get('/get-all-stages', [App\Http\Controllers\API\SettingsController::class, 'AllStages']);
 Route::get('/get-all-datasets', [App\Http\Controllers\API\SettingsController::class, 'AllDatasets']);
+Route::get('/get-all-dataset-groups', [App\Http\Controllers\API\SettingsController::class, 'AllFilterDatasets']);
 Route::get('/get-all-agent-lists', [App\Http\Controllers\API\OutreachController::class, 'AllAgents']);
 Route::get('/get-all-last-dispo', [App\Http\Controllers\API\OutreachController::class, 'AllLastDispo']);
 

@@ -34,7 +34,7 @@
             <div class="logo">
                 <router-link to="/dashboard" class="navbar-brand">
                     <img :src="currentConfig.company_logo" :alt="currentConfig.company_name" width="160px" v-if="fullmenu"> 
-                    <img :src="currentConfig.company_icon" :alt="currentConfig.company_name" width="40px" v-else> 
+                    <img :src="currentConfig.company_icon" :alt="currentConfig.company_name" width="33px" v-else> 
                 </router-link>
             </div>
             <ul class="side-menu-list">
@@ -129,6 +129,12 @@
                     <router-link  to="/job-history" class="side-menu-link"> 
                         <i class="bi bi-clock-history mr-1"></i>
                         <span v-show="fullmenu"> Scheduled Jobs</span>
+                    </router-link>
+                </li>
+                <li>
+                    <router-link  to="/log/sync-logs" class="side-menu-link"> 
+                        <i class="bi bi-layout-text-window-reverse"></i>
+                        <span v-show="fullmenu"> Sync Log</span>
                     </router-link>
                 </li>
                 <li class="side-menu-item">

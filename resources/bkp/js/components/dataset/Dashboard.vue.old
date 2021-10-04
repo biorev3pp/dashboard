@@ -1,0 +1,197 @@
+<template>
+    <div>
+        <div>
+            <div class="table-responsive border-bottom">
+                <dataset-count :total="totalNumberOfRecords" :activeDataset="form.dataset"></dataset-count>
+            </div>
+            <div class="filterbox">
+                <div class="row mx-0 mb-2">
+                    <div class="col-md-3 pl-0">
+                        <div class="input-group in-search-group">
+                            <input type="text" class="form-control" v-model="form.textSearch" placeholder="Search by name, email or company">
+                            <div class="input-group-append">
+                                <button class="btn" type="button">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-12"></div>
+                    <div class="col-md-3 col-12 p-0 text-right pt-2">
+                        <img :src="loader_url" alt="Loading..." v-show="loader">
+                        <span v-if="recordContainer.length >= 1"> Selected  <b>{{ recordContainer.length | freeNumber }}</b> of  </span>
+                        <span v-else>Showing</span>
+                        <span><b>{{ totalNumberOfRecords | freeNumber }}</b> Results</span>
+                    </div>
+                </div>
+            </div> 
+            <div class="divtable border-top">
+                <div class="divthead">
+                    <div class="divthead-row">
+                        <div class="divthead-elem wf-45 text-center">
+                            <input type="checkbox" name="" id="check-all" value="0" aria-label="...">
+                        </div>
+                        <div class="divthead-elem wf-125">
+                            Dataset                        
+                        </div>
+                        <div class="divthead-elem mwf-200">
+                            Name                            
+                        </div>
+                        <div class="divthead-elem wf-175">
+                            Stage                        
+                        </div>
+                        <div class="divthead-elem wf-150">
+                            Call Stack  
+                        </div>
+                        <div class="divthead-elem wf-220">
+                            Email Stack                   
+                        </div>
+                        <div class="divthead-elem wf-150">
+                            Time Stack
+                        </div>
+                    </div>
+                </div>
+                <div class="divtbody  fit-divt-content2">
+                    <div class="divtbody-row" v-for="record in records.data" :key="'dsg-'+record.id" :class="[(active_row.id == record.record_id)?'expended':'']">
+                        <div class="divtbody-elem  wf-45 text-center">
+                            <div class="form-check">
+                                <input :id="'record-'+record.id" class="form-check-input me-1" type="checkbox" :value="record.id">
+                            </div>
+                        </div>
+                        <div class="divtbody-elem  wf-125">
+                            <dataset-group :a="record.totalemail_count" :b="record.totalclick_count" :c="record.totalopen_count" :d="(record.totalcall)?record.totalcall.totalcall:0" :e="(record.totalrcall_count)?record.totalrcall_count:0" :f="(record.totalwcall)?record.totalwcall.totalwcall:0" :g="(record.totalwrcall_count)?record.totalwrcall_count:0" :h="record.stage"></dataset-group>
+                        </div>
+                        <div class="divtbody-elem mwf-200">
+                            <router-link target="_blank" :to="'prospects/' + record.record_id" class=""><b>{{ record.first_name }} {{ record.last_name }} </b></router-link>
+                            <br>
+                            <small class="fw-500" v-title="record.designation" v-if="record.designation">{{ record.designation }}  in </small> 
+                            <span class="company-sm" v-title="record.company" v-if="record.company">{{ record.company }}</span>
+                        </div>
+                        <div class="divtbody-elem wf-175">
+                            <span v-if="record.stage_name" :class="record.stage_css" v-title="record.stage_name">
+                                {{ record.stage_name }}
+                            </span>
+                            <span class="no-stage" v-else>No Stage</span>
+                        </div>
+                        <div class="divtbody-elem wf-150">
+                            <span class="stack-box call-log">
+                                <label for="call">
+                                    <i class="bi bi-telephone-fill"></i>
+                                </label>
+                                <call-log :calldata="record.calllogs" :title="MumberFormated(record.otherPhones)" :label="'B'"></call-log>
+                                <call-log :calldata="record.calllogs" :title="MumberFormated(record.mobilePhones)" :label="'M'"></call-log>
+                                <call-log :calldata="record.calllogs" :title="MumberFormated(record.workPhones)" :label="'HQ'"></call-log>
+                            </span>
+                        </div>
+                        <div class="divtbody-elem wf-220">
+                            <span class="stack-box email-log">
+                                <label for="email">
+                                    <i class="bi bi-envelope-fill text-primary"></i>
+                                </label>
+                                <email-log :te="record.totalemail_count" :tc="record.totalclick_count" :to="record.totalopen_count" :tb="record.totalbounced_count" :tr="record.totalbounced_count" :title="record.emails?record.emails:record.email" :label="'B'"></email-log>
+                                <email-log :te="record.totalemail_count" :tc="record.totalclick_count" :to="record.totalopen_count" :tb="record.totalbounced_count" :tr="record.totalbounced_count" :title="record.supplemental_email?record.supplemental_email:''" :label="'S'"></email-log>
+                            </span>
+                        </div>                             
+                        <div class="divtbody-elem  wf-150">
+                            <span class="stack-box">
+                                <label for="email">
+                                    <i class="bi bi-clock-fill text-success"></i>
+                                </label>
+                                <span :class="(record.outreach_created_at)?'active':''" v-title="myDateFormat('Created', record.outreach_created_at)">C</span>
+                                <span :class="(record.outreach_touched_at)?'active':''" v-title="myDateFormat('Touched', record.outreach_touched_at)">T</span>
+                                <span :class="(record.last_update_at)?'active':''" v-title="myDateFormat('Updated', record.last_update_at)">U</span>
+                                <span :class="(record.last_agent_dispo_time)?'active':''" v-title="myDateFormat('Last Called ', record.last_agent_dispo_time)">CT</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="divtfoot border-top">
+                    <div class="text-center py-1">
+                        <span class="form-inline d-inline-flex mr-3">
+                            <label class="form-control  pr-0 border-none"> Show : </label>
+                            <select class="form-control" v-model="form.recordPerPage" @change="getDatasets">
+                                <option value="10">10</option>
+                                <option value="20">20</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </span>
+                        <pagination :limit="5" :data="records" @pagination-change-page="getDatasets"></pagination>
+                    </div>                    
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+<script>
+import DatasetGroup from './Group';
+import CallLog from './CallLog';
+import EmailLog from './EmailLog';
+import DatasetCount from './Counts';
+export default {
+    components:{CallLog, EmailLog, DatasetGroup, DatasetCount},
+    data() {
+        return {
+            loader:false,
+            step:0,
+            records:{},
+            totalRecords : 0,
+            active_row:'',
+            form: new Form({
+                sortType:'outreach_touched_at',
+                sortBy:'desc',
+                recordPerPage:20,
+                pageno:1,
+                datatset:''
+            }),
+            loader_url: '/img/spinner.gif',
+            totalNumberOfRecords:'',
+            recordContainer:''
+        }
+    },
+    filters: {
+           },
+    computed: {
+        datasets() {
+            return this.$store.getters.datasets
+        },
+    },
+    methods: {
+        MumberFormated(numbr) {
+            return this.$options.filters.phoneFormatting(numbr);
+        },
+        myDateFormat(txt, val) {
+            return txt+' '+this.$options.filters.convertInDayMonth(val)+' ago';
+        },
+        getDatasets(page) {
+            this.loader = true;
+            this.$Progress.start();  
+            if(page == undefined) { page = 1; }          
+            axios.get('/api/dataset-values?page='+page).then((response) => {                
+                this.records = response.data;
+                this.totalRecords = response.data.total;                
+                this.$Progress.finish();               
+                this.totalNumberOfRecords = response.data.total;
+                this.loader = false;
+            });
+        }
+    },
+    beforeMount() {
+        if(this.datasets == '') {
+           this.$store.dispatch('setDatasets');
+        }
+    },
+    mounted() {
+        this.getDatasets(1);
+    }
+}
+</script>
+<style>
+    .pointer-hand{
+        cursor: pointer;
+    }
+    .border-none{
+        border:none !important;
+        margin-right:3px;
+    }
+</style>

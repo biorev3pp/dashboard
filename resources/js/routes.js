@@ -1,4 +1,4 @@
-import Dashboard from './components/Dashboard.vue';
+import Dashboard from './components/dashboard/Dashboard.vue';
 import DatasetDashboard from './components/dataset/Dashboard.vue';
 import UDashboard from './components/UDashboard.vue';
 import Settings from './components/Settings.vue';
@@ -17,6 +17,8 @@ import FiveNineCallReportOne from './components/FiveNineCallReportOne.vue';
 import OutreachAccountsDetails from './components/OutreachAccountsDetails.vue';
 import OutreachAccountsProspects from './components/OutreachAccountsProspects.vue';
 import OutreachProspects from './components/OutreachProspects.vue';
+import SyncReport from './components/reports/Sync.vue';
+import SyncReportDetail from './components/reports/SyncDetail.vue';
 
 export const routes = [{
         path: '/',
@@ -184,6 +186,22 @@ export const routes = [{
         meta: {
             requiresAuth: true,
             title: 'Outreach Prospects Details',
+        }
+    },
+    {
+        path: '/log/sync-logs',
+        component: SyncReport,
+        meta: {
+            requiresAuth: true,
+            title: 'Sync Data Log',
+        }
+    },
+    {
+        path: '/log/sync-log-details',
+        component: SyncReportDetail,
+        meta: {
+            requiresAuth: true,
+            title: 'Sync Data Log Details',
         }
     }
 ];

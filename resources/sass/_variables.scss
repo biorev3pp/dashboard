@@ -1,7 +1,8 @@
 // Body
 $body-bg: #f8fafc;
 // Typography
-$font-family-sans-serif: 'Celias', sans-serif;
+$font-family-sans-serif: 'Celias',
+sans-serif;
 $font-size-base: 0.75rem;
 $line-height-base: 1.5;
 // Colors
@@ -16,9 +17,9 @@ $green: #38c172;
 $teal: #4dc0b5;
 $cyan: #6cb2eb;
 $white: #ffffff;
-
-$wamounts: (3,5,10,15,20,25,30,35,40,45,50,75,80,90,100);
-
+$theme:#8e29db;
+$themehover:#6d18aa;
+$wamounts: (2, 3, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 75, 80, 90, 100);
 @each $wamount in $wamounts {
     .w-#{$wamount} {
         width: percentage($wamount/100) !important;
@@ -51,8 +52,7 @@ $wamounts: (3,5,10,15,20,25,30,35,40,45,50,75,80,90,100);
     }
 }
 
-$wamounts2: (110,115,120,125,130,135,140,145,150,175,180,200,220,225,250,275,300,320);
-
+$wamounts2: (110, 115, 120, 125, 130, 135, 140, 145, 150, 175, 180, 200, 220, 225, 250, 275, 300, 320);
 @each $wamount2 in $wamounts2 {
     .wf-#{$wamount2} {
         width: #{$wamount2}px !important;
@@ -64,20 +64,20 @@ $wamounts2: (110,115,120,125,130,135,140,145,150,175,180,200,220,225,250,275,300
     }
 }
 
-$weights: (100,200,300,400,500,600,700,800);
-
+$weights: (100, 200, 300, 400, 500, 600, 700, 800);
 @each $weight in $weights {
     .fw-#{$weight} {
         font-weight: #{$weight} !important;
     }
 }
 
-$fsizes: (10,11,12,13,14,15,16,17,18,20);
-
+$fsizes: (10, 11, 12, 13, 14, 15, 16, 17, 18, 20);
 @each $size in $fsizes {
     .fs-#{$size} {
         font-size: #{$size}px !important;
     }
 }
 
-.cursor-pointer{cursor: pointer;}
+.cursor-pointer {
+    cursor: pointer;
+}
