@@ -298,7 +298,6 @@ export default {
                 recordPerPage:20,
                 pageno:1,
                 datatset:'',
-
                 dateRange:{},
                 outreach:1,
                 activecampaign:0,
@@ -846,6 +845,14 @@ export default {
         }
     },
     mounted() {
+        if(this.$route.query) {
+            const obj = this.$route.query
+            var i
+            for (const key of Object.keys(obj)) {
+                i = key
+            }
+            this.form.filterConditionsArray = JSON.parse(i)
+        }
         this.getDatasets(1);
         if(this.filterItems == '') {
            this.$store.dispatch('setDatasetFilter');
@@ -853,12 +860,3 @@ export default {
     }
 }
 </script>
-<style>
-    .pointer-hand{
-        cursor: pointer;
-    }
-    .border-none{
-        border:none !important;
-        margin-right:3px;
-    }
-</style>

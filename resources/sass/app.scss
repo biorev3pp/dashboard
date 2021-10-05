@@ -1,25 +1,15 @@
-// Fonts
 @import url('../font/stylesheet.css');
-// Variables
 @import 'variables';
-// Bootstrap
 @import '~bootstrap/scss/bootstrap';
-@import '~bootstrap-icons/font/bootstrap-icons';
 ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 7px;
+    height: 7px;
 }
-
-
-/* Track */
 
 ::-webkit-scrollbar-track {
     -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
     box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
 }
-
-
-/* Handle */
 
 ::-webkit-scrollbar-thumb {
     -webkit-border-radius: 10px;
@@ -1928,6 +1918,37 @@ table span.badge {
     top: 15px;
 }
 
+.chart-dmode ul {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.chart-dmode ul li {
+    margin-bottom: 2px;
+}
+
+.chart-dmode ul li span {
+    border: 1px solid #ccc;
+    padding: 2px 5px;
+    min-width: 190px;
+    display: inline-block;
+    background: #e4e4e4;
+}
+
+.chart-dmode ul li span:first-child {
+    border: none;
+    min-width: 98px;
+    display: inline-block;
+    text-align: right;
+    background: none;
+}
+
+.chart-dmode i {
+    font-size: 20px;
+    margin-left: 3px;
+}
+
 .chart-dmode label {
     display: inline-block;
     position: relative;
@@ -1939,7 +1960,7 @@ table span.badge {
     border: 1px solid #ccc;
     padding: 2px 0 7px;
     font-weight: 500;
-    min-width: 150px;
+    min-width: 200px;
     display: inline-block;
 }
 
@@ -1964,6 +1985,20 @@ table span.badge {
     margin-right: 3px;
 }
 
+.dash-select {
+    font-size: 18px;
+    position: relative;
+    top: -7px;
+    display: inline-block;
+    outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    margin-right: 10px;
+    padding-right: 10px;
+    border-bottom: 1px solid #ccc !important;
+    padding-bottom: 5px;
+}
+
 .apexcharts-pie-label,
 .apexcharts-datalabels,
 .apexcharts-datalabel,
@@ -1977,7 +2012,7 @@ table span.badge {
 }
 
 .chart-box {
-    margin-left: 250px;
+    margin-left: 390px;
     height: calc(100vh - 200px);
 }
 

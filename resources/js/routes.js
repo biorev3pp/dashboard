@@ -1,4 +1,6 @@
 import Dashboard from './components/dashboard/Dashboard.vue';
+import CallDashboard from './components/dashboard/Calls.vue';
+import EmailDashboard from './components/dashboard/Emails.vue';
 import DatasetDashboard from './components/dataset/Dashboard.vue';
 import UDashboard from './components/UDashboard.vue';
 import Settings from './components/Settings.vue';
@@ -26,6 +28,7 @@ export const routes = [{
         meta: {
             requiresAuth: true,
             title: 'Dashboard',
+            subtitle: 'prospect'
         }
     },
     {
@@ -34,6 +37,25 @@ export const routes = [{
         meta: {
             requiresAuth: true,
             title: 'Dashboard',
+            subtitle: 'prospect'
+        }
+    },
+    {
+        path: '/dashboard/calls',
+        component: CallDashboard,
+        meta: {
+            requiresAuth: true,
+            title: 'Dashboard',
+            subtitle: 'calls'
+        }
+    },
+    {
+        path: '/dashboard/emails',
+        component: EmailDashboard,
+        meta: {
+            requiresAuth: true,
+            title: 'Dashboard',
+            subtitle: 'emails'
         }
     },
     {

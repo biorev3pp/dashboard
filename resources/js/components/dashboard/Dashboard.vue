@@ -15,16 +15,15 @@
                     </div>
                 </div>
                <div class="synops" v-else>          
-                    <div class="inner-synop cursor-pointer" v-for="(detail, i) in synopValues"  :key="'row-'+i"   @click="dataPointSelectionHandlerTop(detail.value)">
+                    <div class="inner-synop cursor-pointer" v-for="(detail, i) in synopValues"  :key="'row-'+i"   @click="dataPointSelectionHandlerTop(detail.value)" @mouseenter="dataPointMouseEnterHandlerTop(detail.percentage+' : '+detail.value)" @mouseleave="dataPointMouseLeaveHandler">
                         <h4  class="number" >{{ detail.count | freeNumber }} 
                             <small>({{ detail.percentage }})</small> 
                         </h4>
                         <p>{{ detail.value }}</p>
                     </div>
                </div>
-                <div class="outer-synop cursor-pointer text-danger" style="right:0">
+                <div class="outer-synop cursor-pointer text-danger" style="right:0" @click="showListModal">
                     <h4 class="number">
-                        <img :src="loader_url" alt="Loading..." v-if="loader">
                         <i class="bi bi-gear-wide-connected"></i>    
                     </h4><p class=" text-danger">Settings</p>
                 </div>
@@ -138,7 +137,7 @@
                         </div>
                     </div>
                     <div class="col-md-2 col-12 p-0 text-right">
-                        <a href="/datasets" class="btn btn-primary theme-btn icon-btn-left" target="_blank">
+                        <a target="_blank" class="btn btn-primary theme-btn icon-btn-left" :href="'/datasets?'+ JSON.stringify(form.filterConditionsArray)">
                             <i class="bi bi-list-ul"></i> View
                         </a>
                     </div>
@@ -146,20 +145,52 @@
             </div>
             <div class="graphics-div border-top">
                 <div class="chart-dmode">
-                    <button v-if="this.form.filterConditionsArray.length > 0" class="btn btn-primary" @click="moveBack">Back</button>
-                    <ul v-for="list in form.historyValue" :key="'list' + list">
-                        <li > {{ list }} </li>
+                    <ul >
+                        <li v-for="(list, lkey) in form.historyValue" :key="'list' + list">
+                            <span class="text-uppercase fw-500">Level - {{ lkey + 1 }}</span>
+                            <span class="text-uppercase fw-500">{{ list }}</span>
+                        </li>
                     </ul>
                     <label for="" class="text-uppercase fw-500 mb-0">Display Mode</label>
-                    <v-select label="title" :options="graphFilterItems" v-model="form.primary_filter" @input="getDatasetGraphFilter"></v-select>
+                    <v-select :clearable="false" label="title" :options="graphFilterItems" v-model="form.primary_filter" @input="getDatasetGraphFilter"></v-select>
+                    <i v-if="this.form.historyKey.length > 0" class="bi bi-arrow-up-circle cursor-pointer" @click="moveBack"></i>
                 </div>
                 <div class="chart-box">
-                    <apexchart v-if="maplabelsS.length > 0" width="90%" height="94%" type="pie" :options="chartOptionsS" :series="seriesS" @dataPointSelection="dataPointSelectionHandler" @dataPointMouseEnter="dataPointMouseEnterHandler" @dataPointMouseLeave="dataPointMouseLeaveHandler"></apexchart>
+                    <apexchart v-if="paiDataS.length > 0" width="90%" height="94%" type="pie" :options="chartOptionsS" :series="seriesS" @dataPointSelection="dataPointSelectionHandler"></apexchart>
                 </div>
             </div>
         </div>
         <div class="overlay-loader" v-show="loader">
             <b-spinner style="width: 3rem; height: 3rem;" label="Loading.."></b-spinner>
+        </div>
+        <div class="modal fade" id="list-modal" aria-hidden="true" :backdrop="false" :keyboard="false">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-uppercase" >Set Display Mode Priority</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <draggable v-model="gfList" @end="sortList">
+                        <transition-group>
+                            <div v-for="element in gfList" :key="'gfl-'+element.id" class="border py-2 px-3 m-1" style="cursor:move" >
+                                {{element.title}} <span class="float-right badge badge-secondary">{{ element.order_no }}</span>
+                            </div>
+                        </transition-group>
+                    </draggable>
+                </div>
+                <div class="modal-footer d-block">
+                    <button type="button" class="btn btn-warning theme-btn float-left" @click="updateList(2)" :disabled="drag">
+                        {{ (drag)? 'Updating...' : 'Save changes and Refresh Data' }}
+                    </button>
+                    <button type="button" class="btn btn-primary theme-btn float-right" @click="updateList(1)" :disabled="drag">
+                        {{ (drag)? 'Updating...' : 'Save changes' }}
+                    </button>
+                </div>
+                </div>
+            </div>
         </div>
     </div>
 </template>
@@ -168,12 +199,14 @@
 import DateRangePicker from 'vue2-daterange-picker';
 import 'vue2-daterange-picker/dist/vue2-daterange-picker.css';
 import 'vue-select/dist/vue-select.css';
+import draggable from 'vuedraggable'
 
 export default {
-    components:{DateRangePicker},
+    components:{DateRangePicker, draggable},
     data() {
         return {
-            stages : [],
+            drag:false,
+            gfList:[],
             bypassFIlterKey : '',
             filter_expand:true,
             loader:false,
@@ -210,15 +243,9 @@ export default {
                 sharing : 'private',
                 historyKey:[],
                 historyValue:[],
-                primary_filter:{
-                            id: 7,
-                            filter_option: "is,is not,starts with,is empty,is not empty,contains",
-                            filter_type: "textbox",
-                            api: null,
-                            title: "Country",
-                            value: "country",
-                            options: null
-                        }
+                primary_filter:'',
+                mode_status:0,
+                back_status:0
             }),
             allValues:[],
             showView : false, //control appearance of view controls
@@ -261,6 +288,9 @@ export default {
         },
         filterItems() {
             return this.$store.getters.datasetFilter
+        },
+        stages() {
+            return this.$store.getters.stages_data
         },
         filterScanItems() {
             if(this.filter_keyword == '') {
@@ -564,7 +594,7 @@ export default {
                     type: type,
                 }
             }
-            this.form.primary_filter = ''
+            this.form.mode_status = 1
             this.getDatasetGraphFilter()
         },
         createFilter(){   
@@ -868,11 +898,12 @@ export default {
             this.leftpos = fleft+'px';
             this.toppos = ftop+'px';
         },
-        dataPointMouseLeaveHandler(e, chartContext, config){
+        dataPointMouseLeaveHandler(){
             this.selectedSlide = ''
         },
-        dataPointMouseEnterHandler(e, chartContext, config){
-            this.selectedSlide = config.dataPointIndex
+
+        dataPointMouseEnterHandlerTop(value){
+            this.selectedSlide = this.maplabelsS.indexOf(value)
         },
         dataPointSelectionHandler(e, chartContext, config) {    
             var name = this.maplabelsS[config.dataPointIndex]
@@ -892,81 +923,33 @@ export default {
             var formula = '';
             var type = ""
             if(this.form.primary_filter.value == "stage"){
-                //oid = response.data
                 oid = this.stages.filter( (element, index) => {
                     return element.stage == label
                 })
             }
-            console.log(oid)
             var message = "";
-            if(label == 'Empty'){
-                if(oid){
-                    id = oid[0]["oid"].toString()
-                    formula = "is"
-                    message = this.form.primary_filter.title  + " is " + label
-                    type = "dropdown"
-                }else{
-                    id = ""
-                    formula = "is empty"
-                    message = this.form.primary_filter.title  + " is empty"
-                    type = "textbox"
-                }
-                this.form.filterConditionsArray[this.form.filterConditionsArray.length] = {
-                    api: this.form.primary_filter.api,
-                    condition: this.form.primary_filter.value,
-                    conditionText: this.form.primary_filter.title,
-                    formula: formula,
-                    oldformula: this.form.primary_filter.filter_option,
-                    textCondition: id,
-                    textConditionLabel: message,
-                    type: type,
-                }
-            } else if(label == 'Not Empty'){
-                if(oid){
-                    id = oid[0]["oid"].toString()
-                    formula = "is"
-                    message = this.form.primary_filter.title  + " is " + label
-                    type = "dropdown"
-                }else{
-                    id = ""
-                    formula = "is not empty"
-                    message = this.form.primary_filter.title  + " is empty"
-                    type = "textbox"
-                }
-                this.form.filterConditionsArray[this.form.filterConditionsArray.length] = {
-                    api: this.form.primary_filter.api,
-                    condition: this.form.primary_filter.value,
-                    conditionText: this.form.primary_filter.title,
-                    formula: formula,
-                    oldformula: this.form.primary_filter.filter_option,
-                    textCondition: id,
-                    textConditionLabel: message,
-                    type: type,
-                }
+            if(oid){
+                id = oid[0]["oid"].toString()
+                formula = "is"
+                message = this.form.primary_filter.title  + " is " + label
+                type = "dropdown"
             }else{
-                if(oid){
-                    id = oid[0]["oid"].toString()
-                    formula = "is"
-                    message = this.form.primary_filter.title  + " is " + label
-                    type = "dropdown"
-                }else{
-                    id = label
-                    formula = "is"
-                    message = this.form.primary_filter.title  + " is " + label
-                    type = "textbox"
-                }
-                this.form.filterConditionsArray[this.form.filterConditionsArray.length] = {
-                    api: this.form.primary_filter.api,
-                    condition: this.form.primary_filter.value,
-                    conditionText: this.form.primary_filter.title,
-                    formula: formula,
-                    oldformula: this.form.primary_filter.filter_option,
-                    textCondition: id,
-                    textConditionLabel: message,
-                    type: type,
-                }
+                id = label
+                formula = "is"
+                message = this.form.primary_filter.title  + " is " + label
+                type = "textbox"
             }
-            this.form.primary_filter = ''
+            this.form.filterConditionsArray[this.form.filterConditionsArray.length] = {
+                api: this.form.primary_filter.api,
+                condition: this.form.primary_filter.value,
+                conditionText: this.form.primary_filter.title,
+                formula: formula,
+                oldformula: this.form.primary_filter.filter_option,
+                textCondition: id,
+                textConditionLabel: message,
+                type: type,
+            }
+            this.form.mode_status = 1
             this.getDatasetGraphFilter()
             
 
@@ -977,29 +960,58 @@ export default {
             })
         },
         moveBack(){
-            var lele = this.form.filterConditionsArray[this.form.filterConditionsArray.length - 1]
-            
-            axios.get("/api/get-graph-search-criteria-record?value=" + lele.condition).then( (response) => {
-                this.form.primary_filter = response.data.results
-                this.form.filterConditionsArray.pop()
-                this.getDatasetGraphFilter()
+            let last_dm = this.form.historyKey[this.form.historyKey.length - 1]
+            let indx = this.form.filterConditionsArray.filter((ele) => {
+                return ele.condition == last_dm
             })
+            let findex = this.form.filterConditionsArray.indexOf(indx[0]);
+            this.removeFilter(findex);
+            this.form.back_status = 1
+            this.getDatasetGraphFilter();
         },
         getDatasetGraphFilter(){
             this.loader = true
+            let $thisf = this.form;
             this.form.post("/api/get-dataset-graph-filter").then((response) => {
                 this.paiDataS = response.data.paiDataS
                 this.maplabelsS = response.data.maplabelsS
                 this.allValues = response.data.allValues
-                this.graphFilter = response.data.graphFilter
-                this.form.primary_filter = response.data.graphNext
                 this.totalProspects = response.data.totalContacts
                 this.graphFilterItems = response.data.graphFilterItems
-                this.form.historyKey  = response.data.historyKey
-                this.form.historyValue  = response.data.historyValue
+                $thisf.primary_filter = response.data.graphFilter
+                $thisf.historyKey  = response.data.historyKey
+                $thisf.historyValue  = response.data.historyValue
+                $thisf.mode_status = 0
+                $thisf.back_status = 0
                 this.loader = false
             })
         },
+        showListModal() {
+            $('#list-modal').modal('show')
+        },
+        sortList(){
+            this.gfList.forEach((element, index) => {
+                element.order_no = index+1
+            });
+        },
+        updateList(val) {
+            this.drag = true
+            axios.post('/api/update-graph-filters', {'glist':this.gfList})
+                .then((response) => {
+                    Vue.$toast.success("Display Mode order has been reset successfully !!");
+                    if(val == 1) {
+                        this.drag = false
+                    } else {
+                        Vue.$toast.success("Chart data has been refreshed successfully !!");
+                        this.form.primary_filter = ''
+                        this.form.historyKey = []
+                        this.form.historyValue = []
+                        this.getDatasetGraphFilter()
+                        this.drag = false
+                        $('#list-modal').modal('hide')
+                    }
+                })
+        }
     },
     created() {
         this.getDatasetGraphFilter()
@@ -1007,6 +1019,14 @@ export default {
         if(this.filterItems == '') {
            this.$store.dispatch('setDatasetFilter');
         }
+        if(this.stages == '') {
+           this.$store.dispatch('setStagesData');
+        }
+        axios.get('/api/get-graph-filters')
+            .then((response) => {
+                this.gfList = response.data
+            })
+        
     }
 }
 </script>

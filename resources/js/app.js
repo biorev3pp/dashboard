@@ -21,7 +21,6 @@ import vSelect from 'vue-select';
 import JsonExcel from "vue-json-excel";
 import VueSweetalert2 from 'vue-sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
-import 'sweetalert2/dist/sweetalert2.min.css';
 import { TabsPlugin, BSpinner, VBTooltip, BModal, BFormCheckbox } from 'bootstrap-vue';
 import VueApexCharts from 'vue-apexcharts'
 Vue.use(VueApexCharts)

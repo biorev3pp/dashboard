@@ -43,6 +43,7 @@ Route::get('/get-f9-skills', [App\Http\Controllers\API\FiveNineController::class
 Route::get('/get-f9-countries', [App\Http\Controllers\API\FiveNineController::class, 'getCountryList']);
 Route::get('/get-mapping-range', [App\Http\Controllers\API\SettingsController::class, 'MappingRange']);
 Route::get('/get-all-stages', [App\Http\Controllers\API\SettingsController::class, 'AllStages']);
+Route::get('/get-stages-data', [App\Http\Controllers\API\SettingsController::class, 'AllStagesData']);
 Route::get('/get-all-datasets', [App\Http\Controllers\API\SettingsController::class, 'AllDatasets']);
 Route::get('/get-all-dataset-groups', [App\Http\Controllers\API\SettingsController::class, 'AllFilterDatasets']);
 Route::get('/get-all-agent-lists', [App\Http\Controllers\API\OutreachController::class, 'AllAgents']);
@@ -129,4 +130,5 @@ Route::get('/get-five-nine-all-list-report', [App\Http\Controllers\API\FiveNineC
 Route::get('/get-five-nine-all-list-report-results/{id}', [App\Http\Controllers\API\FiveNineController::class, 'getAllListResults']);
 Route::post('/outreach-records', [App\Http\Controllers\API\OutreachController::class, 'getOutreachRecords']);
 
-
+Route::get('/get-graph-filters', [App\Http\Controllers\API\SettingsController::class, 'getGraphFilters']);
+Route::post('/update-graph-filters', [App\Http\Controllers\API\SettingsController::class, 'updateGraphFilterOrder']);

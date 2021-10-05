@@ -251,30 +251,67 @@ class DatasetsController extends Controller
     public function getGraphSearchCriteria(){
         return DB::table('graph_search_criterias')->orderBy('title')->get();
     }
-    public function chartFilter(Request $request){
-        $search = $request->textSearch;
-        $graphFilter = $request->input("primary_filter.value");
-        if(is_null($request->input("primary_filter"))){
-            $graphFilter = "country";
-        }elseif($request->input("primary_filter")){
+    public function chartFilter(Request $request) 
+    {
+        $historyKey = [];
+        $historyValue = [];
+        
+        if($request->input("primary_filter")) {            
             $graphFilter = $request->input("primary_filter.value");
+        } else {
+            $graphFilter = DB::table("graph_search_criterias")->orderBy('order_no', 'asc')->first();
+            $graphFilter = $graphFilter->value;
         }
-        // dd($graphFilter);
-        $records = Contacts::select(DB::raw("count(contacts.$graphFilter) as count, contacts.$graphFilter"))
-        ->groupBy("contacts.$graphFilter");
-        if($search):
-            $records = $records->when($search, function($query, $search){
-                $query->where(function($q) use ($search){
-                    $q->where('contacts.name', 'like', '%'.$search.'%')->orWhere('contacts.first_name', 'like', '%'.$search.'%')->orWhere('contacts.last_name', 'like', '%'.$search.'%')->orWhere('contacts.emails', 'like', '%'.$search.'%')->orWhere('contacts.company', 'like', '%'.$search.'%')->orWhere('contacts.mnumber', 'like', '%'.$search.'%')->orWhere('contacts.hnumber', 'like', '%'.$search.'%')->orWhere('contacts.wnumber', 'like', '%'.$search.'%');
-                });
-            });
-        endif; 
+
+        if($request->input("mode_status") == 1) 
+        {
+            $hkey = [];
+
+            if(count($request->input("historyKey")) > 0) {
+                $hkey = $request->input("historyKey");
+                array_push($hkey, $graphFilter);     
+            }else {
+                $hkey[] = $graphFilter;
+            }
+            $gNext = DB::table("graph_search_criterias")->whereNotIn("value",  $hkey)->orderBy('order_no', 'asc')->first();
+            $graphFilter = $gNext->value;
+
+            $historyKey = $hkey;
+            if(count($historyKey) > 0){
+                foreach($historyKey as $value){
+                    $g = DB::table("graph_search_criterias")->where("value", "=", $value)->orderBy('order_no', 'asc')->first();
+                    $historyValue[] = $g->title;
+                }
+            }
+        }
+        elseif($request->input("back_status") == 1) 
+        {
+            $old = $request->input("historyKey");
+            $graphFilter = $old[count($old)-1];
+            array_pop($old);
+
+            $historyKey = $old;
+            if(count($historyKey) > 0){
+                foreach($historyKey as $value){
+                    $g = DB::table("graph_search_criterias")->where("value", "=", $value)->first();
+                    $historyValue[] = $g->title;
+                }
+            } else {
+                $historyValue = [];
+            }
+        }
+        else {
+            $historyKey = $request->input('historyKey');
+            $historyValue = $request->input('historyValue');
+        }
+        $records = Contacts::select(DB::raw("count(contacts.$graphFilter) as count, contacts.$graphFilter"))->groupBy("contacts.$graphFilter");
+
         if(count($request->input('filterConditionsArray')) > 0):
             $filterConditions = true;
             $filterConditionsArray = $request->input('filterConditionsArray');
             $q = $records;
             foreach($filterConditionsArray as $value){
-                $historyKey[] = $value["condition"];
+                //$historyKey[] = $value["condition"];
                 if( ($value['type'] == 'textbox') || ($value['type'] == 'dropdown') ):
                     if($value['formula'] == 'is'):
                         if(strpos($value["textCondition"],  ",")):
@@ -475,79 +512,68 @@ class DatasetsController extends Controller
             }
             $records = $q;
         endif;
+        
         $totalContacts = 0;
-        $records = $records->get();//dd($records);
-        foreach($records as $value){
+        $records = $records->get();
+
+        foreach($records as $value) {
             $totalContacts += $value["count"];
         }
+
         if($totalContacts == 0){
-            return [
-                "paiDataS" => [],
-                "maplabelsS" => [],
-                "totalContacts" => 0,
-            ];
+            $paiDataS = [];
+            $maplabelsS = [];
+            $allValues = [];
         }
-        $stageRecords = Stages::select("oid", "name")->get();
-        $stageList = [];
-        foreach($stageRecords as $value){
-            $stageList[$value["oid"]] = $value["name"];
-        }
-        $paiDataS = [];
-        $maplabelsS = [];
-        $allValues = [];
-        foreach($records as $value){
-            if($graphFilter == "stage"){
-                $paiDataS[] = $value["count"];
-                $maplabelsS[] = number_format(($value["count"]*100)/$totalContacts, 1, '.', '')."% : ".$stageList[$value["stage"]];
-                $allValues[] = [
-                "count" => $value["count"],
-                "field" => $graphFilter,
-                "value" => $stageList[$value["stage"]],
-                "percentage" => number_format(($value["count"]*100)/$totalContacts, 1, '.', '')."%"
-            ];
-            }else{
-                if($value["count"] > 0 && strlen(substr($value[$graphFilter], 0, 50)) > 1)
-                {
+        else {
+            $stageRecords = Stages::select("oid", "name")->get();
+            $stageList = [];
+            foreach($stageRecords as $value){
+                $stageList[$value["oid"]] = $value["name"];
+            }
+            $paiDataS = [];
+            $maplabelsS = [];
+            $allValues = [];
+            foreach($records as $value){
+                if($graphFilter == "stage"){
                     $paiDataS[] = $value["count"];
-                    if($value[$graphFilter] == "0"){
-                        $maplabelsS[] = number_format(($value["count"]*100)/$totalContacts, 1, '.', '')."% : Empty";
-                    }else{
-                        $maplabelsS[] = number_format(($value["count"]*100)/$totalContacts, 1, '.', '')."% : ".substr($value[$graphFilter], 0, 50);
-                    }
+                    $maplabelsS[] = number_format(($value["count"]*100)/$totalContacts, 1, '.', '')."% : ".$stageList[$value["stage"]];
                     $allValues[] = [
-                        "count" => $value["count"],
-                        "field" => $graphFilter,
-                        "value" => substr($value[$graphFilter], 0, 50),
-                        "percentage" => number_format(($value["count"]*100)/$totalContacts, 1, '.', '')."%"
-                    ];
+                    "count" => $value["count"],
+                    "field" => $graphFilter,
+                    "value" => $stageList[$value["stage"]],
+                    "percentage" => number_format(($value["count"]*100)/$totalContacts, 1, '.', '')."%"
+                ];
+                }else{
+                    if($value["count"] > 0 && strlen(substr($value[$graphFilter], 0, 50)) > 1)
+                    {
+                        $paiDataS[] = $value["count"];
+                        if($value[$graphFilter] == "0"){
+                            $maplabelsS[] = number_format(($value["count"]*100)/$totalContacts, 1, '.', '')."% : Empty";
+                        }else{
+                            $maplabelsS[] = number_format(($value["count"]*100)/$totalContacts, 1, '.', '')."% : ".substr($value[$graphFilter], 0, 50);
+                        }
+                        $allValues[] = [
+                            "count" => $value["count"],
+                            "field" => $graphFilter,
+                            "value" => substr($value[$graphFilter], 0, 50),
+                            "percentage" => number_format(($value["count"]*100)/$totalContacts, 1, '.', '')."%"
+                        ];
+                    }
                 }
             }
+
         }
         
-        $historyKey[] = $graphFilter;
-        $graphNext = DB::table("graph_search_criterias")
-                    ->whereNotIn("value",  $historyKey)
-                    ->first();
-        $graphFilterItems = DB::table("graph_search_criterias")
-                    ->whereNotIn("value",  $historyKey)
-                    ->get();
-        $graphFilter = DB::table("graph_search_criterias")
-                    ->where("value", "=",  $graphFilter)
-                    ->leftJoin("search_criterias", "search_criterias.id", "=", "graph_search_criterias.search_criteria_id")
-                    ->first();
-        $historyValueRecords = DB::table("graph_search_criterias")
-                        ->leftJoin("search_criterias", "search_criterias.id", "=", "graph_search_criterias.search_criteria_id")
-                        ->whereIn("value", $historyKey)
-                        ->select("title")
-                        ->get();
-        $historyValue =  $historyValueRecords->pluck("title");
+        $graphFilterItems = DB::table("graph_search_criterias")->whereNotIn('value', array_merge($historyKey, [$graphFilter]))->orderBy('order_no', 'asc')->get();
+        $graphFilter = DB::table("graph_search_criterias")->where("value", $graphFilter)->first();
+        
         return [
             "paiDataS" => $paiDataS,
             "maplabelsS" => $maplabelsS,
             "totalContacts" => $totalContacts,
             "allValues" => $allValues,
             "graphFilter" => $graphFilter,
-            "graphNext" => $graphNext,
             "graphFilterItems" => $graphFilterItems,
             "historyKey" => $historyKey,
             "historyValue" => $historyValue

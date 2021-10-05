@@ -6,8 +6,12 @@
                     <button class="side-menu-toggler" type="button" @click="toggleMenu">
                         <i class="bi bi-list bt-icon"></i>
                     </button>
-                    <span class="page-title" v-html="title">
-                    </span>
+                    <select  v-model="dash" class="dash-select" v-if="title == 'Dashboard'" @change="chageDashabord">
+                        <option value="">Prospect </option>
+                        <option value="calls">Calls </option>
+                        <option value="emails">Emails </option>
+                    </select>
+                    <span class="page-title" v-html="title"></span>
                 </div>
                 <div class="col-5 text-right">
                     <ul class="top-menu">
@@ -152,6 +156,7 @@ import {mapGetters, mapActions} from 'vuex';
 export default {
     data() {
         return {
+            dash:'',
             fullmenu:false,
             desktopview: 2,
             submenu:0
@@ -188,10 +193,16 @@ export default {
             } else {
                 this.submenu = sm;
             }
+        },
+        chageDashabord() {
+            this.$router.push({ path: '/dashboard/'+this.dash })
         }
     },
     beforeMount() {
        // this.toggleMenu();
+       if(this.$route.meta.hasOwnProperty('subtitle')) {
+           this.dash = (this.$route.meta.subtitle == 'prospect')?'':this.$route.meta.subtitle
+       }
         this.submenu = (this.$route.meta.parent >= 1)?this.$route.meta.parent:0;
     },
     created() {

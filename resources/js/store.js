@@ -11,9 +11,10 @@ export default {
         user: localStorage.getItem('user'),
         status: "",
         fullmenu: false,
-        datasets:[],
-        datasetFilter:[],
-        stages:''
+        datasets: [],
+        datasetFilter: [],
+        stages: '',
+        stages_data: ''
 
     },
     getters: {
@@ -26,15 +27,18 @@ export default {
             return state.fullmenu;
         },
         user: state => state.user,
-        stages(state){
+        stages(state) {
             return state.stages
-        }, 
-        datasets(state){
+        },
+        stages_data(state) {
+            return state.stages_data
+        },
+        datasets(state) {
             return state.datasets
-        }, 
-        datasetFilter(state){
+        },
+        datasetFilter(state) {
             return state.datasetFilter
-        }, 
+        },
     },
     mutations: {
         isFullMenu(state, menu) {
@@ -61,6 +65,9 @@ export default {
         SET_STAGES(state, stages) {
             state.stages = stages
         },
+        SET_STAGES_DATA(state, stages) {
+            state.stages_data = stages
+        },
         SET_DATASETS(state, datasets) {
             state.datasets = datasets
         },
@@ -84,16 +91,20 @@ export default {
             commit('logout');
             return
         },
-        setStages: async (context, payload) => {
-            let {data} = await axios.get('/api/get-all-stages');
+        setStages: async(context, payload) => {
+            let { data } = await axios.get('/api/get-all-stages');
             context.commit('SET_STAGES', data);
         },
-        setDatasets: async (context, payload) => {
-            let {data} = await axios.get('/api/get-all-datasets');
+        setStagesData: async(context, payload) => {
+            let { data } = await axios.get('/api/get-stages-data');
+            context.commit('SET_STAGES_DATA', data);
+        },
+        setDatasets: async(context, payload) => {
+            let { data } = await axios.get('/api/get-all-datasets');
             context.commit('SET_DATASETS', data);
         },
-        setDatasetFilter: async (context, payload) => {
-            let {data} = await axios.get('/api/get-all-filter-dataset');
+        setDatasetFilter: async(context, payload) => {
+            let { data } = await axios.get('/api/get-all-filter-dataset');
             context.commit('SET_DATASET_FILTER', data.items);
         },
         isFullMenu({ commit }, menu) {

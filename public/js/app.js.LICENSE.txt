@@ -5,6 +5,12 @@
   */
 
 /*!
+ * ApexCharts v3.28.3
+ * (c) 2018-2021 ApexCharts
+ * Released under the MIT License.
+ */
+
+/*!
  * Sizzle CSS Selector Engine v2.3.6
  * https://sizzlejs.com/
  *
@@ -49,6 +55,14 @@
  * http://adamwdraper.github.com/Numeral-js/
  */
 
+/*! svg.draggable.js - v2.2.2 - 2019-01-08
+  * https://github.com/svgdotjs/svg.draggable.js
+  * Copyright (c) 2019 Wout Fierens; Licensed MIT */
+
+/*! svg.filter.js - v2.0.2 - 2016-02-24
+  * https://github.com/wout/svg.filter.js
+  * Copyright (c) 2016 Wout Fierens; Licensed MIT */
+
 /**
  * @license
  * Lodash <https://lodash.com/>
@@ -81,6 +95,13 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ */
+
+/**!
+ * Sortable 1.10.2
+ * @author	RubaXa   <trash@rubaxa.org>
+ * @author	owenm    <owen23355@gmail.com>
+ * @license MIT
  */
 
 //! moment.js
