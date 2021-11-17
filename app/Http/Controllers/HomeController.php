@@ -1,6 +1,8 @@
 <?php
+
 namespace App\Http\Controllers;
 
+use App\Events\ListInfoUpdate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Contacts;
@@ -35,6 +37,7 @@ class HomeController extends Controller
         echo 'all done'; die;
     }
 
+
     public function index()
     {
         return view('home');
@@ -46,7 +49,7 @@ class HomeController extends Controller
         $token_expire = Settings::where('id', '=', 7)->first();
         if($token_expire['value'] <= strtotime("now")):
             curl_setopt_array($curl, array(
-                CURLOPT_URL => "https://api.outreach.io/oauth/token?client_id=eUBHpxrv-UgUE_NloPqbbcHsJn0VpV1mj9JEraoh_jg&client_secret=D6e9SmqUTDcQLna_BhZst97JonI7wnZAE_Y5KuCcqFE&redirect_uri=https://www.biorev.us/oauth/outreach&grant_type=refresh_token&refresh_token=tWODyzlm-Glao8PeQzOV5ugZjRq7Wz6oTxYwQyxtY0Y",
+                CURLOPT_URL => "https://api.outreach.io/oauth/token?client_id=eUBHpxrv-UgUE_NloPqbbcHsJn0VpV1mj9JEraoh_jg&client_secret=D6e9SmqUTDcQLna_BhZst97JonI7wnZAE_Y5KuCcqFE&redirect_uri=https://www.biorev.us/oauth/outreach&grant_type=refresh_token&refresh_token=sNLqOEE0j9Pd7rhv6HnY23YzaJHzql0bVKAF58B-enA",
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_ENCODING => '',
                 CURLOPT_MAXREDIRS => 10,
@@ -69,40 +72,48 @@ class HomeController extends Controller
         return $access_token['value'];
     }
 
-    public function getOutreachRecords($i = 0){
-        // this function import all outreach contacts in database table named 'contacts'
-        //for($i = 0; $i < 45; $i++){
-        if($i == 90){
-            echo 'all done'; die;
+    //stage update 
+    public function stageUpdateInOutreach(){
+        $stages = Stages::get();
+        foreach ($stages as $key => $value) {
+            Contacts::where('stage', '=', $value->stage)->update(['stage' => $value->oid]);
         }
-        ini_set('max_execution_time', 3600);
-        $accessToken = $this->outreachsession();  
-        $recordUpdated = []; $c = 0; $u = 0; $id = '';        
-        $per_page_record = 500;
-        $startId = $i*$per_page_record+1;
-        $endId = ($i+1)*$per_page_record;
-        $curl = curl_init();
-        $query = "https://api.outreach.io/api/v2/prospects?sort=id&filter[id]=$startId..$endId&count=true&page[limit]=500&&include=persona,stage,opportunities,owner";
-        curl_setopt_array($curl, array(
-            CURLOPT_URL => $query,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => '',
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 0,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => 'GET',
-            CURLOPT_HTTPHEADER => array(
-                "Authorization: Bearer $accessToken",
-                "Content-Type: application/vnd.api+json"
-            ),
-        ));
-        $responseq = curl_exec($curl);
-        curl_close($curl);
-        if($responseq){
+        Contacts::whereNull('stage')->update(['stage' => 0]);
+        echo 'all done'; die;
+    }
+
+    public function getOutreachRecords(){
+        // this function import all outreach contacts in database table named 'contacts'
+        for($i = 0; $i < 45; $i++){
+            if($i == 44){
+                echo 'all done'; die;
+            }
+            ini_set('max_execution_time', 3600);
+            $accessToken = $this->outreachsession();  
+            $recordUpdated = []; $c = 0; $u = 0; $id = '';        
+            $per_page_record = 1000;
+            $startId = $i*$per_page_record;
+            $endId = ($i+1)*$per_page_record-1;
+            $curl = curl_init();
+            $query = "https://api.outreach.io/api/v2/prospects?sort=id&filter[id]=$startId..$endId&count=true&page[limit]=1000&&include=persona,stage,opportunities,owner";
+            curl_setopt_array($curl, array(
+                CURLOPT_URL => $query,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_ENCODING => '',
+                CURLOPT_MAXREDIRS => 10,
+                CURLOPT_TIMEOUT => 0,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_CUSTOMREQUEST => 'GET',
+                CURLOPT_HTTPHEADER => array(
+                    "Authorization: Bearer $accessToken",
+                    "Content-Type: application/vnd.api+json"
+                ),
+            ));
+            $responseq = curl_exec($curl);
+            curl_close($curl);
             $results = get_object_vars(json_decode($responseq));    
             foreach($results['data'] as $key => $value){
-                
                 $accountId = null;
                 $stageName = null;
                 $personaName = null;
@@ -132,109 +143,123 @@ class HomeController extends Controller
                     $owner = get_object_vars($owner["data"]);
                     $ownerId = $owner["id"];
                 endif;
-                $id = '';
+                foreach($results["included"] as $ikey => $ivalue):
+                    $ivalue = get_object_vars($ivalue);
+                    if( ($ivalue["type"] == 'stage') && ($ivalue["id"]) == $stageId ):
+                        $stageDetail = get_object_vars($ivalue["attributes"]);
+                        $stageName = $stageDetail["name"];
+                    endif;
+                    if( ($ivalue["type"] == 'persona') && ($ivalue["id"]) == $personaId ):
+                        $personaDetail = get_object_vars($ivalue["attributes"]);
+                        $personaName = $personaDetail["name"];
+                    endif;
+                    if( ($ivalue["type"] == 'user') && ($ivalue["id"]) == $ownerId ):
+                        $ownerDetail = get_object_vars($ivalue["attributes"]);
+                        $ownerName = $ownerDetail["name"];
+                    endif;
+                endforeach;
+                
                 $count = Contacts::where('record_id', '=', $value->id)->count();
                 if($count == 0):  
-                    $cc = [];
-                    $prospect = Contacts::create([
+                    Contacts::create([
                         "record_id" => $value->id,
-                        "country" => $attributes['addressCountry'],
+                        "account_id" => $accountId,
+                        "designation" => $attributes['title'],
+                        "first_name" => $attributes['firstName'],
+                        "last_name" => $attributes['lastName'],
+                        "emails" => implode(',', $attributes['emails']),
+                        "company" => $attributes['company'],
+                        "address" => $attributes["addressStreet"]." ".$attributes["addressStreet2"],
                         "city" => $attributes['addressCity'],
                         "state" => $attributes['addressState'],
                         "zip" => $attributes['addressZip'],
-                        "address" => $attributes["addressStreet"]." ".$attributes["addressStreet2"],
-                        "company" => $attributes['company'],
-                        "companyIndustry" => $attributes['companyIndustry'],
-                        "emails" => implode(',', $attributes['emails']),
+                        "country" => $attributes['addressCountry'],
+                        "outreach_tag" => implode(',', $attributes['tags']),
                         "engage_score" => $attributes['engagedScore'],
-                        "first_name" => $attributes['firstName'],
-                        "last_name" => $attributes['lastName'],
+                        "last_outreach_engage" => $attributes['engagedAt'],
+                        "stage" => $stageId,
+                        "last_outreach_email" => $attributes['emailsOptedAt'],
+                        "outreach_touched_at" => $attributes['touchedAt'],
+                        "personal_onote" => $attributes['personalNote1'],
+                        "last_update_at" => $attributes['updatedAt'],
+                        "outreach_created_at" => $attributes['createdAt'],
+                        "linkedInUrl" => $attributes['linkedInUrl'],
+                        "websiteUrl1" => $attributes['websiteUrl1'],
+                        "source" => $attributes['source'],
+                        "title" => $attributes['title'],
+                        "outreach_owner" => $ownerName,
+                        "outreach_persona" => $personaName,
+                        "purchase_authorization" => $attributes['custom1'],
+                        "department" => $attributes['custom2'],
+                        "job_function" => $attributes['custom3'],
+                        "supplemental_email" => $attributes['custom4'],
+                        "company_hq_phone" => $attributes['custom5'],
+                        "custom6" => $attributes['custom6'],
+                        "custom7" => $attributes['custom7'],
+                        "industry" => $attributes['custom9'],
+                        "primary_industry" => $attributes['custom10'],
+                        "company_revenue" => $attributes['custom11'],
+                        "zoominfo_accuracy" => $attributes['custom19'],
+                        "subsource" => $attributes['custom35'],
+                        "secondary_industry" => $attributes['custom38'],
                         "mobilePhones" => implode(',', $attributes['mobilePhones']),
                         "workPhones" => implode(',', $attributes['workPhones']),
                         "homePhones" => implode(',', $attributes['homePhones']),
                         "otherPhones" => implode(',', $attributes['otherPhones']),
                         "voipPhones" => implode(',', $attributes['voipPhones']),
-                        "linkedInUrl" => $attributes['linkedInUrl'],
-                        "source" => $attributes['source'],
-                        "title" => $attributes['title'],
-                        "account_id" => $accountId,       
-                        "outreach_tag" => implode(',', $attributes['tags']),
-                        "timeZone" => $attributes['timeZone'],
-                        "outreach_touched_at" => $attributes['touchedAt'],
-                        "last_update_at" => $attributes['updatedAt'],
-                        "websiteUrl1" => $attributes['websiteUrl1'],
-                        "last_outreach_engage" => $attributes['engagedAt'],
-                        "stage" => $stageId,
-                        "last_outreach_email" => $attributes['emailsOptedAt'],
-                        "outreach_created_at" => $attributes['createdAt'],
-                        "outreach_owner" => $ownerId,
-                        "outreach_persona" => $personaId,
+                        "occupation" => $attributes['occupation'],
                     ]);
-                    $id = $prospect->id;
-                    for ($counti=1; $counti <= 150 ; $counti++) { 
-                        $cname = 'custom'.$counti;
-                        $cc[$cname] = $attributes[$cname];
-                    }
-                    $cc['contact_id'] = $id;
-                    $customs = ContactCustoms::create($cc);
                     $c++; 
                 else:
-                    $cc = [];
                     $prospect = Contacts::where('record_id', '=', $value->id)->first();  
-                    $prospect->update(["country" => $attributes['addressCountry'],
-                        "city" => $attributes['addressCity'],
-                        "state" => $attributes['addressState'],
-                        "zip" => $attributes['addressZip'],
-                        "address" => $attributes["addressStreet"]." ".$attributes["addressStreet2"],
-                        "company" => $attributes['company'],
-                        "companyIndustry" => $attributes['companyIndustry'],
-                        "emails" => implode(',', $attributes['emails']),
-                        "engage_score" => $attributes['engagedScore'],
-                        "first_name" => $attributes['firstName'],
-                        "last_name" => $attributes['lastName'],
-                        "mobilePhones" => implode(',', $attributes['mobilePhones']),
-                        "workPhones" => implode(',', $attributes['workPhones']),
-                        "homePhones" => implode(',', $attributes['homePhones']),
-                        "otherPhones" => implode(',', $attributes['otherPhones']),
-                        "voipPhones" => implode(',', $attributes['voipPhones']),
-                        "linkedInUrl" => $attributes['linkedInUrl'],
-                        "source" => $attributes['source'],
-                        "title" => $attributes['title'],
-                        "account_id" => $accountId,       
-                        "outreach_tag" => implode(',', $attributes['tags']),
-                        "timeZone" => $attributes['timeZone'],
-                        "outreach_touched_at" => $attributes['touchedAt'],
-                        "last_update_at" => $attributes['updatedAt'],
-                        "websiteUrl1" => $attributes['websiteUrl1'],
-                        "last_outreach_engage" => $attributes['engagedAt'],
-                        "stage" => $stageId,
-                        "last_outreach_email" => $attributes['emailsOptedAt'],
-                        "outreach_created_at" => $attributes['createdAt'],
-                        "outreach_owner" => $ownerId,
-                        "outreach_persona" => $personaId]);
-                    
-                    $id = $prospect->id;
-                    for ($counti=1; $counti <= 150 ; $counti++) { 
-                        $cname = 'custom'.$counti;
-                        $cc[$cname] = $attributes[$cname];
-                    }
-                    $customs = ContactCustoms::where('contact_id', $id)->first();
-                    if($customs):
-                        $customs = $customs->update($cc);
-                    else:
-                        $cc['contact_id'] = $id;
-                        $customs = ContactCustoms::create($cc);
-                    endif;
+                    $prospect->account_id = $accountId;
+                    $prospect->emails = implode(',', $attributes['emails']);
+                    $prospect->outreach_tag = implode(',', $attributes['tags']);
+                    $prospect->personal_note = $attributes['personalNote1'];
+                    $prospect->stage =$stageId;
+                    $prospect->last_outreach_email = $attributes['emailsOptedAt'];
+                    $prospect->outreach_touched_at = $attributes['touchedAt'];
+                    $prospect->engage_score =  $attributes['engagedScore'];
+                    $prospect->last_outreach_engage = $attributes['engagedAt'];
+                    $prospect->last_update_at = $attributes['updatedAt'];
+                    $prospect->outreach_created_at = $attributes['createdAt'];
+                    $prospect->linkedInUrl = $attributes['linkedInUrl'];
+                    $prospect->websiteUrl1 = $attributes['websiteUrl1'];
+                    $prospect->source = $attributes['source'];
+                    $prospect->title = $attributes['title'];
+                    $prospect->outreach_owner = $ownerName;
+                    $prospect->purchase_authorization = $attributes['custom1'];
+                    $prospect->department = $attributes['custom2'];
+                    $prospect->job_function = $attributes['custom3'];
+                    $prospect->supplemental_email = $attributes['custom4'];
+                    $prospect->company_hq_phone = $attributes['custom5'];
+                    $prospect->custom6 = $attributes['custom6'];
+                    $prospect->custom7 = $attributes['custom7'];
+                    $prospect->industry = $attributes['custom9'];
+                    $prospect->primary_industry = $attributes['custom10'];
+                    $prospect->company_revenue = $attributes['custom11'];
+                    $prospect->zoominfo_accuracy = $attributes['custom19'];
+                    $prospect->subsource = $attributes['custom35'];
+                    $prospect->secondary_industry = $attributes['custom38'];
+                    $prospect->mobilePhones = implode(',', $attributes['mobilePhones']);
+                    $prospect->workPhones = implode(',', $attributes['workPhones']);
+                    $prospect->homePhones = implode(',', $attributes['homePhones']);
+                    $prospect->otherPhones = implode(',', $attributes['otherPhones']);
+                    $prospect->voipPhones = implode(',', $attributes['voipPhones']);
+                    $prospect->occupation = $attributes['occupation'];
+                    $prospect->save();    
                     $u++;
                 endif;
+                $id = $value->id;     
+                echo 'all done';die;       
             }
         }
-        return view('csync', compact('c', 'u', 'i', 'id'));
+        //return view('csyncb', compact('c', 'u', 'i', 'id'));
     }
 
     public function updateAll()
     {
-        ini_set('max_execution_time', -1);
+        ini_set('max_execution_time', 3600);
         // outreach starts
         $accessToken = $this->outreachsession();
         $recordUpdated = 0;
@@ -2495,5 +2520,4 @@ class HomeController extends Controller
     public function getOutreachCustomData(){
         
     }
-
 }

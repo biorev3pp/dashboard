@@ -104,7 +104,29 @@ class ImportController extends SettingsController
                 $newArray[$key][array_search($ikey, $keyArray)] = $ivalue;
             }
         }
-        $result = get_object_vars(json_decode($records->report)); 
+        $results = get_object_vars(json_decode($records->report));
+        $resultA = [];
+        if($records->type == "dataset"){
+            foreach($results as $value){
+                $value = get_object_vars($value);
+                $resultA[] = get_object_vars($value["return"]);
+                $value = get_object_vars($value["return"]);
+            }
+            $result = [
+                "keyFields" => $value["keyFields"],
+                "uploadDuplicatesCount" => array_sum(array_column($resultA, "uploadDuplicatesCount")),
+                "uploadErrorsCount" => array_sum(array_column($resultA, "uploadErrorsCount")),
+                "warningsCount" => [],
+                "callNowQueued" => array_sum(array_column($resultA, "callNowQueued")),
+                "crmRecordsInserted" => array_sum(array_column($resultA, "crmRecordsInserted")),
+                "crmRecordsUpdated" => array_sum(array_column($resultA, "crmRecordsUpdated")),
+                "listName" => $value["listName"],
+                "listRecordsDeleted" => array_sum(array_column($resultA, "listRecordsDeleted")),
+                "listRecordsInserted" => array_sum(array_column($resultA, "listRecordsInserted")),
+            ];
+        }else{  
+            $result = $results["message"];
+        }
         $errorArray = []; $errorCounter = 0;
         $error = [];
         $errorArrayExport = [];
@@ -170,7 +192,7 @@ class ImportController extends SettingsController
             }
         }
         return [ 
-            'results' => $result['message'], 
+            'results' => $result, 
             'keys' =>  json_decode($records->arraykeys),
             'newArray' => json_decode($records->data),
             'errorArray' => $errorArray,

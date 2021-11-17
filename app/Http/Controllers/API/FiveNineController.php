@@ -7,6 +7,12 @@ use App\Http\Controllers\Biorev;
 use App\Models\Settings;
 use Biorev\Fivenine\Fivenine;
 use App\Models\Agents;
+use App\Models\FivenineCallLogs;
+use App\Models\FivenineAllCallLogs;
+use Illuminate\Support\Facades\DB;
+use App\Models\Contacts;
+use App\Models\AgentOccupancy;
+
 
 class FiveNineController extends Biorev
 {
@@ -15,12 +21,25 @@ class FiveNineController extends Biorev
     {
         $this->middleware('auth');
     }
-
-    public function getContactList()
+    
+    public function getContactFullList()
+    {
+        return DB::table('fivenine_lists')->get();
+    }
+    public function getContactListFromF9()
     {
         $five9 = new Fivenine();
         $data  = $five9->GetRequestCall('GET', 'getListsInfo', '');
         return $data;
+    }
+    public function getContactList(Request $request)
+    {
+        if($request->input('search')){
+            return DB::table("fivenine_lists")->where('name', "like", "%".$request->input('search')."%")->orderBy("name")->paginate($request->input("recordPerPage"));
+        }else{
+            return DB::table("fivenine_lists")->orderBy("name")->paginate($request->input("recordPerPage"));
+        }
+        
     }
 
     public function getCampaignList()
@@ -33,7 +52,6 @@ class FiveNineController extends Biorev
     public function getCountryList()
     {
         return ['countries' => Settings::where('id', '=', 39)->first()];
-
     }
 
     public function report(Request $request)
@@ -73,7 +91,7 @@ class FiveNineController extends Biorev
         $password = $setting2->value;
         
         $code = base64_encode($username.':'.$password);
-        //dd($code);
+        
         curl_setopt_array($curl, array(
             CURLOPT_URL => 'https://api.five9.com/wsadmin/v4/AdminWebService',
             CURLOPT_RETURNTRANSFER => true,
@@ -90,8 +108,8 @@ class FiveNineController extends Biorev
                 "Cookie: Authorization=Bearer-ebfa8d5a-ba2a-11eb-abfe-00505fca8def; apiRouteKey=SCLnAPIc6f; app_key=web-ui; farmId=182; uiRouteKey=SCLnUI5551"
             ),
         ));
-        $response = curl_exec($curl);        
-        curl_close($curl); 
+        $response = curl_exec($curl);
+        curl_close($curl);
         $xml = $response;
         // SimpleXML seems to have problems with the colon ":" in the <xxx:yyy> response tags, so take them out
         $xml = preg_replace("/(<\/?)(\w+):([^>]*>)/", '$1$2$3', $xml);
@@ -1548,7 +1566,6 @@ class FiveNineController extends Biorev
             ];
         endif;
     }
-
     public function callReportResultOne(Request $request)
     {
         //dd($request->all());
@@ -1607,9 +1624,10 @@ class FiveNineController extends Biorev
             $records = [];
             $dial_attempts = [];
             foreach($data as $key => $value){
-                $records[$counter] = array_combine($headerArray,$value["values"]["data"]);
+               $records[$counter] = array_combine($headerArray,$value["values"]["data"]);
                 
                 $record = array_combine($headerArray,$value["values"]["data"]);
+                $records[$counter]["new_timestamp"] = strtotime($record["timestamp"]);
                 $dialAttempts = intval($record["dial_attempts"]);
                 if($dialAttempts == 0):
                     $records[$counter]["dial_attempts"] = '-';
@@ -1624,8 +1642,8 @@ class FiveNineController extends Biorev
             //$dial_attempts = array_unique(array_column($records, 'dial_attempts'));
             $campaign = array_unique(array_column($records, 'campaign'));
             $disposition = array_unique(array_column($records, 'disposition'));
-            //$dials = (array_column($records, 'disposition'));
             return [
+                "headerArray" => $headerArray,
                 "results" => true, 
                 'records' => $records, 
                 'dial_attempts' => $dial_attempts,
@@ -1637,4 +1655,1068 @@ class FiveNineController extends Biorev
             return ["results" => false];
         endif;
     }
+    //get all list data form five-9
+    public function dataFromFiveNineReport()
+    {
+        ini_set('max_execution_time', 3600);
+        $listName = 'AC_Builder_open-Click';
+        $lists = DB::table("fivenine_lists")->where("status", "=", 0)->orderBy("name")->get();
+        foreach($lists as $list){
+            $list = get_object_vars($list);
+            $listName = $list["name"];
+            $listId = $list["id"];
+            echo "<pre>"; echo $listName; echo "</pre>";
+            $start = date("Y-m-d", strtotime("-6 years")).'T'.date("H:i:s", strtotime("-6 years"));
+            $end = date("Y-m-d", strtotime("now")).'T'.date("H:i:s", strtotime("now"));
+            $postFields = '<env:Envelope xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:tns="http://service.admin.ws.five9.com/" xmlns:env="http://schemas.xmlsoap.org/soap/envelope/"
+            xmlns:ins0="http://jaxb.dev.java.net/array">
+            <env:Body>
+                <tns:runReport>
+                    <folderName>My Reports</folderName>
+                    <reportName>List All '.$listName.'</reportName>
+                        <criteria>
+                            <time>
+                            <end>'.$end.'</end>
+                            <start>'.$start.'</start>
+                            </time>
+                        </criteria>
+                </tns:runReport>
+            </env:Body>
+            </env:Envelope>';
+            $curl = curl_init();
+            $setting1 = Settings::where('id', '=', 37)->first();
+            $setting2 = Settings::where('id', '=', 38)->first();
+            $username = $setting1->value;
+            $password = $setting2->value;
+            
+            $code = base64_encode($username.':'.$password);
+            
+            curl_setopt_array($curl, array(
+                CURLOPT_URL => 'https://api.five9.com/wsadmin/v4/AdminWebService',
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_ENCODING => '',
+                CURLOPT_MAXREDIRS => 10,
+                CURLOPT_TIMEOUT => 0,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_CUSTOMREQUEST => 'GET',
+                CURLOPT_POSTFIELDS => $postFields,
+                CURLOPT_HTTPHEADER => array(
+                    "Authorization: Basic $code",
+                    "Content-Type: application/xml",
+                    "Cookie: Authorization=Bearer-ebfa8d5a-ba2a-11eb-abfe-00505fca8def; apiRouteKey=SCLnAPIc6f; app_key=web-ui; farmId=182; uiRouteKey=SCLnUI5551"
+                ),
+            ));
+            $response = curl_exec($curl);
+            curl_close($curl);
+            $xml = $response;
+            // SimpleXML seems to have problems with the colon ":" in the <xxx:yyy> response tags, so take them out
+            $xml = preg_replace("/(<\/?)(\w+):([^>]*>)/", '$1$2$3', $xml);
+            $xml = simplexml_load_string($xml);
+            $json = json_encode($xml);
+            $return = json_decode($json,true); //dd($return["envBody"]["envFault"]);
+            if(isset($return["envBody"]["envFault"])):
+                return ['restults' => 'fault'];
+            endif;
+            $id = substr($response, strpos($response, '<return>')+8, strrpos($response, '</return>') - strpos($response, '<return>')-8);
+        
+            $curl = curl_init();
+            for ($i=0; $i < 10; $i++) {
+                sleep(1);     
+                $setting1 = Settings::where('id', '=', 37)->first();
+                $setting2 = Settings::where('id', '=', 38)->first();
+                $username = $setting1->value;
+                $password = $setting2->value;
+                $code = base64_encode($username.':'.$password);    
+                curl_setopt_array($curl, array(
+                CURLOPT_URL => 'https://api.five9.com/wsadmin/v4/AdminWebService',
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_ENCODING => '',
+                CURLOPT_MAXREDIRS => 10,
+                CURLOPT_TIMEOUT => 0,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_CUSTOMREQUEST => 'GET',
+                CURLOPT_POSTFIELDS =>'<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ser="http://service.admin.ws.five9.com/">;
+                <soapenv:Header/>
+                <soapenv:Body>
+                    <ser:isReportRunning>
+                        <identifier>'.$id.'</identifier>
+                    </ser:isReportRunning>
+                </soapenv:Body>
+                </soapenv:Envelope>',
+                CURLOPT_HTTPHEADER => array(
+                    "Authorization: Basic $code",
+                    "Content-Type: application/xml",
+                    "Cookie: clientId=8998A130504F4358BADF215E686E2E8B; Authorization=Bearer-ebfa8d5a-ba2a-11eb-abfe-00505fca8def; apiRouteKey=SCLnAPIc6f; app_key=web-ui; farmId=182; uiRouteKey=SCLnUI5551"
+                ),
+                ));
+        
+                $response = curl_exec($curl); 
+                $result = substr($response, strpos($response, '<return>')+8, strrpos($response, '</return>') - strpos($response, '<return>')-8);
+                if($result == 'false'){
+                    break;
+                }
+            }
+            curl_close($curl);
+        
+            $curl = curl_init();
+            $setting1 = Settings::where('id', '=', 37)->first();
+            $setting2 = Settings::where('id', '=', 38)->first();
+            $username = $setting1->value;
+            $password = $setting2->value;
+            $code = base64_encode($username.':'.$password);
+            curl_setopt_array($curl, array(
+                CURLOPT_URL => 'https://api.five9.com/wsadmin/v4/AdminWebService',
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_ENCODING => '',
+                CURLOPT_MAXREDIRS => 10,
+                CURLOPT_TIMEOUT => 0,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_CUSTOMREQUEST => 'GET',
+                CURLOPT_POSTFIELDS =>'<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ser="http://service.admin.ws.five9.com/">;
+                <soapenv:Header/>
+                <soapenv:Body>
+                    <ser:getReportResult>
+                        <!--Optional:-->
+                        <identifier>'.$id.'</identifier>
+                    </ser:getReportResult>
+                </soapenv:Body>
+                </soapenv:Envelope>',
+                CURLOPT_HTTPHEADER => array(
+                    'Content-Type: application/json',
+                    "Authorization: Basic $code",
+                    "Cookie: clientId=C4A452B18E5646FA9ACBE8A819154296; Authorization=Bearer-ebfa8d5a-ba2a-11eb-abfe-00505fca8def; apiRouteKey=SCLnAPIc6f; app_key=web-ui; farmId=182; uiRouteKey=SCLnUI5551"
+                ),
+            ));
+
+            $response = curl_exec($curl);
+
+            curl_close($curl);
+            $xml = $response;
+            // SimpleXML seems to have problems with the colon ":" in the <xxx:yyy> response tags, so take them out
+            $xml = preg_replace("/(<\/?)(\w+):([^>]*>)/", '$1$2$3', $xml);
+            $xml = simplexml_load_string($xml);
+            $json = json_encode($xml);
+            $return = json_decode($json,true);
+            $header = $return["envBody"]["ns2getReportResultResponse"]["return"]["header"]["values"]["data"];
+            $headerOld = $header;
+            foreach($header as $key => $value):
+                if(strpos($value, " ")):
+                    $e = explode(" ", $value);
+                    $i = implode("_", $e);
+                    $header[$key] = $i;
+                else:
+                    $header[$key] = $value;
+                endif;
+            endforeach; 
+            $counter = 0;
+            $contactIds = [];
+            $allRecords = []; //dd($return["envBody"]["ns2getReportResultResponse"]["return"]["records"]);
+            if(isset($return["envBody"]["ns2getReportResultResponse"]["return"]["records"])):
+                $records = $return["envBody"]["ns2getReportResultResponse"]["return"]["records"];
+                foreach($records as $key => $value):
+                    if(isset($value["data"])){
+                        // $record["contact_id"] = is_array($value["data"][0]) ? null : intval($value["data"][0]);
+                        // $record["first_name"] = is_array($value["data"][1]) ? null : $value["data"][1];
+                        // $record["last_name"] = is_array($value["data"][2]) ? null : $value["data"][2];
+                        $record["record_id"] = is_array($value["data"][3]) ? null : intval($value["data"][3]);
+                        $record["number1"] = is_array($value["data"][4]) ? null : intval($value["data"][4]);
+                        $record["number2"] = is_array($value["data"][5]) ? null : intval($value["data"][5]);
+                        $record["number3"] = is_array($value["data"][6]) ? null : intval($value["data"][6]);                        
+                    }else{
+                        // $record["contact_id"] = is_array($value["values"]["data"][0]) ? null : intval($value["values"]["data"][0]);
+                        // $record["first_name"] = is_array($value["values"]["data"][1]) ? null : $value["values"]["data"][1];
+                        // $record["last_name"] = is_array($value["values"]["data"][2]) ? null : $value["values"]["data"][2];
+                        $record["record_id"] = is_array($value["values"]["data"][3]) ? null : intval($value["values"]["data"][3]);
+                        $record["number1"] = is_array($value["values"]["data"][4]) ? null : intval($value["values"]["data"][4]);
+                        $record["number2"] = is_array($value["values"]["data"][5]) ? null : intval($value["values"]["data"][5]);
+                        $record["number3"] = is_array($value["values"]["data"][6]) ? null : intval($value["values"]["data"][6]);
+                    }
+                    
+                    $count = DB::table("fivenine_list_contacts")->where("fivenine_list_id", "=", $listId)->count();
+                    if($count == 0){
+                        DB::table("fivenine_list_contacts")->insert([
+                            "fivenine_list_id" => $listId,
+                            // "contact_id" => $record["contact_id"],
+                            "number1" => $record["number1"],
+                            "record_id" => $record["record_id"],
+                            // "first_name" => $record["first_name"],
+                            // "last_name" => $record["last_name"],
+                            "number2" => $record["number2"],
+                            "number3" => $record["number3"],
+                        ]);
+                    }
+                endforeach;
+                $listItemCounter = DB::table("fivenine_list_contacts")->where("fivenine_list_id", "=", $listId)->count();
+                DB::table("fivenine_lists")->where("id", "=", $listId)->update([
+                    "size" => $listItemCounter,
+                    "status" => 1
+                ]);
+            endif;
+        }
+    }
+    public function getFivenineListDetails($lid  = null){
+        $result = get_object_vars(DB::table('fivenine_lists')->where("id", "=", $lid)->first());
+        return $result;
+    }
+    public function getListBasedStages($lid  = null){
+        $recordIds = DB::table('fivenine_list_contacts')->where("fivenine_list_id", "=", $lid)->get();
+        $data = [];
+        $allRecordIds = $recordIds->pluck("record_id");
+        foreach($allRecordIds as $value){
+            $record = get_object_vars(DB::table("contacts")->where("record_id", $value)->first());
+            $data[$value] = intval($record["stage"]);
+        }
+        $results = [];
+        foreach($data as $key => $value){
+            //$key => $record_id, value => stage
+            if(array_key_exists($value, $results)){
+                $results[$value] = $results[$value] + 1;
+            }else{
+                $results[$value] = 1;
+            }
+        }
+        $resultStage = [];
+        foreach($results as $key => $value){
+            // $key => stage, $value => count
+            $stage = get_object_vars(DB::table("stages")->where("oid", "=", $key)->first());
+            $resultStage[] = [
+                "count" => $value,
+                "stage" => $stage["name"],
+                "stageOid" => $key
+            ];
+        }
+        return $resultStage;
+    }
+    public function getListMatchedData(Request $request){
+        ini_set('max_execution_time', 3600);
+        $ac_list = DB::table("fivenine_lists")->get();
+        $records = $request->input("records");
+        $matched = 0;
+        $result = [];
+        $matched = [];
+        $notMatched = [];
+        foreach($ac_list as $valueAcList){
+            $valueAcList = get_object_vars($valueAcList);
+            $listId = $valueAcList["id"]; 
+            $list = get_object_vars(DB::table("fivenine_lists")->where("id", "=", $listId)->first());
+            $listRecord = 0;
+            $listRecord = DB::table("fivenine_list_contacts")->whereIn("record_id", array_column($records, "record_id"))->where("fivenine_list_id", "=", $listId)->select('record_id')->distinct()->get()->count();
+            if($listRecord == 0){
+                $notMatched[] = [
+                    "name" => $list["name"],
+                    "size" => $list["size"],
+                    "matched" => 0
+                ];
+            }else{
+                $matched[] = [
+                    "name" => $list["name"],
+                    "size" => $list["size"],
+                    "matched" => $listRecord,
+                    "records" => $listRecord
+                ];
+            }
+            $result[] = [
+                "name" => $list["name"],
+                "size" => $list["size"],
+                "matched" => $listRecord
+            ];
+        }
+        return ["result" => $result, "matched" => $matched, "notMatched" => $notMatched];
+    }
+    public function getListbasedProspects(Request $request)
+    {
+        $cids = DB::table('fivenine_list_contacts')->where('fivenine_list_id', $request->list_id)->get()->pluck('record_id');
+        return Contacts::select('contacts.id', 'contacts.record_id', 'contacts.first_name', 'contacts.last_name', 'contacts.title', 'contacts.company', 'contacts.mobilePhones', 'contacts.workPhones', 'contacts.homePhones', 'contacts.emails', 'contacts.outreach_touched_at', 'contacts.outreach_created_at', 'contacts.last_agent_dispo_time', 'contacts.last_agent', 'contacts.email_delivered', 'contacts.email_opened', 'contacts.email_clicked', 'contacts.email_replied', 'contacts.email_bounced', 'contacts.mcall_attempts', 'contacts.mcall_received', 'contacts.wcall_attempts', 'contacts.wcall_received', 'contacts.hcall_attempts', 'contacts.hcall_received', 'stages.id as stage', 'stages.name as stage_name', 'stages.css as stage_css', 'contacts.dataset','contacts.outreach_tag')->leftjoin('stages', 'stages.oid', '=', 'contacts.stage')->whereIn('record_id', $cids)->orderBy('record_id', 'asc')->paginate($request->recordPerPage);
+    }
+    
+    public function getNumberBasedOnDispositionAndNoneAgent(Request $request){
+        $records = $request->input("records");
+        $recordIds = array_column($records, "record_id");
+        $number1 = array_column($records, "number1");
+        $number2 = array_column($records, "number2");
+        $number3 = array_column($records, "number3");
+        // $dispostions = DB::table("fivenine_call_logs")->whereNull("agent_name")->select("disposition")->distinct()->pluck("disposition")->toArray();
+        $dispostions = ["Answering Machine", "Fax", "No Answer", "Operator Intercept"];
+        $results = [];
+        foreach($records as $value){
+            $number1 = intval($value["number1"]);
+            $number2 = intval($value["number2"]);
+            $number3 = intval($value["number3"]);
+            if(strlen($number1) > 9){
+                $cn1 = DB::table("fivenine_call_logs")->where("dnis", $number1)->whereNull("agent_name")->whereIn("disposition", $dispostions)->count();
+                if($cn1 > 0){
+                    $results[] = $number1;
+                }
+            }
+            if(strlen($number2) > 9){
+                $cn2 = DB::table("fivenine_call_logs")->where("dnis", $number2)->whereNull("agent_name")->whereIn("disposition", $dispostions)->count();
+                if($cn2 > 0){
+                    $results[] = $number2;
+                }
+            }
+            if(strlen($number3) > 9){
+                $cn3 = DB::table("fivenine_call_logs")->where("dnis", $number3)->whereNull("agent_name")->whereIn("disposition", $dispostions)->count();
+                if($cn3 > 0){
+                    $results[] = $number2;
+                }
+            }
+        }
+        return $results;
+    }
+    
+    public function deleteList(Request $request){
+        $listName = $request->input("listName");
+        $postFields = '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ser="http://service.admin.ws.five9.com/">
+            <soapenv:Header/>
+            <soapenv:Body>
+            <ser:deleteList>
+                <!--Optional:-->
+                <listName>'.$listName.'</listName>
+            </ser:deleteList>
+            </soapenv:Body>
+        </soapenv:Envelope>';
+        $curl = curl_init();
+        $setting1 = Settings::where('id', '=', 37)->first();
+        $setting2 = Settings::where('id', '=', 38)->first();
+        $username = $setting1->value;
+        $password = $setting2->value;
+        $code = base64_encode($username.':'.$password);
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => 'https://api.five9.com/wsadmin/v4/AdminWebService',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'GET',
+            CURLOPT_POSTFIELDS => $postFields,
+            CURLOPT_HTTPHEADER => array(
+                "Authorization: Basic $code",
+                'Content-Type: application/xml',
+                'Cookie: Authorization=Bearer-ebfa8d5a-ba2a-11eb-abfe-00505fca8def; apiRouteKey=SCLnAPIc6f; app_key=web-ui; farmId=182; uiRouteKey=SCLnUI5551'
+            ),
+        ));
+        $response = curl_exec($curl);// dd($response);
+        curl_close($curl);
+        //$results = $this->__XMLtoJSON($response, 'deleteAllFromList');
+        $listDetais = get_object_vars(DB::table("fivenine_lists")->where("name", "=", $listName)->first());
+        DB::table("fivenine_list_contacts")->where("fivenine_list_id", "=", $listDetais["id"])->delete();
+        DB::table("fivenine_lists")->where("name", "=", $listName)->delete();
+        return ["status" => "success"];
+    }
+
+    public function deleteAllFromList(Request $request){
+        $listName = $request->input("listName");
+        $postFields = '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ser="http://service.admin.ws.five9.com/">
+            <soapenv:Header/>
+            <soapenv:Body>
+            <ser:deleteAllFromList>
+                <!--Optional:-->
+                <listName>'.$listName.'</listName>
+            </ser:deleteAllFromList>
+            </soapenv:Body>
+        </soapenv:Envelope>';
+        $curl = curl_init();
+        $setting1 = Settings::where('id', '=', 37)->first();
+        $setting2 = Settings::where('id', '=', 38)->first();
+        $username = $setting1->value;
+        $password = $setting2->value;
+        $code = base64_encode($username.':'.$password);
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => 'https://api.five9.com/wsadmin/v4/AdminWebService',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'GET',
+            CURLOPT_POSTFIELDS => $postFields,
+            CURLOPT_HTTPHEADER => array(
+                "Authorization: Basic $code",
+                'Content-Type: application/xml',
+                'Cookie: Authorization=Bearer-ebfa8d5a-ba2a-11eb-abfe-00505fca8def; apiRouteKey=SCLnAPIc6f; app_key=web-ui; farmId=182; uiRouteKey=SCLnUI5551'
+            ),
+        ));
+        $response = curl_exec($curl);
+        curl_close($curl);
+        $results = $this->__XMLtoJSON($response, 'deleteAllFromList');
+        if(isset($results["message"]["identifier"])){
+            $record = get_object_vars(DB::table("fivenine_lists")->where("name", "LIKE", $listName)->first());
+            $id = $record["id"];
+            $oldhistory = $record["history"];
+            if(is_null($oldhistory)){
+                $history = [$results["message"]["identifier"]];
+            }else{
+                $his = json_decode($oldhistory);
+                array_push($his, $results["message"]["identifier"]);
+                $history = $his;
+            }
+            DB::table("fivenine_lists")->where("id", "=", $id)->update([
+                "history" => json_encode($history),
+            ]);
+        }
+        $listDetais = get_object_vars(DB::table("fivenine_lists")->where("name", "=", $listName)->first());
+        DB::table("fivenine_lists")->where("id", "=", $listDetais["id"])->update([
+                    "size" => 0,
+                    "updated_at" => date("Y-m-d H:i:s", strtotime("now"))
+                ]);
+        DB::table("fivenine_list_contacts")->where("fivenine_list_id", "=", $listDetais["id"])->delete();
+        return ["status" => "success", "results" => $results];
+    }
+    public function createNewList($listName = null){
+        $curl = curl_init();
+        $setting1 = Settings::where('id', '=', 37)->first();
+        $setting2 = Settings::where('id', '=', 38)->first();
+        $username = $setting1->value;
+        $password = $setting2->value;
+        $code = base64_encode($username.':'.$password);
+        
+        $postFields = '<env:Envelope xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ser="http://service.admin.ws.five9.com/" xmlns:env="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ins0="http://jaxb.dev.java.net/array">
+        <env:Header/>
+        <env:Body>
+            <ser:createList>
+                <listName>'.$listName.'</listName>
+            </ser:createList>
+        </env:Body>
+        </env:Envelope>';
+        
+        $curl = curl_init();
+        $setting1 = Settings::where('id', '=', 37)->first();
+        $setting2 = Settings::where('id', '=', 38)->first();
+        $username = $setting1->value;
+        $password = $setting2->value;
+        $code = base64_encode($username.':'.$password);
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => 'https://api.five9.com/wsadmin/v4/AdminWebService',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'GET',
+            CURLOPT_POSTFIELDS => $postFields,
+            CURLOPT_HTTPHEADER => array(
+                "Authorization: Basic $code",
+                'Content-Type: application/xml',
+                'Cookie: Authorization=Bearer-ebfa8d5a-ba2a-11eb-abfe-00505fca8def; apiRouteKey=SCLnAPIc6f; app_key=web-ui; farmId=182; uiRouteKey=SCLnUI5551'
+            ),
+        ));
+        $response = curl_exec($curl);// dd($response);
+        curl_close($curl);
+    }
+    public function updateList(Request $request){
+        ini_set('max_execution_time', 3600);
+        $listName = $request->input("listName");
+        $list = DB::table("fivenine_lists")->where("name", "=", $listName)->first();
+        $list = get_object_vars($list);
+            $listName = $list["name"];
+            $listId = $list["id"];
+            //echo "<pre>"; print_r($listName); echo "</pre>";
+            
+            $start = date("Y-m-d", strtotime("-6 years")).'T'.date("H:i:s", strtotime("-6 years"));
+            $end = date("Y-m-d", strtotime("now")).'T'.date("H:i:s", strtotime("now"));
+            $postFields = '<env:Envelope xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:tns="http://service.admin.ws.five9.com/" xmlns:env="http://schemas.xmlsoap.org/soap/envelope/"
+            xmlns:ins0="http://jaxb.dev.java.net/array">
+            <env:Body>
+                <tns:runReport>
+                    <folderName>My Reports</folderName>
+                    <reportName>List All '.$listName.'</reportName>
+                        <criteria>
+                            <time>
+                            <end>'.$end.'</end>
+                            <start>'.$start.'</start>
+                            </time>
+                        </criteria>
+                </tns:runReport>
+            </env:Body>
+            </env:Envelope>';
+            $curl = curl_init();
+            $setting1 = Settings::where('id', '=', 37)->first();
+            $setting2 = Settings::where('id', '=', 38)->first();
+            $username = $setting1->value;
+            $password = $setting2->value;
+            
+            $code = base64_encode($username.':'.$password);
+            
+            curl_setopt_array($curl, array(
+                CURLOPT_URL => 'https://api.five9.com/wsadmin/v4/AdminWebService',
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_ENCODING => '',
+                CURLOPT_MAXREDIRS => 10,
+                CURLOPT_TIMEOUT => 0,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_CUSTOMREQUEST => 'GET',
+                CURLOPT_POSTFIELDS => $postFields,
+                CURLOPT_HTTPHEADER => array(
+                    "Authorization: Basic $code",
+                    "Content-Type: application/xml",
+                    "Cookie: Authorization=Bearer-ebfa8d5a-ba2a-11eb-abfe-00505fca8def; apiRouteKey=SCLnAPIc6f; app_key=web-ui; farmId=182; uiRouteKey=SCLnUI5551"
+                ),
+            ));
+            $response = curl_exec($curl);
+            curl_close($curl);
+            $xml = $response;
+            // SimpleXML seems to have problems with the colon ":" in the <xxx:yyy> response tags, so take them out
+            $xml = preg_replace("/(<\/?)(\w+):([^>]*>)/", '$1$2$3', $xml);
+            $xml = simplexml_load_string($xml);
+            $json = json_encode($xml);
+            $return = json_decode($json,true); //dd($return["envBody"]["envFault"]);
+            if(isset($return["envBody"]["envFault"])):
+                return ['restults' => 'fault'];
+            endif;
+            $id = substr($response, strpos($response, '<return>')+8, strrpos($response, '</return>') - strpos($response, '<return>')-8);
+        
+            $curl = curl_init();
+            for ($i=0; $i < 10; $i++) {
+                sleep(1);     
+                $setting1 = Settings::where('id', '=', 37)->first();
+                $setting2 = Settings::where('id', '=', 38)->first();
+                $username = $setting1->value;
+                $password = $setting2->value;
+                $code = base64_encode($username.':'.$password);    
+                curl_setopt_array($curl, array(
+                CURLOPT_URL => 'https://api.five9.com/wsadmin/v4/AdminWebService',
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_ENCODING => '',
+                CURLOPT_MAXREDIRS => 10,
+                CURLOPT_TIMEOUT => 0,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_CUSTOMREQUEST => 'GET',
+                CURLOPT_POSTFIELDS =>'<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ser="http://service.admin.ws.five9.com/">;
+                <soapenv:Header/>
+                <soapenv:Body>
+                    <ser:isReportRunning>
+                        <identifier>'.$id.'</identifier>
+                    </ser:isReportRunning>
+                </soapenv:Body>
+                </soapenv:Envelope>',
+                CURLOPT_HTTPHEADER => array(
+                    "Authorization: Basic $code",
+                    "Content-Type: application/xml",
+                    "Cookie: clientId=8998A130504F4358BADF215E686E2E8B; Authorization=Bearer-ebfa8d5a-ba2a-11eb-abfe-00505fca8def; apiRouteKey=SCLnAPIc6f; app_key=web-ui; farmId=182; uiRouteKey=SCLnUI5551"
+                ),
+                ));
+        
+                $response = curl_exec($curl); 
+                $result = substr($response, strpos($response, '<return>')+8, strrpos($response, '</return>') - strpos($response, '<return>')-8);
+                if($result == 'false'){
+                    break;
+                }
+            }
+            curl_close($curl);
+        
+            $curl = curl_init();
+            $setting1 = Settings::where('id', '=', 37)->first();
+            $setting2 = Settings::where('id', '=', 38)->first();
+            $username = $setting1->value;
+            $password = $setting2->value;
+            $code = base64_encode($username.':'.$password);
+            curl_setopt_array($curl, array(
+                CURLOPT_URL => 'https://api.five9.com/wsadmin/v4/AdminWebService',
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_ENCODING => '',
+                CURLOPT_MAXREDIRS => 10,
+                CURLOPT_TIMEOUT => 0,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_CUSTOMREQUEST => 'GET',
+                CURLOPT_POSTFIELDS =>'<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ser="http://service.admin.ws.five9.com/">;
+                <soapenv:Header/>
+                <soapenv:Body>
+                    <ser:getReportResult>
+                        <!--Optional:-->
+                        <identifier>'.$id.'</identifier>
+                    </ser:getReportResult>
+                </soapenv:Body>
+                </soapenv:Envelope>',
+                CURLOPT_HTTPHEADER => array(
+                    'Content-Type: application/json',
+                    "Authorization: Basic $code",
+                    "Cookie: clientId=C4A452B18E5646FA9ACBE8A819154296; Authorization=Bearer-ebfa8d5a-ba2a-11eb-abfe-00505fca8def; apiRouteKey=SCLnAPIc6f; app_key=web-ui; farmId=182; uiRouteKey=SCLnUI5551"
+                ),
+            ));
+
+            $response = curl_exec($curl);
+
+            curl_close($curl);
+            $xml = $response;
+            // SimpleXML seems to have problems with the colon ":" in the <xxx:yyy> response tags, so take them out
+            $xml = preg_replace("/(<\/?)(\w+):([^>]*>)/", '$1$2$3', $xml);
+            $xml = simplexml_load_string($xml);
+            $json = json_encode($xml);
+            $return = json_decode($json,true);
+            $header = $return["envBody"]["ns2getReportResultResponse"]["return"]["header"]["values"]["data"];
+            $headerOld = $header;
+            foreach($header as $key => $value):
+                if(strpos($value, " ")):
+                    $e = explode(" ", $value);
+                    $i = implode("_", $e);
+                    $header[$key] = $i;
+                else:
+                    $header[$key] = $value;
+                endif;
+            endforeach; 
+            $counter = 0;
+            $contactIds = [];
+            $allRecords = []; 
+            if(isset($return["envBody"]["ns2getReportResultResponse"]["return"]["records"])):
+                $records = $return["envBody"]["ns2getReportResultResponse"]["return"]["records"];
+                DB::table("fivenine_list_contacts")->where("fivenine_list_id", "=", $listId)->delete();
+                foreach($records as $key => $value):
+                    if(isset($value["data"])){
+                        $record["record_id"] = is_array($value["data"][3]) ? null : intval($value["data"][3]);
+                        $record["number1"] = is_array($value["data"][4]) ? null : intval($value["data"][4]);
+                        $record["number2"] = is_array($value["data"][5]) ? null : intval($value["data"][5]);
+                        $record["number3"] = is_array($value["data"][6]) ? null : intval($value["data"][6]);                        
+                    }else{
+                        $record["record_id"] = is_array($value["values"]["data"][3]) ? null : intval($value["values"]["data"][3]);
+                        $record["number1"] = is_array($value["values"]["data"][4]) ? null : intval($value["values"]["data"][4]);
+                        $record["number2"] = is_array($value["values"]["data"][5]) ? null : intval($value["values"]["data"][5]);
+                        $record["number3"] = is_array($value["values"]["data"][6]) ? null : intval($value["values"]["data"][6]);
+                    }
+                    
+                    $count = DB::table("fivenine_list_contacts")->where("fivenine_list_id", "=", $listId)->where("record_id", "=", $record["record_id"])->count();
+                    if($count == 0){
+                        DB::table("fivenine_list_contacts")->insert([
+                            "fivenine_list_id" => $listId,
+                            "number1" => $record["number1"],
+                            "record_id" => $record["record_id"],
+                            "number2" => $record["number2"],
+                            "number3" => $record["number3"],
+    
+                        ]);
+                    }
+                endforeach;
+                $listItemCounter = DB::table("fivenine_list_contacts")->where("fivenine_list_id", "=", $listId)->count();
+                DB::table("fivenine_lists")->where("id", "=", $listId)->update([
+                    "size" => $listItemCounter,
+                    "updated_at" => date("Y-m-d H:i:s", strtotime("now"))
+                ]);
+            else:
+                DB::table("fivenine_lists")->where("id", "=", $listId)->update([
+                    "size" => 0,
+                    "updated_at" => date("Y-m-d H:i:s", strtotime("now"))
+                ]);
+                DB::table("fivenine_list_contacts")->where("fivenine_list_id", "=", $listId)->delete();
+            endif;
+        // }
+        return ["status" => "success"];
+    }
+    public function startCampaign(Request $request){
+        $campaignName = $request->input("campaignName");
+        $postFields = '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ser="http://service.admin.ws.five9.com/">
+            <soapenv:Header/>
+            <soapenv:Body>
+            <ser:startCampaign>
+                <!--Optional:-->
+                <campaignName>'.$campaignName.'</campaignName>
+            </ser:startCampaign>
+            </soapenv:Body>
+        </soapenv:Envelope>';
+
+        $setting1 = Settings::where('id', '=', 37)->first();
+        $setting2 = Settings::where('id', '=', 38)->first();
+        $username = $setting1->value;
+        $password = $setting2->value;
+        $code = base64_encode($username.':'.$password);
+
+        $curl = curl_init();
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => 'https://api.five9.com/wsadmin/v4/AdminWebService',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'GET',
+            CURLOPT_POSTFIELDS => $postFields,
+            CURLOPT_HTTPHEADER => array(
+               "Authorization: Basic $code",
+                "Content-Type: application/xml",
+                "Cookie: clientId=C4A452B18E5646FA9ACBE8A819154296; Authorization=Bearer-ebfa8d5a-ba2a-11eb-abfe-00505fca8def; apiRouteKey=SCLnAPIc6f; app_key=web-ui; farmId=182; uiRouteKey=SCLnUI5551"
+            ),
+        ));
+        $response = curl_exec($curl);
+        curl_close($curl); 
+        $xml = $response;
+        // SimpleXML seems to have problems with the colon ":" in the <xxx:yyy> response tags, so take them out
+        $xml = preg_replace("/(<\/?)(\w+):([^>]*>)/", '$1$2$3', $xml);
+        $xml = simplexml_load_string($xml);
+        $json = json_encode($xml);
+        $return = json_decode($json,true); 
+        //echo "<pre>"; print_r($return); print_r($return["envBody"]["envFault"]["detail"]); echo "</pre>";
+        if(isset($return["envBody"]["envFault"])){
+            return ["results" => "error", "message" => $return["envBody"]["envFault"]["detail"]["ns1CampaignStateUpdateFault"]];    
+        }
+        return ["results" => "success"];
+    }
+    public function stopCampaign(Request $request){
+        $campaignName = $request->input("campaignName");
+        $postFields = '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ser="http://service.admin.ws.five9.com/">
+            <soapenv:Header/>
+            <soapenv:Body>
+            <ser:stopCampaign>
+                <!--Optional:-->
+                <campaignName>'.$campaignName.'</campaignName>
+            </ser:stopCampaign>
+            </soapenv:Body>
+        </soapenv:Envelope>';
+
+        $setting1 = Settings::where('id', '=', 37)->first();
+        $setting2 = Settings::where('id', '=', 38)->first();
+        $username = $setting1->value;
+        $password = $setting2->value;
+        $code = base64_encode($username.':'.$password);
+
+        $curl = curl_init();
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => 'https://api.five9.com/wsadmin/v4/AdminWebService',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'GET',
+            CURLOPT_POSTFIELDS => $postFields,
+            CURLOPT_HTTPHEADER => array(
+               "Authorization: Basic $code",
+                "Content-Type: application/xml",
+                "Cookie: clientId=C4A452B18E5646FA9ACBE8A819154296; Authorization=Bearer-ebfa8d5a-ba2a-11eb-abfe-00505fca8def; apiRouteKey=SCLnAPIc6f; app_key=web-ui; farmId=182; uiRouteKey=SCLnUI5551"
+            ),
+        ));
+        $response = curl_exec($curl);
+        curl_close($curl);
+        return ["status" => "success"];
+    }
+    public function addListToCampaign(Request $request){
+        $list = $request->input("list");
+        $campaign = $request->input("campaign");
+        $priority = $request->input("priority") +1;
+        $dialingPriority = $request->input("dialingPriority") +1;
+        $postFields = '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ser="http://service.admin.ws.five9.com/">
+            <soapenv:Header/>
+            <soapenv:Body>
+            <ser:addListsToCampaign>
+                <!--Optional:-->
+                <campaignName>'.$campaign.'</campaignName>
+                <!--Zero or more repetitions:-->
+                <lists>
+                    <!--Optional:-->
+                    <campaignName>'.$campaign.'</campaignName>
+                    <!--Optional:-->
+                    <dialingPriority>1</dialingPriority>
+                    <!--Optional:-->
+                    <dialingRatio>1</dialingRatio>
+                    <!--Optional:-->
+                    <listName>'.$list.'</listName>
+                    <!--Optional:-->
+                    <priority>'.$priority.'</priority>
+                </lists>
+            </ser:addListsToCampaign>
+            </soapenv:Body>
+        </soapenv:Envelope>';
+
+        $setting1 = Settings::where('id', '=', 37)->first();
+        $setting2 = Settings::where('id', '=', 38)->first();
+        $username = $setting1->value;
+        $password = $setting2->value;
+        $code = base64_encode($username.':'.$password);
+
+        $curl = curl_init();
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => 'https://api.five9.com/wsadmin/v4/AdminWebService',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'GET',
+            CURLOPT_POSTFIELDS => $postFields,
+            CURLOPT_HTTPHEADER => array(
+               "Authorization: Basic $code",
+                "Content-Type: application/xml",
+                "Cookie: clientId=C4A452B18E5646FA9ACBE8A819154296; Authorization=Bearer-ebfa8d5a-ba2a-11eb-abfe-00505fca8def; apiRouteKey=SCLnAPIc6f; app_key=web-ui; farmId=182; uiRouteKey=SCLnUI5551"
+            ),
+        ));
+        $response = curl_exec($curl);
+        curl_close($curl);
+        return  ["status" => "success"];
+    }
+    public function getListHistory(Request $request){
+        $listName = $request->input("listName");
+        $record = get_object_vars(DB::table("fivenine_lists")->where("name", "like", $listName)->first());
+        if($record["history"]){
+            $history = json_decode($record["history"]);            
+        }else{
+            $history = [];
+        }
+        return $history;
+    }
+    public function getListImportResult(Request $request){
+        $rid = $request->input("rid");
+        $postFields = '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ser="http://service.admin.ws.five9.com/">
+            <soapenv:Header/>
+            <soapenv:Body>
+            <ser:getListImportResult>
+                <!--Optional:-->
+                <identifier>
+                    <!--Optional:-->
+                    <identifier>'.$rid.'</identifier>
+                </identifier>
+            </ser:getListImportResult>
+            </soapenv:Body>
+        </soapenv:Envelope>';
+        $setting1 = Settings::where('id', '=', 37)->first();
+        $setting2 = Settings::where('id', '=', 38)->first();
+        $username = $setting1->value;
+        $password = $setting2->value;
+        $code = base64_encode($username.':'.$password);
+
+        $curl = curl_init();
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => 'https://api.five9.com/wsadmin/v4/AdminWebService',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'GET',
+            CURLOPT_POSTFIELDS => $postFields,
+            CURLOPT_HTTPHEADER => array(
+               "Authorization: Basic $code",
+                "Content-Type: application/xml",
+                "Cookie: clientId=C4A452B18E5646FA9ACBE8A819154296; Authorization=Bearer-ebfa8d5a-ba2a-11eb-abfe-00505fca8def; apiRouteKey=SCLnAPIc6f; app_key=web-ui; farmId=182; uiRouteKey=SCLnUI5551"
+            ),
+        ));
+        $response = curl_exec($curl);
+        curl_close($curl);
+        return $this->__XMLtoJSON($response, 'getListImportResult');
+    }
+    public function removeHistoryFromList(Request $request){
+        $rid = $request->input("rid");
+        $listName = $request->input("listName");
+        $record = get_object_vars(DB::table("fivenine_lists")->where("name", "like", $listName)->first());
+        $his = json_decode($record["history"]);
+        $history = [];
+        foreach($his as $value){
+            if($value != $rid){
+                $history[] = $value;
+            }
+        }
+        //dd($history);
+        DB::table("fivenine_lists")->where("name", "like", $listName)->update([
+            "history" => json_encode($history)
+        ]);
+        return ["status" => "success"];
+    }
+    //agent occupancy functionality
+    function getAgentOccupnecyReport(Request $request){
+        if($request->input('dateRange')):
+            $exp = explode(',',$request->input('dateRange'));
+            if($exp[0] == $exp[1]):
+                $end = $exp[0];
+                $start = date("Y-m-d", strtotime($exp[0])- 3600*24);
+            else:
+                $start = $exp[0];
+                $end = $exp[1];
+            endif;
+        else:
+            $start = date("Y-m-d", strtotime("-4 month")).'T'.date("H:i:s", strtotime("-4 month"));
+            $end = date("Y-m-d", strtotime("now")).'T'.date("H:i:s", strtotime("now"));
+        endif;
+        $postFields = '<env:Envelope xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:tns="http://service.admin.ws.five9.com/" xmlns:env="http://schemas.xmlsoap.org/soap/envelope/"
+        xmlns:ins0="http://jaxb.dev.java.net/array">
+        <env:Body>
+            <tns:runReport>
+                <folderName>My Reports</folderName>
+                <reportName>Biorev Agent Occupancy</reportName>
+                    <criteria>
+                        <time>
+                        <end>'.$end.'</end>
+                        <start>'.$start.'</start>
+                        </time>
+                    </criteria>
+            </tns:runReport>
+        </env:Body>
+        </env:Envelope>';
+        $curl = curl_init();
+        $setting1 = Settings::where('id', '=', 37)->first();
+        $setting2 = Settings::where('id', '=', 38)->first();
+        $username = $setting1->value;
+        $password = $setting2->value;
+        
+        $code = base64_encode($username.':'.$password);
+        
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => 'https://api.five9.com/wsadmin/v4/AdminWebService',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'GET',
+            CURLOPT_POSTFIELDS => $postFields,
+            CURLOPT_HTTPHEADER => array(
+                "Authorization: Basic $code",
+                "Content-Type: application/xml",
+                "Cookie: Authorization=Bearer-ebfa8d5a-ba2a-11eb-abfe-00505fca8def; apiRouteKey=SCLnAPIc6f; app_key=web-ui; farmId=182; uiRouteKey=SCLnUI5551"
+            ),
+        ));
+        $response = curl_exec($curl);
+        curl_close($curl);
+        return $this->__XMLtoJSON($response, "runReport");
+    }
+
+    function getAgentOccupencyReportData($id = null){
+        $curl = curl_init();
+        $setting1 = Settings::where('id', '=', 37)->first();
+        $setting2 = Settings::where('id', '=', 38)->first();
+        $username = $setting1->value;
+        $password = $setting2->value;
+        $code = base64_encode($username.':'.$password);
+        curl_setopt_array($curl, array(
+        CURLOPT_URL => 'https://api.five9.com/wsadmin/v4/AdminWebService',
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => '',
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 0,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => 'GET',
+        CURLOPT_POSTFIELDS =>'<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ser="http://service.admin.ws.five9.com/">;
+            <soapenv:Header/>
+            <soapenv:Body>
+                <ser:getReportResultCsv>
+                    <!--Optional:-->
+                    <identifier>'.$id.'</identifier>
+                </ser:getReportResultCsv>
+            </soapenv:Body>
+            </soapenv:Envelope>',
+        CURLOPT_HTTPHEADER => array(
+            'Content-Type: application/json',
+            "Authorization: Basic $code",
+            "Cookie: clientId=C4A452B18E5646FA9ACBE8A819154296; Authorization=Bearer-ebfa8d5a-ba2a-11eb-abfe-00505fca8def; apiRouteKey=SCLnAPIc6f; app_key=web-ui; farmId=182; uiRouteKey=SCLnUI5551"
+        ),
+        ));
+
+        $responseCsv = curl_exec($curl);
+        curl_close($curl);
+        $xmlCsv = $responseCsv;
+        // SimpleXML seems to have problems with the colon ":" in the <xxx:yyy> response tags, so take them out
+        $xmlCsv = preg_replace("/(<\/?)(\w+):([^>]*>)/", '$1$2$3', $xmlCsv);
+        $xmlCsv = simplexml_load_string($xmlCsv);
+        $jsonCsv = json_encode($xmlCsv);
+        $returnCsv = json_decode($jsonCsv,true);
+        foreach(explode("\n",$returnCsv["envBody"]["ns2getReportResultCsvResponse"]["return"]) as $key => $value){
+            $value = str_getcsv($value, ",", '"');
+            if($key == 0){
+                foreach($value as $head){
+                    $headerArray[] = str_replace(' ', '_', strtolower($head));
+                }
+                dd($headerArray);
+            }
+        }
+        foreach(explode("\n",$returnCsv["envBody"]["ns2getReportResultCsvResponse"]["return"]) as $key => $value){
+            $value = str_getcsv($value, ",", '"');
+            if($key > 0 && (count($value) == count($headerArray))){
+                $records = array_combine($headerArray,$value);
+                // dd($records);
+                $data["agent"] = ($records["agent"]) ? $records["agent"] : null;
+                $data["agent_first_name"] = ($records["agent_first_name"]) ? $records["agent_first_name"] : null;
+                $data["agent_last_name"] = ($records["agent_last_name"]) ? $records["agent_last_name"] : null;
+                $data["date"] = ($records["date"]) ? $records["date"] : null;
+                $data["login_time"] = ($records["login_time"]) ? $records["login_time"] : null;
+                $data["not_ready_time"] = ($records["not_ready_time"]) ? $records["not_ready_time"] : null;
+                $data["wait_time"] = ($records["wait_time"]) ? $records["wait_time"] : null;
+                $data["ringing_time"] = ($records["ringing_time"]) ? $records["ringing_time"] : null;
+                $data["on_call_time"] = ($records["on_call_time"]) ? $records["on_call_time"] : null;
+                $data["on_voicemail_time"] = ($records["on_voicemail_time"]) ? $records["on_voicemail_time"] : null;
+                $data["on_acw_time"] = ($records["on_acw_time"]) ? $records["on_acw_time"] : null;
+                $data["logout_time"] = ($records["logout_time"]) ? $records["logout_time"] : null;
+                $data["ready_time"] = ($records["ready_time"]) ? $records["ready_time"] : null;
+                
+                AgentOccupancy::insert($data);
+            }
+        } 
+    }
+
+    function getAgentOccupancyData(Request $request){
+        if($request->input('dateRange')):
+            $s = explode("T", $request->input('dateRange.startDate')); 
+            //dd($request->input('dateRange.startDate'));
+            $e = explode("T", $request->input('dateRange.endDate'));
+            $startDate = '';
+            $endDate = '';
+
+            if($s[1] == $e[1]):
+                //date coming form calender date selection
+                if($s[0] == $e[0]):
+                    // single date selected
+                    //"2021-07-23::2021-07-23" today
+                    //"2021-07-22::2021-07-22"  yesterday
+                    //print_r('single date selected');
+                    $startDate = $s[0];
+                    $endDate = $e[0];
+                else:
+                    //"2021-06-30::2021-07-31" this month
+                    //"2021-06-01::2021-06-30" last month
+                    //print_r('multiple date selected');
+                    $startDate = date("Y-m-d", strtotime($s[0]) - 24*3600);
+                    $endDate = $e[0];
+                endif;
+            else:
+                //date coming from calender date-tab selection
+                //print_r('calender tab selection:');
+                if(strtotime($e[0]) - strtotime($s[0]) == 24*3600):
+                    //"2021-07-22::2021-07-23" today
+                    //"2021-07-21::2021-07-22"  yesterday
+                    //print_r('same day');
+                    $endDate = $startDate = $e[0];
+                else:
+                    //"2020-12-31::2021-12-31"  this year
+                    //"2021-06-30::2021-07-31"  this month
+                    //"2021-05-31::2021-06-30"  last month
+                    //print_r('many day');
+                    $startDate = $s[0];
+                    $endDate = $e[0];
+                endif;
+            endif;
+                
+            //dd($startFullDate."::".$endFulllDate);
+        else:
+            $startDate = date("Y-m-d", strtotime("now"));
+            $endDate = date("Y-m-d", strtotime("now"));
+        endif;
+        
+        return ["results" => AgentOccupancy::select(DB::raw("
+        SEC_TO_TIME(sum(TIME_TO_SEC(`login_time`))) as login_time_sum, 
+        SEC_TO_TIME(sum(TIME_TO_SEC(`ready_time`))) as ready_time_sum,
+        SEC_TO_TIME(sum(TIME_TO_SEC(`not_ready_time`))) as not_ready_time_sum, 
+        SEC_TO_TIME(
+            sum(TIME_TO_SEC(`login_time`)) - sum(TIME_TO_SEC(`not_ready_time`)) - sum(TIME_TO_SEC(`on_call_time`)) - sum(TIME_TO_SEC(`on_acw_time`))
+            ) as wait_time_sum, 
+        SEC_TO_TIME(sum(TIME_TO_SEC(`ringing_time`))) as ringing_time_sum, 
+        SEC_TO_TIME(sum(TIME_TO_SEC(`on_call_time`))) as on_call_time_sum, 
+        SEC_TO_TIME(sum(TIME_TO_SEC(`on_voicemail_time`))) as on_voicemail_time_sum, 
+        SEC_TO_TIME(sum(TIME_TO_SEC(`on_acw_time`))) as on_acw_time_sum, 
+        SEC_TO_TIME(sum(TIME_TO_SEC(`logout_time`))) as logout_time_sum, 
+         `agent`"))
+        ->whereBetween("date", [$startDate, $endDate])
+        ->groupBy("agent")
+        ->dd()];
+    }
+
 }

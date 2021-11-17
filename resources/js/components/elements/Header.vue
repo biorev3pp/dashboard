@@ -9,7 +9,7 @@
                     <select  v-model="dash" class="dash-select" v-if="title == 'Dashboard'" @change="chageDashabord">
                         <option value="">Prospect </option>
                         <option value="calls">Calls </option>
-                        <option value="emails">Emails </option>
+                        <option value="agents">Agents </option>
                     </select>
                     <span class="page-title" v-html="title"></span>
                 </div>
@@ -36,14 +36,14 @@
         <div class="menu-backdrop" @click="toggleMenu" v-if="desktopview == 0 && fullmenu"></div>
         <aside :class="[(fullmenu)?'side-menu':'side-menu side-menu-condensed']">
             <div class="logo">
-                <router-link to="/dashboard" class="navbar-brand">
+                <router-link to="/dashboard/" class="navbar-brand">
                     <img :src="currentConfig.company_logo" :alt="currentConfig.company_name" width="160px" v-if="fullmenu"> 
                     <img :src="currentConfig.company_icon" :alt="currentConfig.company_name" width="33px" v-else> 
                 </router-link>
             </div>
             <ul class="side-menu-list">
                 <li class="side-menu-item">
-                    <router-link  to="/dashboard" class="side-menu-link"> 
+                    <router-link  to="/dashboard/" class="side-menu-link"> 
                         <i class="bi bi-speedometer2 mr-1"></i>
                         <span v-show="fullmenu">Dashboard</span>
                     </router-link>
@@ -67,55 +67,49 @@
                     </a>
                     <ul class="side-submenu" v-show="submenu == 1">
                         <li>
-                            <router-link  to="/five9-campaigns" class="side-menu-link"> 
+                            <router-link  to="/five9/campaigns" class="side-menu-link"> 
                                 <i class="bi bi-arrow-right mr-1"></i>
                                 <span>Campaigns</span>
                             </router-link>
                         </li>
                         <li>
-                            <router-link  to="/five9-dispositions" class="side-menu-link"> 
+                            <router-link  to="/five9/dispositions" class="side-menu-link"> 
                                 <i class="bi bi-arrow-right mr-1"></i>
                                 <span>Dispositions</span>
                             </router-link>
                         </li>
                         <li>
-                            <router-link  to="/five9-skills" class="side-menu-link"> 
+                            <router-link  to="/five9/skills" class="side-menu-link"> 
                                 <i class="bi bi-arrow-right mr-1"></i>
                                 <span>Skills</span>
                             </router-link>
                         </li>
                         <li>
-                            <router-link  to="/five9-lists" class="side-menu-link"> 
+                            <router-link  to="/five9/lists" class="side-menu-link"> 
                                 <i class="bi bi-arrow-right mr-1"></i>
                                 <span>List</span>
                             </router-link>
                         </li>
                         <li>
-                            <router-link  to="/five9-modify-contacts" class="side-menu-link"> 
+                            <router-link  to="/five9/modify-contacts" class="side-menu-link"> 
                                 <i class="bi bi-arrow-right mr-1"></i>
                                 <span>Modify Contacts</span>
                             </router-link>
                         </li>
                         <li>
-                            <router-link  to="/five9-call-report" class="side-menu-link"> 
+                            <router-link  to="/five9/call-report" class="side-menu-link"> 
                                 <i class="bi bi-arrow-right mr-1"></i>
                                 <span>Call Reports</span>
                             </router-link>
                         </li>
-                        <li>
-                            <router-link  to="/five9-call-report-01" class="side-menu-link"> 
-                                <i class="bi bi-arrow-right mr-1"></i>
-                                <span>Call Reports - 01</span>
-                            </router-link>
-                        </li>
                     </ul>
                 </li>
-                <li class="side-menu-item">
+                <!-- <li class="side-menu-item">
                     <router-link  to="/outreach-accounts" class="side-menu-link"> 
                         <i class="bi bi-bag-dash"></i>
                         <span v-show="fullmenu">Accounts</span>
                     </router-link>
-                </li>
+                </li> -->
                 
                 <li class="side-menu-item">
                     <router-link  to="/exports" class="side-menu-link"> 
@@ -141,6 +135,13 @@
                         <span v-show="fullmenu"> Sync Log</span>
                     </router-link>
                 </li>
+                <li>
+                    <router-link  to="/cron-jobs" class="side-menu-link"> 
+                        <i class="bi bi-hourglass-split"></i>
+                        <span v-show="fullmenu"> Cron Jobs</span>
+                    </router-link>
+                </li>
+                
                 <li class="side-menu-item">
                     <router-link  to="/settings" class="side-menu-link"> 
                         <i class="bi bi-gear mr-1"></i>
@@ -200,10 +201,14 @@ export default {
     },
     beforeMount() {
        // this.toggleMenu();
-       if(this.$route.meta.hasOwnProperty('subtitle')) {
-           this.dash = (this.$route.meta.subtitle == 'prospect')?'':this.$route.meta.subtitle
-       }
         this.submenu = (this.$route.meta.parent >= 1)?this.$route.meta.parent:0;
+    },
+    mounted() {
+        if(this.$route.meta.hasOwnProperty('subtitle')) {
+           this.dash = (this.$route.meta.subtitle == 'prospect')?'':this.$route.meta.subtitle
+       } else {
+            this.dash = ''
+       }
     },
     created() {
         window.addEventListener('resize', this.handleResize);

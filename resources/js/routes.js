@@ -1,26 +1,28 @@
 import Dashboard from './components/dashboard/Dashboard.vue';
 import CallDashboard from './components/dashboard/Calls.vue';
+import CallDetailDashboard from './components/dashboard/DashboardCall.vue';
 import EmailDashboard from './components/dashboard/Emails.vue';
+import AgentDashboard from './components/dashboard/Agents.vue';
 import DatasetDashboard from './components/dataset/Dashboard.vue';
 import UDashboard from './components/UDashboard.vue';
 import Settings from './components/Settings.vue';
-import History from './components/History.vue';
-import Export from './components/Export.vue';
-import ExportHistory from './components/ExportHistory.vue';
-import ViewExportHistory from './components/ViewExportHistory.vue';
-import FiveNineCampaigns from './components/FiveNineCampaigns.vue';
-import FiveNineDispositions from './components/FiveNineDispositions.vue';
-import FiveNineAllListData from './components/FiveNineAllListData.vue';
-import FiveNineSkills from './components/FiveNineSkills.vue';
-import FiveNineList from './components/FiveNineList.vue';
-import FiveNineModifyContacts from './components/FiveNineModifyContacts.vue';
-import FiveNineCallReport from './components/FiveNineCallReport.vue';
-import FiveNineCallReportOne from './components/FiveNineCallReportOne.vue';
-import OutreachAccountsDetails from './components/OutreachAccountsDetails.vue';
-import OutreachAccountsProspects from './components/OutreachAccountsProspects.vue';
-import OutreachProspects from './components/OutreachProspects.vue';
+import History from './components/import/History.vue';
+import Export from './components/import/Export.vue';
+import ExportHistory from './components/import/ExportHistory.vue';
+import ViewExportHistory from './components/import/ViewExportHistory.vue';
+import FiveNineCampaigns from './components/fivenine/FiveNineCampaigns.vue';
+import FiveNineDispositions from './components/fivenine/FiveNineDispositions.vue';
+import FiveNineAllListData from './components/fivenine/FiveNineAllListData.vue';
+import FiveNineListContacts from './components/fivenine/ListProspects.vue';
+import FiveNineSkills from './components/fivenine/FiveNineSkills.vue';
+import FiveNineList from './components/fivenine/FiveNineList.vue';
+import FiveNineModifyContacts from './components/fivenine/FiveNineModifyContacts.vue';
+import FiveNineCallReport from './components/fivenine/FiveNineCallReport.vue';
+import OutreachProspects from './components/outreach/OutreachProspects.vue';
 import SyncReport from './components/reports/Sync.vue';
 import SyncReportDetail from './components/reports/SyncDetail.vue';
+import Tasks from './components/tasks/index.vue';
+import ProspectsLocation from './components/ProspectsLocation.vue';
 
 export const routes = [{
         path: '/',
@@ -47,6 +49,24 @@ export const routes = [{
             requiresAuth: true,
             title: 'Dashboard',
             subtitle: 'calls'
+        }
+    },
+    ,
+    {
+        path: '/dashboard/agents',
+        component: AgentDashboard,
+        meta: {
+            requiresAuth: true,
+            title: 'Dashboard',
+            subtitle: 'agents'
+        }
+    },
+    {
+        path: '/dashboard/call-details',
+        component: CallDetailDashboard,
+        meta: {
+            requiresAuth: true,
+            title: 'Dashboard - Call Details',
         }
     },
     {
@@ -107,7 +127,7 @@ export const routes = [{
         }
     },
     {
-        path: '/five9-campaigns',
+        path: '/five9/campaigns',
         component: FiveNineCampaigns,
         meta: {
             requiresAuth: true,
@@ -115,7 +135,7 @@ export const routes = [{
         }
     },
     {
-        path: '/five9-dispositions',
+        path: '/five9/dispositions',
         component: FiveNineDispositions,
         meta: {
             requiresAuth: true,
@@ -123,7 +143,7 @@ export const routes = [{
         }
     },
     {
-        path: '/five9-skills',
+        path: '/five9/skills',
         component: FiveNineSkills,
         meta: {
             requiresAuth: true,
@@ -131,7 +151,7 @@ export const routes = [{
         }
     },
     {
-        path: '/five9-lists',
+        path: '/five9/lists',
         component: FiveNineList,
         meta: {
             requiresAuth: true,
@@ -139,7 +159,15 @@ export const routes = [{
         }
     },
     {
-        path: '/five9-modify-contacts',
+        path: '/five9/lists/prospects/:id',
+        component: FiveNineListContacts,
+        meta: {
+            requiresAuth: true,
+            title: 'Five9 List Based Prospects',
+        }
+    },
+    {
+        path: '/five9/modify-contacts',
         component: FiveNineModifyContacts,
         meta: {
             requiresAuth: true,
@@ -147,7 +175,7 @@ export const routes = [{
         }
     },
     {
-        path: '/five9-modify-contacts/:name',
+        path: '/five9/modify-contacts/:name',
         component: FiveNineModifyContacts,
         meta: {
             requiresAuth: true,
@@ -155,19 +183,11 @@ export const routes = [{
         }
     },
     {
-        path: '/five9-call-report',
+        path: '/five9/call-report',
         component: FiveNineCallReport,
         meta: {
             requiresAuth: true,
             title: 'Five9 Call Report',
-        }
-    },
-    {
-        path: '/five9-call-report-01',
-        component: FiveNineCallReportOne,
-        meta: {
-            requiresAuth: true,
-            title: 'Five9 Call Report - 01',
         }
     },
     {
@@ -187,22 +207,6 @@ export const routes = [{
         }
     },
     {
-        path: '/outreach-accounts-details/:id',
-        component: OutreachAccountsDetails,
-        meta: {
-            requiresAuth: true,
-            title: 'Outreach Account Details',
-        }
-    },
-    {
-        path: '/accounts/:id',
-        component: OutreachAccountsProspects,
-        meta: {
-            requiresAuth: true,
-            title: 'Outreach Accounts Prospects',
-        }
-    },
-    {
         path: '/prospects/:id',
         component: OutreachProspects,
         meta: {
@@ -219,11 +223,27 @@ export const routes = [{
         }
     },
     {
+        path: '/cron-jobs',
+        component: Tasks,
+        meta: {
+            requiresAuth: true,
+            title: 'Cron Jobs',
+        }
+    },
+    {
         path: '/log/sync-log-details',
         component: SyncReportDetail,
         meta: {
             requiresAuth: true,
             title: 'Sync Data Log Details',
+        }
+    },
+    {
+        path: '/prospects-location/:id',
+        component: ProspectsLocation,
+        meta: {
+            requiresAuth: true,
+            title: 'Prospects Index New',
         }
     }
 ];

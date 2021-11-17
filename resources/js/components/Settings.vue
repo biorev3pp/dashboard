@@ -1,6 +1,6 @@
 <template>
     <div>
-        <ul class="nav nav-tabs" id="myTab" role="tablist">
+        <!-- <ul class="nav nav-tabs" id="myTab" role="tablist">
         <li class="nav-item">
             <a class="nav-link active" id="outreach-tab" data-toggle="tab" href="#outreach" role="tab" aria-controls="outreach" aria-selected="true">Outreach</a>
         </li>
@@ -15,7 +15,7 @@
             <div class="tab-pane fade show active" id="outreach" role="tabpanel" aria-labelledby="outreach-tab">...</div>
             <div class="tab-pane fade" id="activecampaign" role="tabpanel" aria-labelledby="activecampaign-tab">...</div>
             <div class="tab-pane fade" id="five9" role="tabpanel" aria-labelledby="five9-tab">...</div>
-        </div>
+        </div> -->
     </div>
 </template>
 <script>

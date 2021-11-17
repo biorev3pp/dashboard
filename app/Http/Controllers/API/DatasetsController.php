@@ -8,10 +8,253 @@ use Illuminate\Http\Request;
 use App\Models\Contacts;
 use App\Models\Stages;
 use App\Models\DatasetGroups;
+use App\Models\FivenineCallLogs;
 
 class DatasetsController extends Controller
 {
     public function getAllData(Request $request){
+        $recordPerPage  = $request->recordPerPage;
+        $search = $request->textSearch;
+        $sortby = $request->sortby;
+        $sort = $request->sort;
+
+        $records = Contacts::select('contacts.id', 'contacts.record_id', 'contacts.first_name', 'contacts.last_name', 'contacts.title', 'contacts.company', 'contacts.mobilePhones', 'contacts.workPhones', 'contacts.homePhones', 'contacts.emails', 'contacts.outreach_touched_at', 'contacts.outreach_created_at', 'contacts.last_agent_dispo_time', 'contacts.last_agent', 'contacts.email_delivered', 'contacts.email_opened', 'contacts.email_clicked', 'contacts.email_replied', 'contacts.email_bounced', 'contacts.mcall_attempts', 'contacts.mcall_received', 'contacts.wcall_attempts', 'contacts.wcall_received', 'contacts.hcall_attempts', 'contacts.hcall_received', 'stages.id as stage', 'stages.name as stage_name', 'stages.css as stage_css', 'contacts.dataset','contacts.outreach_tag')
+            ->leftjoin('stages', 'stages.oid', '=', 'contacts.stage');
+        if($search):
+            $records = $records->when($search, function($query, $search){
+                $query->where(function($q) use ($search){
+                    $q->where('contacts.name', 'like', '%'.$search.'%')->orWhere('contacts.first_name', 'like', '%'.$search.'%')->orWhere('contacts.last_name', 'like', '%'.$search.'%')->orWhere('contacts.emails', 'like', '%'.$search.'%')->orWhere('contacts.company', 'like', '%'.$search.'%')->orWhere('contacts.mnumber', 'like', '%'.$search.'%')->orWhere('contacts.hnumber', 'like', '%'.$search.'%')->orWhere('contacts.wnumber', 'like', '%'.$search.'%');
+                });
+            });
+        endif; 
+
+        if(count($request->input('filterConditionsArray')) > 0):
+            $filterConditions = true;
+            $filterConditionsArray = $request->input('filterConditionsArray');
+            $q = $records;
+            foreach($filterConditionsArray as $value){
+                if( ($value['type'] == 'textbox') || ($value['type'] == 'dropdown') ):
+                    if($value['formula'] == 'is'):
+                        if(strpos($value["textCondition"],  ",")):
+                            $ids = explode(",", $value["textCondition"]);
+                            $q->whereIn($value["condition"], $ids);
+                        else:
+                            if(in_array($value["condition"], ["mnumber", "wnumber", "hnumber"])){
+                                $mobile = $this->__NumberFormater($value["textCondition"]);
+                                if(strlen($mobile) >= 10){
+                                    $q->where($value["condition"], 'like', "%".$mobile."%");
+                                }else{
+                                    $q->where($value["condition"], 'like', $mobile);
+                                }
+                            }else{
+                                //dd($value["textConditionLabel"]);
+                                if($value["textCondition"] == "None"){
+                                    $q->whereNull($value["condition"]);
+                                }else{
+                                    $q->where($value["condition"], '=', $value["textCondition"]);
+                                }
+                            }
+                        endif;
+                    elseif($value['formula'] == 'is not'):
+                        if(strpos($value["textCondition"],  ",")):
+                            $ids = explode(",", $value["textCondition"]);
+                            $q->whereNotIn($value["condition"], $ids);
+                            $q->orWhereNull($value["condition"]);
+                        else:
+                            $q->where($value["condition"], 'not like', $value["textCondition"]);
+                        endif;
+                    elseif($value['formula'] == 'starts with'):
+                        if(strpos($value["textCondition"],  ",")):
+                            $ids = explode(",", $value["textCondition"]);
+                            foreach($ids as $IdValue):
+                                $q->orWhere($value["condition"], 'like', $IdValue);
+                            endforeach;
+                        else:
+                            $q->where($value["condition"], 'like', $value["textCondition"].'%');
+                        endif;
+                    elseif($value['formula'] == 'is empty'):
+                        if($value["condition"] == 'stage'){
+                            $q->whereNull($value["condition"]);
+                        }else{
+                            $q->where(function($inq) use($value) {
+                                $inq->where($value["condition"], 0);
+                                $inq->where($value["condition"], '=', '');
+                                $inq->orWhere($value["condition"], null);
+                            });   
+                        }                
+                    elseif($value['formula'] == 'is not empty'):
+                        $q->whereNotNull($value["condition"]);
+                        $q->where($value["condition"], '!=', '');
+                    elseif($value['formula'] == 'contains'):
+                        $q->where($value["condition"], 'like', '%'.$value["textCondition"].'%');
+                    elseif($value['formula'] == 'not contains'):
+                        $q->where($value["condition"], 'not like', '%'.$value["textCondition"].'%');
+                    elseif($value['formula'] == 'ends with'):
+                        if(strpos($value["textCondition"],  ",")):
+                            $ids = explode(",", $value["textCondition"]);
+                            foreach($ids as $IdValue):
+                                $q->orWhere($value["condition"], 'like', $IdValue);
+                            endforeach;
+                        else:
+                            $q->where($value["condition"], 'like', '%'.$value["textCondition"]);
+                        endif;
+                    endif;
+                elseif($value['type'] == 'calendar'):
+                    $date = explode('--', $value["textCondition"]);
+                    if($date[0] == $date[1]):
+                        $s = substr($date[0], 0, 10);
+                        $q->whereDate($value["condition"], $s);
+                    else:
+                        $s = substr($date[0], 0, 10);
+                        $e = substr($date[1], 0, 10);
+                        $q->whereBetween($value["condition"], [$s, $e]);
+                    endif;
+                elseif($value['type'] == 'email'):
+                    if($value['formula'] == 'all'):
+                        foreach (explode(',', $value['textCondition']) as $tcem) {
+                            if(trim($tcem) == 'delivered'): $q->where('email_delivered', '>=', 1); endif;
+                            if(trim($tcem) == 'clicked'): $q->where('email_clicked', '>=', 1); endif;
+                            if(trim($tcem) == 'opened'): $q->where('email_opened', '>=', 1); endif;
+                            if(trim($tcem) == 'bounced'): $q->where('email_bounced', '>=', 1); endif;
+                            if(trim($tcem) == 'replied'): $q->where('email_replied', '>=', 1); endif;
+                        }
+                    elseif($value['formula'] == 'any'):
+                        $q->where(function($inq) use ($value) { // $term is the search term on the query string
+                            $txt = explode(',', $value['textCondition']);
+                            foreach ($txt as $tk => $tcem) {
+                                if(count($txt) == 1 || $tk == 0):
+                                    if(trim($tcem) == 'delivered'): $inq->where('email_delivered', '>=', 1); endif;
+                                    if(trim($tcem) == 'clicked'): $inq->where('email_clicked', '>=', 1); endif;
+                                    if(trim($tcem) == 'opened'): $inq->where('email_opened', '>=', 1); endif;
+                                    if(trim($tcem) == 'bounced'): $inq->where('email_bounced', '>=', 1); endif;
+                                    if(trim($tcem) == 'replied'): $inq->where('email_replied', '>=', 1); endif;
+                                else:
+                                    if(trim($tcem) == 'delivered'): $inq->orWhere('email_delivered', '>=', 1); endif;
+                                    if(trim($tcem) == 'clicked'): $inq->orWhere('email_clicked', '>=', 1); endif;
+                                    if(trim($tcem) == 'opened'): $inq->orWhere('email_opened', '>=', 1); endif;
+                                    if(trim($tcem) == 'bounced'): $inq->orWhere('email_bounced', '>=', 1); endif;
+                                    if(trim($tcem) == 'replied'): $inq->orWhere('email_replied', '>=', 1); endif;
+                                endif;
+                            }
+                        });
+                    elseif($value['formula'] == 'none'):
+                        $q->where(function($inq) {
+                            $inq->where('email_delivered', 0);
+                            $inq->orWhere('email_delivered', null);
+                        });
+                        $q->where(function($inq) {
+                            $inq->where('email_bounced', 0);
+                            $inq->orWhere('email_bounced', null);
+                        });
+                    endif;
+                elseif($value['type'] == 'phone' && $value['condition'] == 'dsMobilePhones'):
+                    if($value['formula'] == 'all'):
+                        foreach (explode(',', $value['textCondition']) as $tcem) {
+                            if(trim($tcem) == 'dialed'): $q->where('mcall_attempts', '>=', 1); endif;
+                            if(trim($tcem) == 'received'): $q->where('mcall_received', '>=', 1); endif;
+                        }
+                    elseif($value['formula'] == 'any'):
+                        $q->where(function($inq) use ($value) { // $term is the search term on the query string
+                            $txt = explode(',', $value['textCondition']);
+                            foreach ($txt as $tk => $tcem) {
+                                if(count($txt) == 1 || $tk == 0):
+                                    if(trim($tcem) == 'dialed'): $inq->where('mcall_attempts', '>=', 1); endif;
+                                    if(trim($tcem) == 'received'): $inq->where('mcall_received', '>=', 1); endif;
+                                else:
+                                    if(trim($tcem) == 'dialed'): $inq->orWhere('mcall_attempts', '>=', 1); endif;
+                                    if(trim($tcem) == 'received'): $inq->orWhere('mcall_received', '>=', 1); endif;
+                                endif;
+                            }
+                        });
+                    elseif($value['formula'] == 'none'):
+                        $q->where(function($inq) {
+                            $inq->where('mcall_attempts', 0);
+                            $inq->orWhere('mcall_attempts', null);
+                        });
+                        $q->where(function($inq) {
+                            $inq->where('mcall_received', 0);
+                            $inq->orWhere('mcall_received', null);
+                        });
+                    endif;
+                elseif($value['type'] == 'phone' && $value['condition'] == 'dsHomePhones'):
+                    if($value['formula'] == 'all'):
+                        foreach (explode(',', $value['textCondition']) as $tcem) {
+                            if(trim($tcem) == 'dialed'): $q->where('hcall_attempts', '>=', 1); endif;
+                            if(trim($tcem) == 'received'): $q->where('hcall_received', '>=', 1); endif;
+                        }
+                    elseif($value['formula'] == 'any'):
+                        $q->where(function($inq) use ($value) { // $term is the search term on the query string
+                            $txt = explode(',', $value['textCondition']);
+                            foreach ($txt as $tk => $tcem) {
+                                if(count($txt) == 1 || $tk == 0):
+                                    if(trim($tcem) == 'dialed'): $inq->where('hcall_attempts', '>=', 1); endif;
+                                    if(trim($tcem) == 'received'): $inq->where('hcall_received', '>=', 1); endif;
+                                else:
+                                    if(trim($tcem) == 'dialed'): $inq->orWhere('hcall_attempts', '>=', 1); endif;
+                                    if(trim($tcem) == 'received'): $inq->orWhere('hcall_received', '>=', 1); endif;
+                                endif;
+                            }
+                        });
+                    elseif($value['formula'] == 'none'):
+                        $q->where(function($inq) {
+                            $inq->where('hcall_attempts', 0);
+                            $inq->orWhere('hcall_attempts', null);
+                        });
+                        $q->where(function($inq) {
+                            $inq->where('hcall_received', 0);
+                            $inq->orWhere('hcall_received', null);
+                        });
+                    endif;
+                elseif($value['type'] == 'phone' && $value['condition'] == 'dsWorkPhones'):
+                    if($value['formula'] == 'all'):
+                        foreach (explode(',', $value['textCondition']) as $tcem) {
+                            if(trim($tcem) == 'dialed'): $q->where('wcall_attempts', '>=', 1); endif;
+                            if(trim($tcem) == 'received'): $q->where('wcall_received', '>=', 1); endif;
+                        }
+                    elseif($value['formula'] == 'any'):
+                        $q->where(function($inq) use ($value) { // $term is the search term on the query string
+                            $txt = explode(',', $value['textCondition']);
+                            foreach ($txt as $tk => $tcem) {
+                                if(count($txt) == 1 || $tk == 0):
+                                    if(trim($tcem) == 'dialed'): $inq->where('wcall_attempts', '>=', 1); endif;
+                                    if(trim($tcem) == 'received'): $inq->where('wcall_received', '>=', 1); endif;
+                                else:
+                                    if(trim($tcem) == 'dialed'): $inq->orWhere('wcall_attempts', '>=', 1); endif;
+                                    if(trim($tcem) == 'received'): $inq->orWhere('wcall_received', '>=', 1); endif;
+                                endif;
+                            }
+                        });
+                    elseif($value['formula'] == 'none'):
+                        $q->where(function($inq) {
+                            $inq->where('wcall_attempts', 0);
+                            $inq->orWhere('wcall_attempts', null);
+                        });
+                        $q->where(function($inq) {
+                            $inq->where('wcall_received', 0);
+                            $inq->orWhere('wcall_received', null);
+                        });
+                    endif;
+                endif;
+            }
+            $records = $q;
+        endif;
+ 
+        /* $records->withCount(['totalemail', 'totalopen', 'totalclick', 'totalreply', 'totalrcall', 'totalwrcall', 'totalbounced'])
+                ->with(['totalcall', 'totalwcall', 'calllogs'])
+                ->join('stages', 'stages.oid', '=', 'contacts.stage')
+                ->orderBy('contacts.outreach_touched_at', 'desc')
+                ->paginate($recordPerPage);
+        return $records; */
+        
+        if($request->input("sortBy") == 'asc'):
+            $records = $records->orderBy( $request->input('sortType'))->paginate($recordPerPage); 
+        else:
+            $records = $records->orderByDesc($request->input('sortType'))->paginate($recordPerPage);    
+        endif;
+        //$records = $records->orderBy('contacts.outreach_touched_at', 'desc')->paginate($recordPerPage);
+        return $records;
+    }
+    public function getFullData(Request $request){
         $recordPerPage  = $request->recordPerPage;
         $search = $request->textSearch;
         $sortby = $request->sortby;
@@ -232,21 +475,9 @@ class DatasetsController extends Controller
             }
             $records = $q;
         endif;
- 
-        /* $records->withCount(['totalemail', 'totalopen', 'totalclick', 'totalreply', 'totalrcall', 'totalwrcall', 'totalbounced'])
-                ->with(['totalcall', 'totalwcall', 'calllogs'])
-                ->join('stages', 'stages.oid', '=', 'contacts.stage')
-                ->orderBy('contacts.outreach_touched_at', 'desc')
-                ->paginate($recordPerPage);
-        return $records; */
         
-        if($request->input("sortBy") == 'asc'):
-            $records = $records->orderBy( $request->input('sortType'))->paginate($recordPerPage); 
-        else:
-            $records = $records->orderByDesc($request->input('sortType'))->paginate($recordPerPage);    
-        endif;
-        //$records = $records->orderBy('contacts.outreach_touched_at', 'desc')->paginate($recordPerPage);
-        return $records;
+        $records = $records->orderBy( $request->input('sortType'))->get();
+        return $records->pluck("id");
     }
     public function getGraphSearchCriteria(){
         return DB::table('graph_search_criterias')->orderBy('title')->get();
@@ -284,6 +515,26 @@ class DatasetsController extends Controller
                 }
             }
         }
+        elseif($request->input("jump_status") == 1) 
+        {
+            $hkey = [];
+
+            if(count($request->input("historyKey")) > 0) {
+                $hkey = $request->input("historyKey");
+            }else {
+                $hkey[] = $graphFilter;
+            }
+            $gNext = DB::table("graph_search_criterias")->where("value",  $graphFilter)->orderBy('order_no', 'asc')->first();
+            $graphFilter = $gNext->value;
+
+            $historyKey = $hkey;
+            if(count($historyKey) > 0){
+                foreach($historyKey as $value){
+                    $g = DB::table("graph_search_criterias")->where("value", "=", $value)->orderBy('order_no', 'asc')->first();
+                    $historyValue[] = $g->title;
+                }
+            }
+        }
         elseif($request->input("back_status") == 1) 
         {
             $old = $request->input("historyKey");
@@ -305,52 +556,71 @@ class DatasetsController extends Controller
             $historyValue = $request->input('historyValue');
         }
         $records = Contacts::select(DB::raw("count(contacts.$graphFilter) as count, contacts.$graphFilter"))->groupBy("contacts.$graphFilter");
-
+        $recordsNull = Contacts::select('contacts.*');
         if(count($request->input('filterConditionsArray')) > 0):
             $filterConditions = true;
             $filterConditionsArray = $request->input('filterConditionsArray');
             $q = $records;
+            $qNull = $recordsNull;
             foreach($filterConditionsArray as $value){
                 //$historyKey[] = $value["condition"];
                 if( ($value['type'] == 'textbox') || ($value['type'] == 'dropdown') ):
                     if($value['formula'] == 'is'):
-                        if(strpos($value["textCondition"],  ",")):
+                        if(strpos($value["textCondition"], "None") !== false):
+                            $q->whereNull($value["condition"]);
+                            $qNull->whereNull($value["condition"]);
+                        elseif(strpos($value["textCondition"],  ",")):
                             $ids = explode(",", $value["textCondition"]);
                             $q->whereIn($value["condition"], $ids);
+                            $qNull->whereIn($value["condition"], $ids);
                         else:
                             if(in_array($value["condition"], ["mnumber", "wnumber", "hnumber"])){
                                 $mobile = $this->__NumberFormater($value["textCondition"]);
                                 if(strlen($mobile) >= 10){
                                     $q->where($value["condition"], 'like', "%".$mobile."%");
+                                    $qNull->where($value["condition"], 'like', "%".$mobile."%");
                                 }else{
                                     $q->where($value["condition"], 'like', $mobile);
+                                    $qNull->where($value["condition"], 'like', $mobile);
                                 }
                             }else{
                                 $q->where($value["condition"], '=', $value["textCondition"]);
+                                $qNull->where($value["condition"], '=', $value["textCondition"]);
                             }
                         endif;
                     elseif($value['formula'] == 'is not'):
                         if(strpos($value["textCondition"],  ",")):
                             $ids = explode(",", $value["textCondition"]);
                             $q->whereNotIn($value["condition"], $ids);
+                            $qNull->whereNotIn($value["condition"], $ids);
                             $q->orWhereNull($value["condition"]);
+                            $qNull->orWhereNull($value["condition"]);
                         else:
                             $q->where($value["condition"], 'not like', $value["textCondition"]);
+                            $qNull->where($value["condition"], 'not like', $value["textCondition"]);
                         endif;
                     elseif($value['formula'] == 'starts with'):
                         if(strpos($value["textCondition"],  ",")):
                             $ids = explode(",", $value["textCondition"]);
                             foreach($ids as $IdValue):
                                 $q->orWhere($value["condition"], 'like', $IdValue);
+                                $qNull->orWhere($value["condition"], 'like', $IdValue);
                             endforeach;
                         else:
                             $q->where($value["condition"], 'like', $value["textCondition"].'%');
+                            $qNull->where($value["condition"], 'like', $value["textCondition"].'%');
                         endif;
                     elseif($value['formula'] == 'is empty'):
                         if($value["condition"] == 'stage'){
                             $q->whereNull($value["condition"]);
+                            $qNull->whereNull($value["condition"]);
                         }else{
                             $q->where(function($inq) use($value) {
+                                $inq->where($value["condition"], 0);
+                                $inq->where($value["condition"], '=', '');
+                                $inq->orWhere($value["condition"], null);
+                            }); 
+                            $qNull->where(function($inq) use($value) {
                                 $inq->where($value["condition"], 0);
                                 $inq->where($value["condition"], '=', '');
                                 $inq->orWhere($value["condition"], null);
@@ -358,19 +628,25 @@ class DatasetsController extends Controller
                         }                
                     elseif($value['formula'] == 'is not empty'):
                         $q->whereNotNull($value["condition"]);
+                        $qNull->whereNotNull($value["condition"]);
                         $q->where($value["condition"], '!=', '');
+                        $qNull->where($value["condition"], '!=', '');
                     elseif($value['formula'] == 'contains'):
                         $q->where($value["condition"], 'like', '%'.$value["textCondition"].'%');
+                        $qNull->where($value["condition"], 'like', '%'.$value["textCondition"].'%');
                     elseif($value['formula'] == 'not contains'):
                         $q->where($value["condition"], 'not like', '%'.$value["textCondition"].'%');
+                        $qNull->where($value["condition"], 'not like', '%'.$value["textCondition"].'%');
                     elseif($value['formula'] == 'ends with'):
                         if(strpos($value["textCondition"],  ",")):
                             $ids = explode(",", $value["textCondition"]);
                             foreach($ids as $IdValue):
                                 $q->orWhere($value["condition"], 'like', $IdValue);
+                                $qNull->orWhere($value["condition"], 'like', $IdValue);
                             endforeach;
                         else:
                             $q->where($value["condition"], 'like', '%'.$value["textCondition"]);
+                            $qNull->where($value["condition"], 'like', '%'.$value["textCondition"]);
                         endif;
                     endif;
                 elseif($value['type'] == 'calendar'):
@@ -378,22 +654,57 @@ class DatasetsController extends Controller
                     if($date[0] == $date[1]):
                         $s = substr($date[0], 0, 10);
                         $q->whereDate($value["condition"], $s);
+                        $qNull->whereDate($value["condition"], $s);
                     else:
                         $s = substr($date[0], 0, 10);
                         $e = substr($date[1], 0, 10);
                         $q->whereBetween($value["condition"], [$s, $e]);
+                        $qNull->whereBetween($value["condition"], [$s, $e]);
                     endif;
                 elseif($value['type'] == 'email'):
                     if($value['formula'] == 'all'):
                         foreach (explode(',', $value['textCondition']) as $tcem) {
-                            if(trim($tcem) == 'delivered'): $q->where('email_delivered', '>=', 1); endif;
-                            if(trim($tcem) == 'clicked'): $q->where('email_clicked', '>=', 1); endif;
-                            if(trim($tcem) == 'opened'): $q->where('email_opened', '>=', 1); endif;
-                            if(trim($tcem) == 'bounced'): $q->where('email_bounced', '>=', 1); endif;
-                            if(trim($tcem) == 'replied'): $q->where('email_replied', '>=', 1); endif;
+                            if(trim($tcem) == 'delivered'): 
+                                $q->where('email_delivered', '>=', 1); 
+                                $qNull->where('email_delivered', '>=', 1); 
+                            endif;
+                            if(trim($tcem) == 'clicked'): 
+                                $q->where('email_clicked', '>=', 1); 
+                                $qNull->where('email_clicked', '>=', 1); 
+                            endif;
+                            if(trim($tcem) == 'opened'): 
+                                $q->where('email_opened', '>=', 1); 
+                                $qNull->where('email_opened', '>=', 1); 
+                            endif;
+                            if(trim($tcem) == 'bounced'): 
+                                $q->where('email_bounced', '>=', 1); 
+                                $qNull->where('email_bounced', '>=', 1); 
+                            endif;
+                            if(trim($tcem) == 'replied'): 
+                                $q->where('email_replied', '>=', 1); 
+                                $qNull->where('email_replied', '>=', 1); 
+                            endif;
                         }
                     elseif($value['formula'] == 'any'):
                         $q->where(function($inq) use ($value) { // $term is the search term on the query string
+                            $txt = explode(',', $value['textCondition']);
+                            foreach ($txt as $tk => $tcem) {
+                                if(count($txt) == 1 || $tk == 0):
+                                    if(trim($tcem) == 'delivered'): $inq->where('email_delivered', '>=', 1); endif;
+                                    if(trim($tcem) == 'clicked'): $inq->where('email_clicked', '>=', 1); endif;
+                                    if(trim($tcem) == 'opened'): $inq->where('email_opened', '>=', 1); endif;
+                                    if(trim($tcem) == 'bounced'): $inq->where('email_bounced', '>=', 1); endif;
+                                    if(trim($tcem) == 'replied'): $inq->where('email_replied', '>=', 1); endif;
+                                else:
+                                    if(trim($tcem) == 'delivered'): $inq->orWhere('email_delivered', '>=', 1); endif;
+                                    if(trim($tcem) == 'clicked'): $inq->orWhere('email_clicked', '>=', 1); endif;
+                                    if(trim($tcem) == 'opened'): $inq->orWhere('email_opened', '>=', 1); endif;
+                                    if(trim($tcem) == 'bounced'): $inq->orWhere('email_bounced', '>=', 1); endif;
+                                    if(trim($tcem) == 'replied'): $inq->orWhere('email_replied', '>=', 1); endif;
+                                endif;
+                            }
+                        });
+                        $qNull->where(function($inq) use ($value) { // $term is the search term on the query string
                             $txt = explode(',', $value['textCondition']);
                             foreach ($txt as $tk => $tcem) {
                                 if(count($txt) == 1 || $tk == 0):
@@ -416,7 +727,15 @@ class DatasetsController extends Controller
                             $inq->where('email_delivered', 0);
                             $inq->orWhere('email_delivered', null);
                         });
+                        $qNull->where(function($inq) {
+                            $inq->where('email_delivered', 0);
+                            $inq->orWhere('email_delivered', null);
+                        });
                         $q->where(function($inq) {
+                            $inq->where('email_bounced', 0);
+                            $inq->orWhere('email_bounced', null);
+                        });
+                        $qNull->where(function($inq) {
                             $inq->where('email_bounced', 0);
                             $inq->orWhere('email_bounced', null);
                         });
@@ -424,11 +743,29 @@ class DatasetsController extends Controller
                 elseif($value['type'] == 'phone' && $value['condition'] == 'dsMobilePhones'):
                     if($value['formula'] == 'all'):
                         foreach (explode(',', $value['textCondition']) as $tcem) {
-                            if(trim($tcem) == 'dialed'): $q->where('mcall_attempts', '>=', 1); endif;
-                            if(trim($tcem) == 'received'): $q->where('mcall_received', '>=', 1); endif;
+                            if(trim($tcem) == 'dialed'): 
+                                $q->where('mcall_attempts', '>=', 1); 
+                                $qNull->where('mcall_attempts', '>=', 1); 
+                            endif;
+                            if(trim($tcem) == 'received'): 
+                                $q->where('mcall_received', '>=', 1); 
+                                $qNull->where('mcall_received', '>=', 1); 
+                            endif;
                         }
                     elseif($value['formula'] == 'any'):
                         $q->where(function($inq) use ($value) { // $term is the search term on the query string
+                            $txt = explode(',', $value['textCondition']);
+                            foreach ($txt as $tk => $tcem) {
+                                if(count($txt) == 1 || $tk == 0):
+                                    if(trim($tcem) == 'dialed'): $inq->where('mcall_attempts', '>=', 1); endif;
+                                    if(trim($tcem) == 'received'): $inq->where('mcall_received', '>=', 1); endif;
+                                else:
+                                    if(trim($tcem) == 'dialed'): $inq->orWhere('mcall_attempts', '>=', 1); endif;
+                                    if(trim($tcem) == 'received'): $inq->orWhere('mcall_received', '>=', 1); endif;
+                                endif;
+                            }
+                        });
+                        $qNull->where(function($inq) use ($value) { // $term is the search term on the query string
                             $txt = explode(',', $value['textCondition']);
                             foreach ($txt as $tk => $tcem) {
                                 if(count($txt) == 1 || $tk == 0):
@@ -445,7 +782,15 @@ class DatasetsController extends Controller
                             $inq->where('mcall_attempts', 0);
                             $inq->orWhere('mcall_attempts', null);
                         });
+                        $qNull->where(function($inq) {
+                            $inq->where('mcall_attempts', 0);
+                            $inq->orWhere('mcall_attempts', null);
+                        });
                         $q->where(function($inq) {
+                            $inq->where('mcall_received', 0);
+                            $inq->orWhere('mcall_received', null);
+                        });
+                        $qNull->where(function($inq) {
                             $inq->where('mcall_received', 0);
                             $inq->orWhere('mcall_received', null);
                         });
@@ -453,11 +798,29 @@ class DatasetsController extends Controller
                 elseif($value['type'] == 'phone' && $value['condition'] == 'dsHomePhones'):
                     if($value['formula'] == 'all'):
                         foreach (explode(',', $value['textCondition']) as $tcem) {
-                            if(trim($tcem) == 'dialed'): $q->where('hcall_attempts', '>=', 1); endif;
-                            if(trim($tcem) == 'received'): $q->where('hcall_received', '>=', 1); endif;
+                            if(trim($tcem) == 'dialed'): 
+                                $q->where('hcall_attempts', '>=', 1); 
+                                $qNull->where('hcall_attempts', '>=', 1); 
+                            endif;
+                            if(trim($tcem) == 'received'): 
+                                $q->where('hcall_received', '>=', 1); 
+                                $qNull->where('hcall_received', '>=', 1); 
+                            endif;
                         }
                     elseif($value['formula'] == 'any'):
                         $q->where(function($inq) use ($value) { // $term is the search term on the query string
+                            $txt = explode(',', $value['textCondition']);
+                            foreach ($txt as $tk => $tcem) {
+                                if(count($txt) == 1 || $tk == 0):
+                                    if(trim($tcem) == 'dialed'): $inq->where('hcall_attempts', '>=', 1); endif;
+                                    if(trim($tcem) == 'received'): $inq->where('hcall_received', '>=', 1); endif;
+                                else:
+                                    if(trim($tcem) == 'dialed'): $inq->orWhere('hcall_attempts', '>=', 1); endif;
+                                    if(trim($tcem) == 'received'): $inq->orWhere('hcall_received', '>=', 1); endif;
+                                endif;
+                            }
+                        });
+                        $qNull->where(function($inq) use ($value) { // $term is the search term on the query string
                             $txt = explode(',', $value['textCondition']);
                             foreach ($txt as $tk => $tcem) {
                                 if(count($txt) == 1 || $tk == 0):
@@ -474,7 +837,15 @@ class DatasetsController extends Controller
                             $inq->where('hcall_attempts', 0);
                             $inq->orWhere('hcall_attempts', null);
                         });
+                        $qNull->where(function($inq) {
+                            $inq->where('hcall_attempts', 0);
+                            $inq->orWhere('hcall_attempts', null);
+                        });
                         $q->where(function($inq) {
+                            $inq->where('hcall_received', 0);
+                            $inq->orWhere('hcall_received', null);
+                        });
+                        $qNull->where(function($inq) {
                             $inq->where('hcall_received', 0);
                             $inq->orWhere('hcall_received', null);
                         });
@@ -482,11 +853,29 @@ class DatasetsController extends Controller
                 elseif($value['type'] == 'phone' && $value['condition'] == 'dsWorkPhones'):
                     if($value['formula'] == 'all'):
                         foreach (explode(',', $value['textCondition']) as $tcem) {
-                            if(trim($tcem) == 'dialed'): $q->where('wcall_attempts', '>=', 1); endif;
-                            if(trim($tcem) == 'received'): $q->where('wcall_received', '>=', 1); endif;
+                            if(trim($tcem) == 'dialed'): 
+                                $q->where('wcall_attempts', '>=', 1); 
+                                $qNull->where('wcall_attempts', '>=', 1); 
+                            endif;
+                            if(trim($tcem) == 'received'): 
+                                $q->where('wcall_received', '>=', 1); 
+                                $qNull->where('wcall_received', '>=', 1); 
+                            endif;
                         }
                     elseif($value['formula'] == 'any'):
                         $q->where(function($inq) use ($value) { // $term is the search term on the query string
+                            $txt = explode(',', $value['textCondition']);
+                            foreach ($txt as $tk => $tcem) {
+                                if(count($txt) == 1 || $tk == 0):
+                                    if(trim($tcem) == 'dialed'): $inq->where('wcall_attempts', '>=', 1); endif;
+                                    if(trim($tcem) == 'received'): $inq->where('wcall_received', '>=', 1); endif;
+                                else:
+                                    if(trim($tcem) == 'dialed'): $inq->orWhere('wcall_attempts', '>=', 1); endif;
+                                    if(trim($tcem) == 'received'): $inq->orWhere('wcall_received', '>=', 1); endif;
+                                endif;
+                            }
+                        });
+                        $qNull->where(function($inq) use ($value) { // $term is the search term on the query string
                             $txt = explode(',', $value['textCondition']);
                             foreach ($txt as $tk => $tcem) {
                                 if(count($txt) == 1 || $tk == 0):
@@ -503,7 +892,15 @@ class DatasetsController extends Controller
                             $inq->where('wcall_attempts', 0);
                             $inq->orWhere('wcall_attempts', null);
                         });
+                        $qNull->where(function($inq) {
+                            $inq->where('wcall_attempts', 0);
+                            $inq->orWhere('wcall_attempts', null);
+                        });
                         $q->where(function($inq) {
+                            $inq->where('wcall_received', 0);
+                            $inq->orWhere('wcall_received', null);
+                        });
+                        $qNull->where(function($inq) {
                             $inq->where('wcall_received', 0);
                             $inq->orWhere('wcall_received', null);
                         });
@@ -511,11 +908,12 @@ class DatasetsController extends Controller
                 endif;
             }
             $records = $q;
+            $recordsNull = $qNull;
         endif;
         
         $totalContacts = 0;
         $records = $records->get();
-
+        $recordsNull = $recordsNull->whereNull("contacts.$graphFilter")->count();        
         foreach($records as $value) {
             $totalContacts += $value["count"];
         }
@@ -526,6 +924,7 @@ class DatasetsController extends Controller
             $allValues = [];
         }
         else {
+            $totalContacts += $recordsNull;
             $stageRecords = Stages::select("oid", "name")->get();
             $stageList = [];
             foreach($stageRecords as $value){
@@ -549,7 +948,7 @@ class DatasetsController extends Controller
                     {
                         $paiDataS[] = $value["count"];
                         if($value[$graphFilter] == "0"){
-                            $maplabelsS[] = number_format(($value["count"]*100)/$totalContacts, 1, '.', '')."% : Empty";
+                            $maplabelsS[] = number_format(($value["count"]*100)/$totalContacts, 1, '.', '')."% : None";
                         }else{
                             $maplabelsS[] = number_format(($value["count"]*100)/$totalContacts, 1, '.', '')."% : ".substr($value[$graphFilter], 0, 50);
                         }
@@ -564,9 +963,18 @@ class DatasetsController extends Controller
             }
 
         }
-        
+        if($recordsNull > 0 && $totalContacts > 0){
+            $paiDataS[] = $recordsNull;
+            $maplabelsS[] = number_format(($recordsNull*100)/$totalContacts, 1, '.', '')."% : None";
+            $allValues[] = [
+                "count" => $recordsNull,
+                "field" => $graphFilter,
+                "value" => "None",
+                "percentage" => number_format(($recordsNull*100)/$totalContacts, 1, '.', '')."%"
+            ];
+        }
         $graphFilterItems = DB::table("graph_search_criterias")->whereNotIn('value', array_merge($historyKey, [$graphFilter]))->orderBy('order_no', 'asc')->get();
-        $graphFilter = DB::table("graph_search_criterias")->where("value", $graphFilter)->first();
+        $graphFilter = DB::table("graph_search_criterias")->leftJoin("search_criterias", "search_criterias.id", "=", "graph_search_criterias.search_criteria_id")->where("value", $graphFilter)->first();
         
         return [
             "paiDataS" => $paiDataS,
@@ -576,7 +984,7 @@ class DatasetsController extends Controller
             "graphFilter" => $graphFilter,
             "graphFilterItems" => $graphFilterItems,
             "historyKey" => $historyKey,
-            "historyValue" => $historyValue
+            "historyValue" => $historyValue,
         ];
     }
     public function getGraphSearchCriteriaRecord(Request $request){
@@ -730,5 +1138,78 @@ class DatasetsController extends Controller
             return 1;
         }
     }
-
+    public function getRecordDispositions($record_id = null){
+        $record_id = intval($record_id);
+        $records = FivenineCallLogs::select("dnis")->where("record_id", "=", $record_id)->distinct()->get();
+        $data = [];
+        foreach($records as $value){            
+            $dispositions = [];
+            $recordValue = FivenineCallLogs::where("record_id", "=", $record_id)->where("dnis", "=", $value["dnis"])->orderByDesc("n_timestamp")->get();
+            foreach($recordValue as $CallValue){
+                $dispositions[] = $CallValue->disposition;
+            }
+            $numberType = FivenineCallLogs::where("record_id", "=", $record_id)->where("dnis", "=", $value["dnis"])->first();
+            $data[]  = [
+                "dispositions" => $dispositions,
+                "number_type" => $numberType["number_type"],
+                "number" => $numberType["dnis"]
+            ];
+        } 
+        return $data;
+    }
+    private function __NumberFormater1($var = null)
+    {
+        if(strpos($var, ",") > -1){
+            $mob = explode(",", $var);
+            $var = $mob[0];
+        }
+        $string = str_replace(' ', '', $var); // Replaces all spaces.
+        $string = str_replace('-', '', $string); // Replaces all hyphens.
+        $string = str_replace('.', '', $string); // Replaces all hyphens.
+        $string = str_replace('(', '', $string); // Replaces all hyphens.
+        $string = str_replace(')', '', $string); // Replaces all hyphens.
+        $string = preg_replace('/[^0-9\-]/', '', $string); // Removes special chars
+        $string = substr($string, -10);
+        return $string;
+    }
+    public function getRecordContainerInfo(Request $request){
+        $ids = $request->input("exports");
+        $results = [];
+        foreach($ids as $id){
+            $record = Contacts::where("id", "=", $id)->first();
+            if($record->mobilePhones != '' || $record->workPhones !== '' || $record->homePhones != ''){
+                $mobilePhones = $record->mobilePhones;
+                $workPhones = $record->workPhones;
+                $homePhones = $record->homePhones;
+                if($mobilePhones == ''){
+                    if($workPhones != '' && $homePhones != ''){
+                        $mobilePhones = $workPhones;
+                        $workPhones = $homePhones;
+                        $homePhones = null;
+                    }elseif($workPhones != '' && $homePhones == ''){
+                        $mobilePhones = $workPhones;
+                        $workPhones = null;
+                    }elseif($workPhones == '' && $homePhones != ''){
+                        $mobilePhones = $homePhones;
+                        $homePhones = null;
+                    }
+                }else{
+                    if($workPhones == '' && $homePhones != ''){
+                        $workPhones = $homePhones;
+                        $homePhones = null;
+                    }
+                }
+                $results[] = [
+                    "first_name" => ucfirst($record->first_name),
+                    "last_name" => ucfirst($record->last_name),
+                    "number1" => $this->__NumberFormater1($mobilePhones),
+                    "number2" => $this->__NumberFormater1($workPhones),
+                    "number3" => $this->__NumberFormater1($homePhones),
+                    "company" => $record->company,
+                    "record_id" => $record->record_id,
+                ]; 
+            }
+        }
+        return $results;
+    }
 }

@@ -8,6 +8,7 @@ use App\Models\Settings;
 use App\Models\Stages;
 use App\Models\Contacts;
 use App\Models\DatasetGroups;
+use App\Models\GraphSearchFilters;
 
 class SettingsController extends Controller
 {
@@ -59,6 +60,17 @@ class SettingsController extends Controller
         }
         return $allStages;
     }
+
+    public function AllStagesData()
+    {
+        $stages = Stages::get();
+        $allStages = [];
+        foreach ($stages as $key => $stage) {
+            $allStages[] = ['oid' => $stage->oid,
+                            'stage' => $stage->name];
+        }
+        return $allStages;
+    }
     
     public function AllDatasets()
     {
@@ -67,5 +79,19 @@ class SettingsController extends Controller
 
     public function AllFilterDatasets(){
         return ['results' => DB::table('dataset_groups')->get()];
+    }
+
+    public function updateGraphFilterOrder(Request $request)
+    {
+        foreach ($request->glist as $key => $value) {
+            $record = GraphSearchFilters::find($value['id']);
+            $record->update(['order_no' => $value['order_no']]);
+        }
+        return ['status' => 'successfully updated'];
+    }
+
+    public function getGraphFilters()
+    {
+        return GraphSearchFilters::orderBy('order_no', 'asc')->get();
     }
 }

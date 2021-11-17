@@ -15,6 +15,8 @@ use App\Models\AccountViews;
 use App\Models\OutreachAccounts;
 use App\Models\SearchCriteriaAccounts;
 use App\Models\ContactCustoms;
+use App\Models\FivenineCallLogs;
+
 use DateTime;
 use DateTimeZone;
 
@@ -26,7 +28,7 @@ class OutreachController extends Controller
         $token_expire = Settings::where('id', '=', 7)->first();
         if($token_expire['value'] <= strtotime("now")):
             curl_setopt_array($curl, array(
-                CURLOPT_URL => "https://api.outreach.io/oauth/token?client_id=eUBHpxrv-UgUE_NloPqbbcHsJn0VpV1mj9JEraoh_jg&client_secret=D6e9SmqUTDcQLna_BhZst97JonI7wnZAE_Y5KuCcqFE&redirect_uri=https://www.biorev.us/oauth/outreach&grant_type=refresh_token&refresh_token=tWODyzlm-Glao8PeQzOV5ugZjRq7Wz6oTxYwQyxtY0Y",
+                CURLOPT_URL => "https://api.outreach.io/oauth/token?client_id=eUBHpxrv-UgUE_NloPqbbcHsJn0VpV1mj9JEraoh_jg&client_secret=D6e9SmqUTDcQLna_BhZst97JonI7wnZAE_Y5KuCcqFE&redirect_uri=https://www.biorev.us/oauth/outreach&grant_type=refresh_token&refresh_token=sNLqOEE0j9Pd7rhv6HnY23YzaJHzql0bVKAF58B-enA",
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_ENCODING => '',
                 CURLOPT_MAXREDIRS => 10,
@@ -142,7 +144,6 @@ class OutreachController extends Controller
         // endif;
         $recordPerPage  = $request->input('recordPerPage');
         $totalRecords = $q->count();
-        //echo '<pre>'; echo $totalRecords; echo '</pre>';
         if($request->input("sortBy") == 'asc'):
             $records = $q->orderBy( $request->input('sortType'))->paginate($recordPerPage); 
         else:
@@ -152,7 +153,6 @@ class OutreachController extends Controller
         $paginate = ['page' => $page, 'start' => $offset+1, 'end' => $offset+$recordPerPage, 'count' => $recordPerPage, 'total' => $totalRecords, 'pager' =>ceil($totalRecords/$recordPerPage)];
         return ['results' => $records, 'page' => $paginate, 'totalRecords' => $totalRecords];
     }
-
     public function getOutreachBlankStages(){
         $results = $this->__stages();
         $res = get_object_vars($results);
@@ -217,50 +217,15 @@ class OutreachController extends Controller
 
     public function outreachprospectDetailsCalls($id)
     {
-        $curl = curl_init();
-        $accessToken = $this->outreachsession();
-        curl_setopt_array($curl, array(
-            CURLOPT_URL => "https://api.outreach.io/api/v2/calls?filter[prospect][id]=$id&include=callDisposition,callPurpose",
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => '',
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 0,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => 'GET',
-            CURLOPT_HTTPHEADER => array(
-                "Authorization: Bearer $accessToken",
-                "Content-Type: application/vnd.api+json"
-            ),
-        ));
-        $response = curl_exec($curl);
-        curl_close($curl);
-        $results = json_decode($response);
-        $data = get_object_vars($results);
-        $callDisposition = [];
-        $callPurpose = [];
-        $counter = 0;
-        foreach($data['included'] as $key =>$record):
-            $rec = get_object_vars($record); // type = ''callDisposition,callPurpose , id, attributes,
-            $attributes = get_object_vars($rec["attributes"]); // name
-            $counter++;
-            if($rec["type"] == "callDisposition"):
-                $callDisposition[$counter]["id"] = $rec["id"];
-                $callDisposition[$counter]["name"] = $attributes["name"];
-            endif;
-            if($rec["type"] == "callPurpose"):
-                $callPurpose[$counter]["id"] = $rec["id"];
-                $callPurpose[$counter]["name"] = $attributes["name"];
-            endif;
-        endforeach;
-        return ['details' => $results, 'callDispositionArray' => $callDisposition, 'callPurposeArray' => $callPurpose];
+        
+        $records = FivenineCallLogs::where('record_id', '=', $id)->get();
+        return ['details' => $records];
     }
 
     public function outreachprospectDetailsEmails($id)
     {
         $curl = curl_init();
         $accessToken = $this->outreachsession();
-        //"https://api.outreach.io/api/v2/mailings?sort=-createdAt&filter[prospect][id]=$ids&include=prospect&fields[prospect]=firstName,lastName",
         curl_setopt_array($curl, array(
             CURLOPT_URL => "https://api.outreach.io/api/v2/mailings?sort=-createdAt&filter[prospect][id]=$id&include=prospect&fields[prospect]=firstName,lastName",
             CURLOPT_RETURNTRANSFER => true,
@@ -357,7 +322,10 @@ class OutreachController extends Controller
     public function getAllFilterDataset(){
         return ['items' => SearchCriteria::orderBy('filter')->where('datasets', '=', 1)->get()];
     }
-    
+    public function getAllFilterDatasetNew(){
+        return ['items' => SearchCriteria::select('filter_key as key', 'filter as value', 'filter_option as options', 'filter_type as type', 'api')->orderBy('filter')->where('datasets', '=', 1)->get()];
+    }
+
     public function getAllFilterForAccounts(){
         return ['items' => SearchCriteriaAccounts::orderBy('type')->orderBy('filter')->get()];
 
@@ -368,18 +336,19 @@ class OutreachController extends Controller
     public function AllAgents(){
         return ['results' => DB::table('agents')->get()];
     }
-    public function allViews(){
-        return ['results' => Views::where('admin_id', '=', \Auth::user()->id)->orderBy('view_name')->get() ];
-    }
     public function AllLastDispo(){
         $records = DB::table('contacts')->select('last_dispo')->distinct()->get();
         $results = [];
         $counter = 0;
         foreach($records as $value){
-            $results[$counter++] = ["stage" => $value->last_dispo, "oid" => $value->last_dispo];
+            $results[$counter++] = ["name" => $value->last_dispo, "oid" => $value->last_dispo];
         }
         return ['results' => $results];
     }
+    public function allViews(){
+        return ['results' => Views::where('admin_id', '=', \Auth::user()->id)->orderBy('view_name')->get() ];
+    }
+
     public function allViewsAccounts(){
         return ['results' => AccountViews::where('admin_id', '=', \Auth::user()->id)->orderBy('view_name')->get() ];
     }

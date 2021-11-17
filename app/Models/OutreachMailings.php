@@ -11,5 +11,8 @@ class OutreachMailings extends Model
     
     protected $guarded = [];
     protected $table = 'outreach_mailings';
+    public function prospect(){
+        return $this->hasOne('App\Models\Contacts', 'record_id', 'contact_id');
+    }
 
 }

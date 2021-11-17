@@ -1,6 +1,6 @@
 <template>
-    <span class="stack-row d-block" :class="[(title)?'active':'']">
-        <span class="span-title" v-title="title?title:''" >{{  label }}</span>
+    <span class="stack-row d-block" :class="[(title)?'active':'', (rcall >= 1)?'bg-warning':'']">
+        <span class="span-title" v-title="title?title:''">{{  label }}</span>
         <em>
             <i :class="(title && (call >= 1))?'cactive':'deactive'" class="status-icon bi bi-telephone-forward-fill"></i>
             <span v-show="title && call >= 1" class="topedge">{{ call }}</span>

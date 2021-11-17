@@ -1,22 +1,26 @@
-import Dashboard from './components/Dashboard.vue';
+import Dashboard from './components/dashboard/Dashboard.vue';
+import CallDashboard from './components/dashboard/Calls.vue';
+import EmailDashboard from './components/dashboard/Emails.vue';
 import DatasetDashboard from './components/dataset/Dashboard.vue';
 import UDashboard from './components/UDashboard.vue';
 import Settings from './components/Settings.vue';
-import History from './components/History.vue';
-import Export from './components/Export.vue';
-import ExportHistory from './components/ExportHistory.vue';
-import ViewExportHistory from './components/ViewExportHistory.vue';
-import FiveNineCampaigns from './components/FiveNineCampaigns.vue';
-import FiveNineDispositions from './components/FiveNineDispositions.vue';
-import FiveNineAllListData from './components/FiveNineAllListData.vue';
-import FiveNineSkills from './components/FiveNineSkills.vue';
-import FiveNineList from './components/FiveNineList.vue';
-import FiveNineModifyContacts from './components/FiveNineModifyContacts.vue';
-import FiveNineCallReport from './components/FiveNineCallReport.vue';
-import FiveNineCallReportOne from './components/FiveNineCallReportOne.vue';
-import OutreachAccountsDetails from './components/OutreachAccountsDetails.vue';
-import OutreachAccountsProspects from './components/OutreachAccountsProspects.vue';
-import OutreachProspects from './components/OutreachProspects.vue';
+import History from './components/import/History.vue';
+import Export from './components/import/Export.vue';
+import ExportHistory from './components/import/ExportHistory.vue';
+import ViewExportHistory from './components/import/ViewExportHistory.vue';
+import FiveNineCampaigns from './components/fivenine/FiveNineCampaigns.vue';
+import FiveNineDispositions from './components/fivenine/FiveNineDispositions.vue';
+import FiveNineAllListData from './components/fivenine/FiveNineAllListData.vue';
+import FiveNineSkills from './components/fivenine/FiveNineSkills.vue';
+import FiveNineList from './components/fivenine/FiveNineList.vue';
+import FiveNineModifyContacts from './components/fivenine/FiveNineModifyContacts.vue';
+import FiveNineCallReport from './components/fivenine/FiveNineCallReport.vue';
+/* import OutreachAccounts from './components/outreach/OutreachAccounts.vue';
+import OutreachAccountsDetails from './components/outreach/OutreachAccountsDetails.vue';
+import OutreachAccountsProspects from './components/outreach/OutreachAccountsProspects.vue'; */
+import OutreachProspects from './components/outreach/OutreachProspects.vue';
+import SyncReport from './components/reports/Sync.vue';
+import SyncReportDetail from './components/reports/SyncDetail.vue';
 
 export const routes = [{
         path: '/',
@@ -24,6 +28,7 @@ export const routes = [{
         meta: {
             requiresAuth: true,
             title: 'Dashboard',
+            subtitle: 'prospect'
         }
     },
     {
@@ -32,6 +37,25 @@ export const routes = [{
         meta: {
             requiresAuth: true,
             title: 'Dashboard',
+            subtitle: 'prospect'
+        }
+    },
+    {
+        path: '/dashboard/calls',
+        component: CallDashboard,
+        meta: {
+            requiresAuth: true,
+            title: 'Dashboard',
+            subtitle: 'calls'
+        }
+    },
+    {
+        path: '/dashboard/emails',
+        component: EmailDashboard,
+        meta: {
+            requiresAuth: true,
+            title: 'Dashboard',
+            subtitle: 'emails'
         }
     },
     {
@@ -139,14 +163,6 @@ export const routes = [{
         }
     },
     {
-        path: '/five9-call-report-01',
-        component: FiveNineCallReportOne,
-        meta: {
-            requiresAuth: true,
-            title: 'Five9 Call Report - 01',
-        }
-    },
-    {
         path: '/settings',
         component: Settings,
         meta: {
@@ -162,28 +178,52 @@ export const routes = [{
             title: 'Dataset Groups',
         }
     },
-    {
-        path: '/outreach-accounts-details/:id',
-        component: OutreachAccountsDetails,
-        meta: {
-            requiresAuth: true,
-            title: 'Outreach Account Details',
-        }
-    },
-    {
-        path: '/accounts/:id',
-        component: OutreachAccountsProspects,
-        meta: {
-            requiresAuth: true,
-            title: 'Outreach Accounts Prospects',
-        }
-    },
+    /*  {
+         path: '/outreach-accounts',
+         component: OutreachAccounts,
+         meta: {
+             requiresAuth: true,
+             title: 'Outreach Accounts',
+         }
+     },
+     {
+         path: '/outreach-accounts-details/:id',
+         component: OutreachAccountsDetails,
+         meta: {
+             requiresAuth: true,
+             title: 'Outreach Account Details',
+         }
+     },
+     {
+         path: '/accounts/:id',
+         component: OutreachAccountsProspects,
+         meta: {
+             requiresAuth: true,
+             title: 'Outreach Accounts Prospects',
+         }
+     }, */
     {
         path: '/prospects/:id',
         component: OutreachProspects,
         meta: {
             requiresAuth: true,
             title: 'Outreach Prospects Details',
+        }
+    },
+    {
+        path: '/log/sync-logs',
+        component: SyncReport,
+        meta: {
+            requiresAuth: true,
+            title: 'Sync Data Log',
+        }
+    },
+    {
+        path: '/log/sync-log-details',
+        component: SyncReportDetail,
+        meta: {
+            requiresAuth: true,
+            title: 'Sync Data Log Details',
         }
     }
 ];

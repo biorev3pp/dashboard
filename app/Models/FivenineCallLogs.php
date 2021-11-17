@@ -11,5 +11,8 @@ class FivenineCallLogs extends Model
     
     protected $guarded = [];
     protected $table = 'fivenine_call_logs';
+    public function contactData(){
+        return $this->hasOne('App\Models\Contacts', 'record_id', 'record_id');
+    }
 
 }

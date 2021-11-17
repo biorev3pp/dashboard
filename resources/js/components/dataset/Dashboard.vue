@@ -1,8 +1,18 @@
 <template>
     <div>
-        <div>
+        <div v-if="step == 0">
             <div class="table-responsive border-bottom">
-               <dataset-count :total="totalNumberOfRecords" :activeDataset="form.dataset"></dataset-count>
+               <div class="synops">          
+                    <div class="inner-synop cursor-pointer" :class="[(form.stage == 'all')?'active':'']" @click="filterStage('all')">
+                        <h4 class="number">{{ totalNumberOfRecords | freeNumber }} </h4><p>Total</p>
+                    </div>
+                    <div class="inner-synop cursor-pointer" v-if="stageDetails == ''">
+                        <img :src="loader_url" alt="Loading...">
+                    </div>
+                    <div v-else class="inner-synop cursor-pointer" v-for="(stageDetail, i) in stageDetails"  :key="'row-'+i" :class="[(stageDetail.oid == form.stage)?'active':'']" @click="filterStage(stageDetail.oid)">
+                        <h4 class="number">{{ stageDetail.count | freeNumber }} </h4><p>{{ stageDetail.stage }}</p>
+                    </div>
+                </div>
             </div>
             <div class="filterbox">
                 <div class="row mx-0 mb-2">
@@ -16,7 +26,36 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4 col-12">
+                    <div class="col-md-4 col-12 p-0 text-right">
+                        <img :src="loader_url" alt="Loading..." v-show="loader">
+                        <span class="float-right"  v-if="recordContainer.length >= 1">
+                            <span class="float-left d-inline-block mr-2 text-center">
+                                <b>{{ recordContainer.length | freeNumber }}</b> Records Selected<br>
+                                <a class="cursor-pointer" style="position:relative;top:-5px" @click="selectAllRecords()"><u>Select All</u></a>
+                            </span>
+                            <div class="dropdown d-inline-block">
+                                <a class="btn btn-outline-danger btn-sm theme-btn dropdown-toggle" href="#" role="button" id="dropdownMenuLink2" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> EXPORT </a>
+                                <div class="dropdown-menu source-dropdown left--65" aria-labelledby="dropdownMenuLink2">
+                                    <!-- <a href="#" class="dropdown-item text-uppercase">Export and Sync in Outreach</a>
+                                    <a href="#" class="dropdown-item text-uppercase">Export and Sync in Activecampaign</a> -->
+                                    <a href="javascript:;" @click="StartExport" class="dropdown-item text-uppercase"> Five9</a>
+                                    <!--<hr class="dropdown-divider my-0">
+                                     <a href="#" class="dropdown-item text-uppercase">Export In CSV File</a> 
+                                    <download-excel
+                                        class="dropdown-item text-uppercase p-2"
+                                        :data="json_data"
+                                        :fields="json_fields"
+                                        :before-generate = "startDownload"
+                                        :before-finish   = "finishdownload"
+                                        worksheet="prospect-export"
+                                        :name="filename"
+                                        type="csv"
+                                    >
+                                    CSV
+                                    </download-excel>-->
+                                </div>
+                            </div>                            
+                        </span>
                     </div>
                     <div class="col-md-4 col-12 pr-0 text-right form-inline d-block">
                         <span class="mr-2">
@@ -45,7 +84,7 @@
                         </span>
                     </div>
                 </div>
-                <div class="row mx-0 mb-2">
+                <div class="row mx-0 mb-1">
                     <div class="col-md-9 col-12 p-0 filter-btns-holder">
                         <span v-for="(filter,index) in form.filterConditionsArray" :key="'filter-'+filter.conditionText+'-'+filter.formula+'-'+filter.textCondition" class="filter-btns row" v-show="filter_expand" :class="'filterbtn-'+index">
                             <span v-title="filter.textConditionLabel"  class="text-dark mx-1 pointer-hand" @click="showFilterDetails(filter, index)"> {{ filter.textConditionLabel }}</span>
@@ -164,7 +203,7 @@
                 <div class="divthead">
                     <div class="divthead-row">
                         <div class="divthead-elem wf-45 text-center">
-                            <input type="checkbox" name="" id="check-all" value="0" aria-label="...">
+                            <input type="checkbox" name="" id="check-all" value="0" aria-label="..." @click="addAndRemoveAllRecordToContainer">
                         </div>
                         <div class="divthead-elem wf-125">
                             Dataset                        
@@ -193,7 +232,7 @@
                     <div class="divtbody-row" v-for="record in records.data" :key="'dsg-'+record.id" :class="[(active_row.id == record.record_id)?'expended':'']">
                         <div class="divtbody-elem  wf-45 text-center">
                             <div class="form-check">
-                                <input :id="'record-'+record.id" class="form-check-input me-1" type="checkbox" :value="record.id">
+                                <input :id="'record-'+record.id" class="form-check-input me-1" type="checkbox" :value="record.id" @click="addAndRemoveRecordToContainer(record.id)">
                             </div>
                         </div>
                         <div class="divtbody-elem  wf-125">
@@ -217,13 +256,13 @@
                             <span class="no-stage" v-else>No Stage</span>
                         </div>
                         <div class="divtbody-elem wf-150">
-                            <span class="stack-box call-log">
+                            <span class="stack-box call-log cursor-pointer" @click="showDispo(record.record_id)">
                                 <label for="call">
                                     <i class="bi bi-telephone-fill"></i>
                                 </label>
-                                <call-log :call="record.mcall_attempts" :rcall="record.mcall_received" :title="record.mobilePhones" :fnumber="record.mnumber" :label="'MP'"></call-log>
-                                <call-log :call="record.wcall_attempts" :rcall="record.wcall_received" :title="record.workPhones" :label="'WP'"></call-log>
-                                <call-log :call="record.hcall_attempts" :rcall="record.hcall_received" :title="record.homePhones" :label="'HP'"></call-log>
+                                <call-log :call="record.mcall_attempts" :rcall="record.mcall_received" :title="record.mobilePhones" :fnumber="record.mnumber" :label="'MP'" :rid="record.record_id"></call-log>
+                                <call-log :call="record.wcall_attempts" :rcall="record.wcall_received" :title="record.workPhones" :label="'WP'" :rid="record.record_id"></call-log>
+                                <call-log :call="record.hcall_attempts" :rcall="record.hcall_received" :title="record.homePhones" :label="'HP'" :rid="record.record_id"></call-log>
                             </span>
                         </div>
                         <div class="divtbody-elem wf-220">
@@ -264,6 +303,53 @@
                 </div>
             </div>
         </div>
+        <div v-else-if="step >= 1">
+            <export-wizard :step="step" :data="fivenineData" />
+        </div>
+        <div v-else>
+        </div>
+        <div class="modal fade" id="dispoModal" tabindex="-1" role="dialog" aria-labelledby="dispoModalLabel" aria-hidden="true" data-backdrop="static">
+            <div class="modal-dialog modal-dialog-centered  modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title text-uppercase" id="dispoModalLabel">Disposition Details</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body" v-if="loader == true">
+                        <p class="text-center text-danger m-4">
+                            <img :src="loader_url" alt="Loading...">
+                        </p>
+                    </div>
+                    <div class="modal-body" v-else-if="dispo_data.length >= 1">
+                        <div class="row m-0">
+                            <div class="col-md-4 p-0 border" v-for="(ddata, dkey) in dispo_data" :key="'dd'+dkey">
+                                <h5 class="dispo-title" :class="[(ddata.number_type == '' || ddata.number_type == '0')?'alert-danger':'']">
+                                    <span v-if="ddata.number_type == 'm'">Mobile Phone</span>
+                                    <span v-else-if="ddata.number_type == 'd'">Work Phone</span>
+                                    <span v-else-if="ddata.number_type == 'h'">Home Phone</span>
+                                    <span v-else>Other</span><br>
+                                    {{ ddata.number | formatPhoneNumber }}
+                                </h5>
+                                <div>
+                                    <ul class="dispo-list">
+                                        <li class="text-uppercase" v-for="(dddispo, ddd) in ddata.dispositions" :key="'ddi'+ddd">
+                                            {{ dddispo }}
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-body" v-else>
+                        <p class="text-center text-danger m-4">
+                            No Data Found
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 <script>
@@ -275,11 +361,15 @@ import DateRangePicker from 'vue2-daterange-picker';
 import 'vue2-daterange-picker/dist/vue2-daterange-picker.css';
 import { ToggleButton } from 'vue-js-toggle-button';
 import 'vue-select/dist/vue-select.css';
+import ExportWizard from './FiveNineWizard';
 
 export default {
-    components:{CallLog, EmailLog, DatasetGroup, DatasetCount, DateRangePicker, ToggleButton},
+    components:{CallLog, EmailLog, DatasetGroup, DatasetCount, DateRangePicker, ToggleButton, ExportWizard},
     data() {
         return {
+            fivenineData : [],
+            recordContainer:[],
+            dispo_data:[],
             bypassFIlterKey : '',
             filter_expand:true,
             loader:false,
@@ -292,6 +382,9 @@ export default {
             queryType : "",
             leftpos:'0px',
             toppos:'0px',
+            exportForm : new Form({
+                exports : []
+            }),
             form: new Form({
                 sortType:'outreach_touched_at',
                 sortBy:'desc',
@@ -318,7 +411,6 @@ export default {
             showView : false, //control appearance of view controls
             loader_url: '/img/spinner.gif',
             totalNumberOfRecords:'',
-            recordContainer:'',
             filter : false,
             filterEmail : false,
             filterPhone : false,
@@ -339,8 +431,19 @@ export default {
         }
     },
     filters: {
-           },
+        formatPhoneNumber(phoneNumberString) {
+            var cleaned = ('' + phoneNumberString).replace(/\D/g, '');
+            var match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/);
+            if (match) {
+                return '(' + match[1] + ') ' + match[2] + '-' + match[3];
+            }
+            return null;
+        }
+    },
     computed: {
+        stageDetails() {
+            return this.$store.getters.stages
+        },
         datasets() {
             return this.$store.getters.datasets
         },
@@ -359,6 +462,42 @@ export default {
         },
     },
     methods: {
+        addAndRemoveAllRecordToContainer(){
+            var a = document.getElementById('check-all');
+            var aa = document.querySelectorAll("input[type=checkbox]");
+            if(document.getElementById("check-all").checked == true){
+                for (var i = 0; i < aa.length; i++){
+                    if(parseInt(aa[i].value) > 0){
+                        if((this.recordContainer.indexOf(parseInt(aa[i].value)) == -1)){
+                            aa[i].checked = true;
+                            this.recordContainer.push(Number(aa[i].value));
+                        }else{
+                            aa[i].checked = true;
+                        }
+                    }
+                }
+            }
+            if(document.getElementById("check-all").checked == false){
+                var record = [];
+                for (var i = 0; i < aa.length; i++){
+                    if(Number(aa[i].value) > 0){
+                        if((this.recordContainer.indexOf(parseInt(aa[i].value)) >= 0)){
+                            this.recordContainer.splice(this.recordContainer.indexOf(parseInt(aa[i].value)), 1);
+                            aa[i].checked = false;
+                        }
+                    }
+                }
+            }
+        },
+        addAndRemoveRecordToContainer(id){
+            if((this.recordContainer.indexOf(parseInt(id)) == -1) && (document.getElementById("record-"+id).checked == true)){
+                this.recordContainer.push(id);
+                document.getElementById("record-"+id).checked = true
+            }else{
+                this.recordContainer.splice(this.recordContainer.indexOf(parseInt(id)), 1);
+                document.getElementById("record-"+id).checked = false
+            }
+        },
         removeAllFilter() {
             this.form.filterConditionsArray = [];
             this.filterBtn = true
@@ -388,6 +527,8 @@ export default {
             this.filter_keyword = ''
         },
         showFilterOption(fitem){
+            this.selectedOptions = []
+            this.selectedOptionsId = []
             this.filter = true
             this.showView = false
             this.form.filterOption = ''
@@ -629,23 +770,24 @@ export default {
                 this.filterDropdown = true
                 this.filterDateRange = false
                 let api = filter.api
-                axios.get(api).then((response) => {
-                    this.selects = response.data.results;
-                });
                 this.selectedOptions = []
                 this.selectedOptionsId = []
-                var newRecords = filter.textCondition.split(",")
-                for(var i = 0; i <= newRecords.length; i++){
-                    var newStage = this.selects.filter(function(e){
-                        return e.oid == newRecords[i]
-                    })
-                    if(newStage.length > 0){
-                        this.selectedOptionsId.push(newRecords[i])
-                        this.selectedOptions.push(newStage[0].name)
+                axios.get(api).then((response) => {
+                    this.selects = response.data.results;                    
+                    
+                    var newRecords = filter.textCondition.split(",")
+                    for(var i = 0; i <= newRecords.length; i++){
+                        var newStage = this.selects.filter(function(e){
+                            return e.oid == newRecords[i]
+                        })
+                        if(newStage.length > 0){
+                            this.selectedOptionsId.push(newRecords[i])
+                            this.selectedOptions.push(newStage[0].name)
+                        }
                     }
-                }
-                this.filterEmail = false
-                this.filterPhone = false
+                    this.filterEmail = false
+                    this.filterPhone = false
+                });
             } else if(filter.type == 'calendar'){
                 this.form.filter = filter.conditionText
                 this.form.filterOption = filter.formula
@@ -723,11 +865,23 @@ export default {
                     } else if(this.form.filterConditionsArray[i]["type"] == "dropdown"){
 
                         this.form.filterConditionsArray[i]["formula"] = this.form.filterOption
-                        this.form.filterConditionsArray[i]["textCondition"] = this.selectedOptionsId.join(',')        
+                        if(this.selectedOptionsId.length == 0){
+                            this.form.filterConditionsArray[i]["textCondition"] = this.form.dropdown
+                        }else{
+                            this.form.filterConditionsArray[i]["textCondition"] = this.selectedOptionsId.join(',')
+                        }
                         if(this.form.filterOption == 'is empty' || this.form.filterOption == 'is not empty'){
                             this.form.filterConditionsArray[i]['textConditionLabel'] = this.form.filter +' '+ this.form.filterOption
                         } else {
-                            this.form.filterConditionsArray[i]['textConditionLabel'] = this.form.filter +' '+ this.form.filterOption +' '+ this.selectedOptions.join(', ')
+                            if(this.selectedOptionsId.length == 0){
+                                var f = this.form.dropdown
+                                var s = this.selects.filter(function(e){
+                                    return e.oid == f
+                                })
+                                this.form.filterConditionsArray[i]['textConditionLabel'] = this.form.filter +' '+ this.form.filterOption +' '+s[0]["name"]
+                            }else{
+                                this.form.filterConditionsArray[i]['textConditionLabel'] = this.form.filter +' '+ this.form.filterOption +' '+ this.selectedOptions.join(', ')
+                            }
                         }
                         
                     } else if(this.form.filterConditionsArray[i]["type"] == "calendar"){
@@ -777,6 +931,8 @@ export default {
                     this.showInputTextOrDropdown = true
                     this.searchfilterEmailMoreOption = []
                     this.searchfilterPhoneMoreOption = []
+                    this.selectedOptions = []
+                    this.selectedOptionsId = []
                     this.queryType = ""
                     this.bypassFIlterKey = ''
                     this.getDatasets(1)
@@ -803,6 +959,7 @@ export default {
             return txt+' '+this.$options.filters.convertInDayMonth(val)+' ago';
         },
         getDatasets(page) {
+            document.getElementById("check-all").checked = false
             this.loader = true;
             this.$Progress.start();  
             this.form.page = page
@@ -812,6 +969,17 @@ export default {
                 this.$Progress.finish();               
                 this.totalNumberOfRecords = response.data.total;
                 this.loader = false;
+                if(this.recordContainer.length > 0){
+                    var records = this.records.data
+                    for(var i = 0; i <= records.length; i++){
+                        var id = records[i]["id"]
+                        if(this.recordContainer.indexOf(id) > -1){
+                            if(document.getElementById('record-'+id).checked == false){
+                                document.getElementById('record-'+id).checked = true
+                            }
+                        }
+                    }
+                }
             });
         },
         getFilterData(){
@@ -837,7 +1005,41 @@ export default {
         refreshAll() {
             this.getDatasets(1);
         },
-        
+        showDispo(rid) {
+            this.dispo_data = '';
+            this.loader = true
+            $('#dispoModal').modal('show');
+            axios.get('/api/get-record-disposition/'+rid).then((resposne) => {
+                this.dispo_data = resposne.data
+                this.loader = false
+            })
+        },
+        StartExport(){
+            this.loader = true
+            this.exportForm.exports = this.recordContainer
+            this.exportForm.post('/api/get-record-container-info').then((response) => {
+                this.fivenineData = response.data
+                this.step = 1
+                this.loader = false
+            })
+        },
+        selectAllRecords()
+        {
+            this.loader = true;
+            this.$Progress.start();  
+            this.form.page = 1
+            this.form.post('/api/dataset-values-data-all').then((response) => {
+                var records = response.data
+                console.log(records)
+                for(var i = 0; i < records.length; i++){
+                    if( (this.recordContainer.indexOf(parseInt(records[i])) == -1) ){
+                        this.recordContainer.push(records[i]);
+                    }
+                }
+                this.loader = false;
+                this.$Progress.finish();
+            });
+        },
     },
     beforeMount() {
         if(this.datasets == '') {
@@ -845,7 +1047,7 @@ export default {
         }
     },
     mounted() {
-        if(this.$route.query) {
+        if(Object.keys(this.$route.query).length != 0) {
             const obj = this.$route.query
             var i
             for (const key of Object.keys(obj)) {
@@ -856,6 +1058,11 @@ export default {
         this.getDatasets(1);
         if(this.filterItems == '') {
            this.$store.dispatch('setDatasetFilter');
+        }
+    },
+    created() {
+        if(this.stageDetails == '') {
+           this.$store.dispatch('setStages');
         }
     }
 }

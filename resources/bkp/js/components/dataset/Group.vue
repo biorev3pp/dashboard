@@ -14,7 +14,7 @@ export default {
         'f': [String, Number],
         'g': Number,
         'h': Number,
-        'i': Number,
+        'i': [String, Number],
         'j': Number,
         'k': Number
     },

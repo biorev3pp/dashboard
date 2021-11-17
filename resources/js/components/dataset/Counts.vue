@@ -55,7 +55,7 @@ export default {
     methods: {
         resetDataset() {
             this.loader = true;
-            axios.get('/api/reset-dataset').then((response) => {
+            axios.post('/api/reset-dataset').then((response) => {
                 this.dcount = response.data.results;
                 this.dtotal = response.data.total;
                 this.loader = false;

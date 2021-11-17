@@ -33,7 +33,7 @@
                     <div class="col-md-10 col-12 p-0 filter-btns-holder">
                         <span v-for="(filter,index) in form.filterConditionsArray" :key="'filter-'+filter.conditionText+'-'+filter.formula+'-'+filter.textCondition" class="filter-btns row" v-show="filter_expand" :class="'filterbtn-'+index">
                             <span v-title="filter.textConditionLabel"  class="text-dark mx-1 pointer-hand" @click="showFilterDetails(filter, index)"> {{ filter.textConditionLabel }}</span>
-                            <i class="bi bi-x pr-1  pointer-hand" @click="removeFilter(index)"></i>
+                            <i class="bi bi-x pr-1  pointer-hand" @click="removeFilter(index, 1)"></i>
                         </span>
                         <span class="filtertemp">
                             <span class="filter-btns row" v-show="(filter == true) && (typeof form.filter == 'object')" >
@@ -245,7 +245,8 @@ export default {
                 historyValue:[],
                 primary_filter:'',
                 mode_status:0,
-                back_status:0
+                back_status:0,
+                jump_status:0
             }),
             allValues:[],
             showView : false, //control appearance of view controls
@@ -391,6 +392,8 @@ export default {
             this.filter_keyword = ''
         },
         showFilterOption(fitem){
+            this.selectedOptions = []
+            this.selectedOptionsId = []
             this.filter = true
             this.showView = false
             this.form.filterOption = ''
@@ -721,23 +724,24 @@ export default {
                 this.filterDropdown = true
                 this.filterDateRange = false
                 let api = filter.api
-                axios.get(api).then((response) => {
-                    this.selects = response.data.results;
-                });
                 this.selectedOptions = []
                 this.selectedOptionsId = []
-                var newRecords = filter.textCondition.split(",")
-                for(var i = 0; i <= newRecords.length; i++){
-                    var newStage = this.selects.filter(function(e){
-                        return e.oid == newRecords[i]
-                    })
-                    if(newStage.length > 0){
-                        this.selectedOptionsId.push(newRecords[i])
-                        this.selectedOptions.push(newStage[0].name)
+                axios.get(api).then((response) => {
+                    this.selects = response.data.results;                    
+                    
+                    var newRecords = filter.textCondition.split(",")
+                    for(var i = 0; i <= newRecords.length; i++){
+                        var newStage = this.selects.filter(function(e){
+                            return e.oid == newRecords[i]
+                        })
+                        if(newStage.length > 0){
+                            this.selectedOptionsId.push(newRecords[i])
+                            this.selectedOptions.push(newStage[0].name)
+                        }
                     }
-                }
-                this.filterEmail = false
-                this.filterPhone = false
+                    this.filterEmail = false
+                    this.filterPhone = false
+                });
             } else if(filter.type == 'calendar'){
                 this.form.filter = filter.conditionText
                 this.form.filterOption = filter.formula
@@ -815,11 +819,23 @@ export default {
                     } else if(this.form.filterConditionsArray[i]["type"] == "dropdown"){
 
                         this.form.filterConditionsArray[i]["formula"] = this.form.filterOption
-                        this.form.filterConditionsArray[i]["textCondition"] = this.selectedOptionsId.join(',')        
+                        if(this.selectedOptionsId.length == 0){
+                            this.form.filterConditionsArray[i]["textCondition"] = this.form.dropdown
+                        }else{
+                            this.form.filterConditionsArray[i]["textCondition"] = this.selectedOptionsId.join(',')
+                        }
                         if(this.form.filterOption == 'is empty' || this.form.filterOption == 'is not empty'){
                             this.form.filterConditionsArray[i]['textConditionLabel'] = this.form.filter +' '+ this.form.filterOption
                         } else {
-                            this.form.filterConditionsArray[i]['textConditionLabel'] = this.form.filter +' '+ this.form.filterOption +' '+ this.selectedOptions.join(', ')
+                            if(this.selectedOptionsId.length == 0){
+                                var f = this.form.dropdown
+                                var s = this.selects.filter(function(e){
+                                    return e.oid == f
+                                })
+                                this.form.filterConditionsArray[i]['textConditionLabel'] = this.form.filter +' '+ this.form.filterOption +' '+s[0]["name"]
+                            }else{
+                                this.form.filterConditionsArray[i]['textConditionLabel'] = this.form.filter +' '+ this.form.filterOption +' '+ this.selectedOptions.join(', ')
+                            }
                         }
                         
                     } else if(this.form.filterConditionsArray[i]["type"] == "calendar"){
@@ -869,18 +885,27 @@ export default {
                     this.showInputTextOrDropdown = true
                     this.searchfilterEmailMoreOption = []
                     this.searchfilterPhoneMoreOption = []
+                    this.selectedOptions = []
+                    this.selectedOptionsId = []
                     this.queryType = ""
                     this.bypassFIlterKey = ''
                     this.getDatasetGraphFilter()
                 }
             }
         },
-        removeFilter(index){
+        removeFilter(index, typ){
+            let rf = this.form.filterConditionsArray[index]
+            if((this.form.historyKey.indexOf(rf.condition) >= 0) && (typ == 1)) {
+                this.form.historyKey.splice(this.form.historyKey.indexOf(rf.condition), 1)
+                this.form.jump_status = 1
+            }
             this.form.filterConditionsArray.splice(index, 1)
             this.filterBtn = true
             this.showView = false
             this.filter = false
-            this.getDatasetGraphFilter();
+            if(typ != 2) {
+                this.getDatasetGraphFilter();
+            }
         },        
         dateFormat(classes, date) {
             if(!classes.disabled) {
@@ -965,8 +990,9 @@ export default {
                 return ele.condition == last_dm
             })
             let findex = this.form.filterConditionsArray.indexOf(indx[0]);
-            this.removeFilter(findex);
+            this.removeFilter(findex, 2);
             this.form.back_status = 1
+            this.form.jump_status = 0
             this.getDatasetGraphFilter();
         },
         getDatasetGraphFilter(){
@@ -983,6 +1009,7 @@ export default {
                 $thisf.historyValue  = response.data.historyValue
                 $thisf.mode_status = 0
                 $thisf.back_status = 0
+                $thisf.jump_status = 0
                 this.loader = false
             })
         },
