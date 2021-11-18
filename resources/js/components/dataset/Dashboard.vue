@@ -1030,7 +1030,7 @@ export default {
             this.form.page = 1
             this.form.post('/api/dataset-values-data-all').then((response) => {
                 var records = response.data
-                console.log(records)
+                //console.log(records)
                 for(var i = 0; i < records.length; i++){
                     if( (this.recordContainer.indexOf(parseInt(records[i])) == -1) ){
                         this.recordContainer.push(records[i]);

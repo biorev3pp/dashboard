@@ -1579,6 +1579,11 @@ table span.badge {
     overflow: auto;
 }
 
+.custom-height-210 {
+    height: calc(100vh - 210px);
+    overflow: auto;
+}
+
 .table-without-search {
     height: calc(100vh - 142px);
     overflow: auto;

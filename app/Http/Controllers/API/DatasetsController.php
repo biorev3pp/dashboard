@@ -1172,6 +1172,18 @@ class DatasetsController extends Controller
         $string = substr($string, -10);
         return $string;
     }
+    private function __NumberExtFormater1($var = null)
+    {
+        if(strpos(strtolower($var), "ext") > -1){
+            $mob = explode("ext", strtolower($var));
+            $string = str_replace(' ', '', trim($mob[1]));
+            $string = str_replace('.', '', $string);
+        } else {
+            $string = '';
+        }
+        return $string;
+    }
+
     public function getRecordContainerInfo(Request $request){
         $ids = $request->input("exports");
         $results = [];
@@ -1205,6 +1217,9 @@ class DatasetsController extends Controller
                     "number1" => $this->__NumberFormater1($mobilePhones),
                     "number2" => $this->__NumberFormater1($workPhones),
                     "number3" => $this->__NumberFormater1($homePhones),
+                    "ext1" => $this->__NumberExtFormater1($mobilePhones),
+                    "ext2" => $this->__NumberExtFormater1($workPhones),
+                    "ext3" => $this->__NumberExtFormater1($homePhones),
                     "company" => $record->company,
                     "record_id" => $record->record_id,
                 ]; 

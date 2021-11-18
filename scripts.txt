@@ -1,0 +1,9 @@
+select record_id from `contacts` join states on (contacts.state = states.state) where contacts.country = 'United States';
+
+UPDATE `contacts` inner join contact_customs ON (contacts.id = contact_customs.contact_id) SET contacts.custom29 = contact_customs.custom29;
+
+UPDATE `contacts` join states on (contacts.state = states.code) set contacts.state = states.state;
+
+SELECT record_id FROM `contacts` inner join states on (contacts.state = states.state) inner join timezones on (states.timezone_id = timezones.id);
+
+update `contacts` inner join states on (contacts.state = states.state) inner join timezones on (states.timezone_id = timezones.id) set contacts.custom29 = timezones.timezone_type where contacts.custom29 is null;

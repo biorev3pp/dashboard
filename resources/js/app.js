@@ -88,6 +88,9 @@ Vue.filter('setusdateSlash', function(mydate) {
 Vue.filter('logdateFull', function(mydate) {
     return moment(mydate).format('ddd, MMM DD @ hh:mm A');
 });
+Vue.filter('logdateYearFull', function(mydate) {
+    return moment(mydate).format('ddd, MMM DD, YYYY @ hh:mm A');
+});
 Vue.filter('setFulldate', function(mydate) {
     moment.locale('en');
     return moment(mydate).format('MM-DD-YYYY hh:mm A');

@@ -47,34 +47,42 @@
         </div>
         <div class="position-relative wizard-content bg-white" :class="[(active_step >= 2)?'border mr-2':'']">
             <div class="table-responsive" v-if="active_step == 1">
-                <table class="table table-striped table-condensed" v-if="recordCount >= 1">
-                    <thead>
-                        <tr>
-                            <th class="wf-120">Record ID</th>
-                            <th>Name</th>
-                            <th>Number1</th>
-                            <th>Number2</th>
-                            <th>Number3</th>
-                            <th>Company</th>
-                            <th class="wf-80">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="(record, rkey) in records" :key="'all-'+rkey">
-                            <td>{{ record.record_id }}</td>
-                            <td>{{ record.first_name+' '+record.last_name }}</td>
-                            <td>{{ record.number1 }}</td>
-                            <td>{{ record.number2 }}</td>
-                            <td>{{ record.number3 }}</td>
-                            <td>{{ record.company }}</td>
-                            <td>
+                <div class="divtable border-top" v-if="recordCount >= 1">
+                    <div class="divthead">
+                        <div class="divthead-row">
+                            <div class="divthead-elem wf-60">SNo</div>
+                            <div class="divthead-elem wf-100">Record ID</div>
+                            <div class="divthead-elem wf-200">Name</div>
+                            <div class="divthead-elem wf-150">Number1</div>
+                            <div class="divthead-elem wf-150">Number2</div>
+                            <div class="divthead-elem wf-150">Number3</div>
+                            <div class="divthead-elem wf-60">Ext1</div>
+                            <div class="divthead-elem wf-60">Ext2</div>
+                            <div class="divthead-elem wf-60">Ext3</div>
+                            <div class="divthead-elem mwf-125">Company</div>
+                            <div class="divthead-elem wf-80">Action</div>
+                        </div>
+                    </div>
+                    <div class="divtbody custom-height">
+                        <div class="divtbody-row" v-for="(record, rkey) in records" :key="'all-'+rkey">
+                            <div class="divtbody-elem wf-60">{{ rkey+1 }}</div>
+                            <div class="divtbody-elem wf-100">{{ record.record_id }}</div>
+                            <div class="divtbody-elem wf-200">{{ record.first_name+' '+record.last_name }}</div>
+                            <div class="divtbody-elem wf-150">{{ record.number1 }}</div>
+                            <div class="divtbody-elem wf-150">{{ record.number2 }}</div>
+                            <div class="divtbody-elem wf-150">{{ record.number3 }}</div>
+                            <div class="divtbody-elem wf-60">{{ record.ext1 }}</div>
+                            <div class="divtbody-elem wf-60">{{ record.ext2 }}</div>
+                            <div class="divtbody-elem wf-60">{{ record.ext3 }}</div>
+                            <div class="divtbody-elem mwf-125">{{ record.company }}</div>
+                            <div class="divtbody-elem wf-80">
                                 <button class="btn btn-sm btn-danger" type="button" @click="deleteRecord(rkey)">
                                     <i class="bi bi-x"></i>
                                 </button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <p class="alert alert-info" v-else>
                     No records found.
                 </p>
@@ -154,7 +162,7 @@
                     </div>
                 </div>
             </div>
-            <div class="p-3" v-else-if="active_step == 3">
+            <div v-else-if="active_step == 3">
                 <div v-if="loader">
                     <p class="text-center">
                         <img :src="loader_url" alt="loading.."><br>
@@ -162,7 +170,7 @@
                     </p>
                 </div>
                 <div v-else>
-                    <div class="row mx-0 mb-2" v-show="refinedview == true">
+                    <div class="row mx-0 my-2" v-show="refinedview == true">
                         <div class="col-6 fs-15">
                             Total Importable Records : <b> {{ form.records.length  }} </b>
                         </div>
@@ -170,49 +178,64 @@
                           
                         </div>
                     </div>
-                    <table class="table table-striped table-condensed" v-if="recordCount >= 1">
-                    <thead>
-                        <tr>
-                            <th class="wf-120">Record ID</th>
-                            <th>Name</th>
-                            <th>Number1</th>
-                            <th>Number2</th>
-                            <th>Number3</th>
-                            <th>Company</th>
-                            <th class="wf-80">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody v-if="refinedview == true">
-                        <tr v-for="(record, rkey) in form.records" :key="'all-'+rkey">
-                            <td>{{ record.record_id }}</td>
-                            <td>{{ record.first_name+' '+record.last_name }}</td>
-                            <td><span :class="[(meltNumbers.indexOf(parseInt(record.number1)) != -1)?'bg-warning py-1 px-2':'']"> {{ record.number1 }} </span> </td>
-                            <td><span :class="[(meltNumbers.indexOf(parseInt(record.number2)) != -1)?'bg-warning py-1 px-2':'']"> {{ record.number2 }} </span> </td>
-                            <td><span :class="[(meltNumbers.indexOf(parseInt(record.number3)) != -1)?'bg-warning py-1 px-2':'']"> {{ record.number3 }} </span> </td>
-                            <td>{{ record.company }}</td>
-                            <td>
-                                <button class="btn btn-sm btn-danger" type="button" @click="deleteFRecord(rkey)">
-                                    <i class="bi bi-x"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    </tbody>
-                    <tbody v-else>
-                        <tr v-for="(record, rkey) in records" :key="'all-'+rkey">
-                            <td>{{ record.record_id }}</td>
-                            <td>{{ record.first_name+' '+record.last_name }}</td>
-                            <td><span :class="[(meltNumbers.indexOf(parseInt(record.number1)) != -1)?'bg-warning py-1 px-2':'']"> {{ record.number1 }} </span> </td>
-                            <td><span :class="[(meltNumbers.indexOf(parseInt(record.number2)) != -1)?'bg-warning py-1 px-2':'']"> {{ record.number2 }} </span> </td>
-                            <td><span :class="[(meltNumbers.indexOf(parseInt(record.number3)) != -1)?'bg-warning py-1 px-2':'']"> {{ record.number3 }} </span> </td>
-                            <td>{{ record.company }}</td>
-                            <td>
-                                <button class="btn btn-sm btn-danger" type="button" @click="deleteRecord(rkey)">
-                                    <i class="bi bi-x"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                    <div class="divtable border-top" v-if="recordCount >= 1">
+                        <div class="divthead">
+                            <div class="divthead-row">
+                                <div class="divthead-elem wf-60">SNo</div>
+                                <div class="divthead-elem wf-100">Record ID</div>
+                                <div class="divthead-elem wf-200">Name</div>
+                                <div class="divthead-elem wf-150">Number1</div>
+                                <div class="divthead-elem wf-150">Number2</div>
+                                <div class="divthead-elem wf-150">Number3</div>
+                                <div class="divthead-elem mwf-125">Company</div>
+                                <div class="divthead-elem wf-80">Action</div>
+                            </div>
+                        </div>
+                        <div class="divtbody custom-height-210" v-if="refinedview == true">
+                            <div class="divtbody-row" v-for="(record, rkey) in records" :key="'all-'+rkey">
+                                <div class="divtbody-elem wf-60">{{ rkey+1 }}</div>
+                                <div class="divtbody-elem wf-100">{{ record.record_id }}</div>
+                                <div class="divtbody-elem wf-200">{{ record.first_name+' '+record.last_name }}</div>
+                                <div class="divtbody-elem wf-150">
+                                    <span :class="[(meltNumbers.indexOf(parseInt(record.number1)) != -1)?'bg-warning py-1 px-2':'']"> {{ record.number1 }} </span>
+                                </div>
+                                <div class="divtbody-elem wf-150">
+                                    <span :class="[(meltNumbers.indexOf(parseInt(record.number2)) != -1)?'bg-warning py-1 px-2':'']"> {{ record.number2 }} </span>
+                                </div>
+                                <div class="divtbody-elem wf-150">
+                                    <span :class="[(meltNumbers.indexOf(parseInt(record.number3)) != -1)?'bg-warning py-1 px-2':'']"> {{ record.number3 }} </span>
+                                </div>
+                                <div class="divtbody-elem mwf-125">{{ record.company }}</div>
+                                <div class="divtbody-elem wf-80">
+                                    <button class="btn btn-sm btn-danger" type="button" @click="deleteFRecord(rkey)">
+                                        <i class="bi bi-x"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="divtbody custom-height" v-else>
+                            <div class="divtbody-row" v-for="(record, rkey) in records" :key="'all-'+rkey">
+                                <div class="divtbody-elem wf-60">{{ rkey+1 }}</div>
+                                <div class="divtbody-elem wf-100">{{ record.record_id }}</div>
+                                <div class="divtbody-elem wf-200">{{ record.first_name+' '+record.last_name }}</div>
+                                <div class="divtbody-elem wf-150">
+                                    <span :class="[(meltNumbers.indexOf(parseInt(record.number1)) != -1)?'bg-warning py-1 px-2':'']"> {{ record.number1 }} </span>
+                                </div>
+                                <div class="divtbody-elem wf-150">
+                                    <span :class="[(meltNumbers.indexOf(parseInt(record.number2)) != -1)?'bg-warning py-1 px-2':'']"> {{ record.number2 }} </span>
+                                </div>
+                                <div class="divtbody-elem wf-150">
+                                    <span :class="[(meltNumbers.indexOf(parseInt(record.number3)) != -1)?'bg-warning py-1 px-2':'']"> {{ record.number3 }} </span>
+                                </div>
+                                <div class="divtbody-elem mwf-125">{{ record.company }}</div>
+                                <div class="divtbody-elem wf-80">
+                                    <button class="btn btn-sm btn-danger" type="button" @click="deleteRecord(rkey)">
+                                        <i class="bi bi-x"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="p-3 text-center" v-else-if="active_step == 4">

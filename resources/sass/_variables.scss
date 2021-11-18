@@ -19,7 +19,7 @@ $cyan: #6cb2eb;
 $white: #ffffff;
 $theme:#8e29db;
 $themehover:#6d18aa;
-$wamounts: (1, 2, 3, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 75, 80, 90, 100);
+$wamounts: (1, 2, 3, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 75, 80, 90, 100);
 @each $wamount in $wamounts {
     .w-#{$wamount} {
         width: percentage($wamount/100) !important;

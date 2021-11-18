@@ -13,6 +13,7 @@
                                     <div class="card mb-3">
                                         <div class="card-header hide" >
                                             <b class="card-title m-0 text-uppercase"> Timezone</b>
+                                            <b class="float-right"> {{ prospect.custom29 }} </b>
                                         </div>
                                         <div class="card-body p-0 custom-auto-height text-center">
                                             <p class="mt-4 mb-2"> {{ prospect.timeZone }} 
@@ -30,6 +31,11 @@
                                                     <tr><th width="50%">First Name</th><td>{{ prospect.first_name }}</td></tr>
                                                     <tr><th>Last Name</th><td>{{ prospect.last_name }}</td></tr>
                                                     <tr><th>Source</th><td>{{ prospect.source }}</td></tr>
+                                                    <tr><th>Address</th><td>{{ prospect.address }}</td></tr>
+                                                    <tr><th>City</th><td>{{ prospect.city }}</td></tr>
+                                                    <tr><th>Zipcode</th><td>{{ prospect.zip }}</td></tr>
+                                                    <tr><th>State</th><td>{{ prospect.state }}</td></tr>
+                                                    <tr><th>Country</th><td>{{ prospect.country }}</td></tr>
                                                 </tbody>
                                             </table>
                                         </div>
@@ -259,22 +265,23 @@
                                 </a>
                             </p>
                         </div>
-                        <div class="border-top pt-2">
+                        <div class="border-top py-2">
                             <b class="my-1">CONTACT</b> :<br>
                             <ul class="nostylelist p-0 m-0">
                                 <li v-for="(bemail, bk) in bemails" :key="'be'+bk">
                                     <b class="icon-icon-2 mt-2" v-title="'Business Email'"> BE </b> <span>{{ bemail }}</span>
                                 </li>
-                                <li><b class="icon-icon-2 mt-2" v-title="'Mobile Phone'"> MP </b> <span>{{ (prospect.mobilePhones)?prospect.mobilePhones:'--' }}</span></li>
-                                <li><b class="icon-icon-2 mt-2" v-title="'Home Phone'"> HP </b> <span>{{ (prospect.homePhones)?prospect.homePhones:'--' }}</span></li>
-                                <li><b class="icon-icon-2 mt-2" v-title="'Work Phone'"> WP </b> <span>{{ (prospect.workPhones)?prospect.workPhones:'--' }}</span></li>
-                                <li><span v-title="'Address'"><i class="icon-icon-2 mt-2 bi bi-house-door"></i></span> :  <b>{{ prospect.addressStreet }}</b><br>
-                                <span class="fs-5"><b>
-                                {{ prospect.addressCity }}
-                                {{ prospect.addressState }}
-                                {{ prospect.addressZip }}
-                                {{ prospect.addressCountry }}</b><br>
-                                </span>
+                                <li v-show="prospect.mobilePhones">
+                                    <b class="icon-icon-2 mt-2" v-title="'Mobile Phone'"> MP </b> 
+                                    <span>{{ prospect.mobilePhones }}</span>
+                                </li>
+                                <li v-show="prospect.homePhones">
+                                    <b class="icon-icon-2 mt-2" v-title="'Home Phone'"> HP </b> 
+                                    <span>{{ prospect.homePhones }}</span>
+                                </li>
+                                <li v-show="prospect.workPhones">
+                                    <b class="icon-icon-2 mt-2" v-title="'Work Phone'"> WP </b> 
+                                    <span>{{ prospect.workPhones }}</span>
                                 </li>
                             </ul>
                         </div>
@@ -285,6 +292,20 @@
                                 <span class="mr-1" v-if="prospect.outreach_created_at" v-title="myDateFormat('Created', prospect.outreach_created_at)"><i class="text-icon">CD</i></span>
                                 <span v-if="prospect.last_agent_dispo_time" v-title="myDateFormat('Last Called ', prospect.last_agent_dispo_time)"><i class="text-icon">CT</i></span>
                             </p>
+                        </div>
+                        <div class="border-top pt-2">
+                            <b class="mt-1 mb-2 d-block">LAST CALL ACTIVITY: </b>
+                            <ul class="nostylelist p-0 m-0">
+                                <li>
+                                    <b class="icon-icon-2 mt-2" v-title="'Last Call by Agent'"> LA </b> <span>{{ prospect.last_agent }}</span>
+                                </li>
+                                <li>
+                                    <b class="icon-icon-2 mt-2" v-title="'Last Disposition'"> LD </b> <span>{{ prospect.last_dispo }}</span>
+                                </li>
+                                <li>
+                                    <b class="icon-icon-2 mt-2" v-title="myDateFormat('Last Called ', prospect.last_agent_dispo_time)"> LC </b> <span>{{ prospect.last_agent_dispo_time | logdateYearFull }}</span>
+                                </li>
+                            </ul>
                         </div>
                     </div>
                 </div>
