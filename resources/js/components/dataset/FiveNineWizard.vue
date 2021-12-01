@@ -10,7 +10,7 @@
                             <span class="step">
                                 <i class="step-icon bi bi-list-check"></i>
                             </span> 
-                            <b>{{ recordCount }} </b> Records Found
+                            <b>{{ recordCount }} / {{ selection }} </b> Records Found
                         </a>
                     </li>
                     <li role="tab" class="" :class="[(done_steps.indexOf(2) >= 0)?'done':(active_step == 2)?'current':'disabled']">
@@ -66,11 +66,30 @@
                     <div class="divtbody custom-height">
                         <div class="divtbody-row" v-for="(record, rkey) in records" :key="'all-'+rkey">
                             <div class="divtbody-elem wf-60">{{ rkey+1 }}</div>
-                            <div class="divtbody-elem wf-100">{{ record.record_id }}</div>
-                            <div class="divtbody-elem wf-200">{{ record.first_name+' '+record.last_name }}</div>
-                            <div class="divtbody-elem wf-150">{{ record.number1 }}</div>
-                            <div class="divtbody-elem wf-150">{{ record.number2 }}</div>
-                            <div class="divtbody-elem wf-150">{{ record.number3 }}</div>
+                            <div class="divtbody-elem wf-100 ">{{ record.record_id }}</div>
+                            <div class="divtbody-elem wf-200">
+                                
+                                <i class="bi bi-info-circle-fill brv-info-icon" @click="showProspect(record.record_id)" :class="[(prospect.record_id == record.record_id)?'text-dark':'text-primary']"></i>
+                                {{ record.first_name+' '+record.last_name }}
+                            </div>
+                            <div class="divtbody-elem wf-150 bg-dark1">
+                                <b class="d-inline-block position-relative badge badge-dark" style="top:-2px" v-if="record.number1">{{ record.number1type }}</b>
+                                <span class="wf-75 text-justify d-inline-block"  style="text-justify:inter-word"> 
+                                    {{ record.number1 }} </span>
+                                <span v-if="record.number1" style="top:2px" class="position-relative m-0 wf-25 d-inline-block badge" :class="[(record.number1call == 0)?'badge-success':(record.number1call < 10)?'badge-warning':'badge-danger']">{{ record.number1call }}</span>
+                            </div>
+                            <div class="divtbody-elem wf-150">
+                                <b class="d-inline-block position-relative badge badge-dark" style="top:-2px" v-if="record.number2">{{ record.number2type }}</b>
+                                <span class="wf-75 text-justify d-inline-block"  style="text-justify:inter-word"> 
+                                    {{ record.number2 }} </span>
+                                <span v-if="record.number2" style="top:2px" class="position-relative m-0 wf-25 d-inline-block badge" :class="[(record.number2call == 0)?'badge-success':(record.number2call < 10)?'badge-warning':'badge-danger']">{{ record.number2call }}</span>
+                            </div>
+                            <div class="divtbody-elem wf-150 bg-dark1">
+                                <b class="d-inline-block position-relative badge badge-dark" style="top:-2px" v-if="record.number3">{{ record.number3type }}</b>
+                                <span class="wf-75 text-justify d-inline-block"  style="text-justify:inter-word"> 
+                                    {{ record.number3 }} </span>
+                                <span v-if="record.number3" style="top:2px" class="position-relative m-0 wf-25 d-inline-block badge" :class="[(record.number3call == 0)?'badge-success':(record.number3call < 10)?'badge-warning':'badge-danger']">{{ record.number3call }}</span>
+                            </div>
                             <div class="divtbody-elem wf-60">{{ record.ext1 }}</div>
                             <div class="divtbody-elem wf-60">{{ record.ext2 }}</div>
                             <div class="divtbody-elem wf-60">{{ record.ext3 }}</div>
@@ -181,30 +200,57 @@
                     <div class="divtable border-top" v-if="recordCount >= 1">
                         <div class="divthead">
                             <div class="divthead-row">
-                                <div class="divthead-elem wf-60">SNo</div>
+                                <div class="divthead-elem wf-80">SNo</div>
                                 <div class="divthead-elem wf-100">Record ID</div>
                                 <div class="divthead-elem wf-200">Name</div>
-                                <div class="divthead-elem wf-150">Number1</div>
-                                <div class="divthead-elem wf-150">Number2</div>
-                                <div class="divthead-elem wf-150">Number3</div>
+                                <div class="divthead-elem wf-180">Number1</div>
+                                <div class="divthead-elem wf-180">Number2</div>
+                                <div class="divthead-elem wf-180">Number3</div>
+                                <div class="divthead-elem wf-60">Ext1</div>
+                                <div class="divthead-elem wf-60">Ext2</div>
+                                <div class="divthead-elem wf-60">Ext3</div>
                                 <div class="divthead-elem mwf-125">Company</div>
                                 <div class="divthead-elem wf-80">Action</div>
                             </div>
                         </div>
                         <div class="divtbody custom-height-210" v-if="refinedview == true">
-                            <div class="divtbody-row" v-for="(record, rkey) in records" :key="'all-'+rkey">
-                                <div class="divtbody-elem wf-60">{{ rkey+1 }}</div>
+                            <div class="divtbody-row" v-for="(record, rkey) in form.records" :key="'all-'+rkey">
+                                <div class="divtbody-elem wf-80">
+                                    <i class="bi bi-circle text-dark cursor-pointer" v-if="checkDuplicacy(record.number1)"></i>
+                                    <i class="bi bi-check-square-fill text-secondary" v-else></i>
+                                    {{ rkey+1 }}
+                                </div>
                                 <div class="divtbody-elem wf-100">{{ record.record_id }}</div>
-                                <div class="divtbody-elem wf-200">{{ record.first_name+' '+record.last_name }}</div>
-                                <div class="divtbody-elem wf-150">
-                                    <span :class="[(meltNumbers.indexOf(parseInt(record.number1)) != -1)?'bg-warning py-1 px-2':'']"> {{ record.number1 }} </span>
+                                <div class="divtbody-elem wf-200">
+                                    <i class="bi bi-info-circle-fill brv-info-icon" @click="showProspect(record.record_id)" :class="[(prospect.record_id == record.record_id)?'text-dark':'text-primary']"></i>
+                                    {{ record.first_name+' '+record.last_name }}
                                 </div>
-                                <div class="divtbody-elem wf-150">
-                                    <span :class="[(meltNumbers.indexOf(parseInt(record.number2)) != -1)?'bg-warning py-1 px-2':'']"> {{ record.number2 }} </span>
+
+                                <div class="divtbody-elem wf-180 bg-dark1">
+                                    <b class="d-inline-block position-relative badge badge-dark" style="top:-2px" v-if="record.number1">{{ record.number1type }}</b>
+                                    <span class="wf-75 text-justify d-inline-block"  style="text-justify:inter-word" :class="[(meltNumbers.indexOf(parseInt(record.number1)) != -1)?'text-danger':'']"> 
+                                        {{ record.number1 }} </span>
+                                    <span v-if="record.number1" style="top:2px" class="position-relative m-0 wf-25 d-inline-block badge" :class="[(record.number1call == 0)?'badge-success':(record.number1call < 10)?'badge-warning':'badge-danger']">{{ record.number1call }}</span>
+                                    <i class="swapper bi bi-shuffle" v-if="record.swapper1 == 1"></i>
                                 </div>
-                                <div class="divtbody-elem wf-150">
-                                    <span :class="[(meltNumbers.indexOf(parseInt(record.number3)) != -1)?'bg-warning py-1 px-2':'']"> {{ record.number3 }} </span>
+                                <div class="divtbody-elem wf-180">
+                                    <b class="d-inline-block position-relative badge badge-dark" style="top:-2px" v-if="record.number2">{{ record.number2type }}</b>
+                                    <span class="wf-75 text-justify d-inline-block"  style="text-justify:inter-word" :class="[(meltNumbers.indexOf(parseInt(record.number2)) != -1)?'text-danger':'']"> 
+                                        {{ record.number2 }} </span>
+                                    <span v-if="record.number2" style="top:2px" class="position-relative m-0 wf-25 d-inline-block badge" :class="[(record.number2call == 0)?'badge-success':(record.number2call < 10)?'badge-warning':'badge-danger']">{{ record.number2call }}</span>
+                                    <i class="swapper bi bi-shuffle" v-if="record.swapper2 == 1"></i>
                                 </div>
+                                <div class="divtbody-elem wf-180 bg-dark1">
+                                    <b class="d-inline-block position-relative badge badge-dark" style="top:-2px" v-if="record.number3">{{ record.number3type }}</b>
+                                    <span class="wf-75 text-justify d-inline-block"  style="text-justify:inter-word" :class="[(meltNumbers.indexOf(parseInt(record.number3)) != -1)?'text-danger':'']"> 
+                                        {{ record.number3 }} </span>
+                                    <span v-if="record.number3" style="top:2px" class="position-relative m-0 wf-25 d-inline-block badge" :class="[(record.number3call == 0)?'badge-success':(record.number3call < 10)?'badge-warning':'badge-danger']">{{ record.number3call }}</span>
+                                    <i class="swapper bi bi-shuffle" v-if="record.swapper3 == 1"></i>
+                                </div>
+
+                                <div class="divtbody-elem wf-60">{{ record.ext1 }}</div>
+                                <div class="divtbody-elem wf-60">{{ record.ext2 }}</div>
+                                <div class="divtbody-elem wf-60">{{ record.ext3 }}</div>
                                 <div class="divtbody-elem mwf-125">{{ record.company }}</div>
                                 <div class="divtbody-elem wf-80">
                                     <button class="btn btn-sm btn-danger" type="button" @click="deleteFRecord(rkey)">
@@ -217,16 +263,35 @@
                             <div class="divtbody-row" v-for="(record, rkey) in records" :key="'all-'+rkey">
                                 <div class="divtbody-elem wf-60">{{ rkey+1 }}</div>
                                 <div class="divtbody-elem wf-100">{{ record.record_id }}</div>
-                                <div class="divtbody-elem wf-200">{{ record.first_name+' '+record.last_name }}</div>
-                                <div class="divtbody-elem wf-150">
-                                    <span :class="[(meltNumbers.indexOf(parseInt(record.number1)) != -1)?'bg-warning py-1 px-2':'']"> {{ record.number1 }} </span>
+                                <div class="divtbody-elem wf-200">
+                                    <i class="bi bi-info-circle-fill brv-info-icon" @click="showProspect(record.record_id)" :class="[(prospect.record_id == record.record_id)?'text-dark':'text-primary']"></i>
+                                    {{ record.first_name+' '+record.last_name }}
                                 </div>
-                                <div class="divtbody-elem wf-150">
-                                    <span :class="[(meltNumbers.indexOf(parseInt(record.number2)) != -1)?'bg-warning py-1 px-2':'']"> {{ record.number2 }} </span>
+                                <div class="divtbody-elem wf-180 bg-dark1">
+                                    <b class="d-inline-block position-relative badge badge-dark" style="top:-2px" v-if="record.number1">{{ record.number1type }}</b>
+                                    <span class="wf-75 text-justify d-inline-block"  style="text-justify:inter-word" :class="[(meltNumbers.indexOf(parseInt(record.number1)) != -1)?'text-danger':'']"> 
+                                        {{ record.number1 }} </span>
+                                    <span v-if="record.number1" style="top:2px" class="position-relative m-0 wf-25 d-inline-block badge" :class="[(record.number1call == 0)?'badge-success':(record.number1call < 10)?'badge-warning':'badge-danger']">{{ record.number1call }}</span>
+                                    <i class="bi bi-shuffle" v-if="record.swapper1 == 1"></i>
                                 </div>
-                                <div class="divtbody-elem wf-150">
-                                    <span :class="[(meltNumbers.indexOf(parseInt(record.number3)) != -1)?'bg-warning py-1 px-2':'']"> {{ record.number3 }} </span>
+                                <div class="divtbody-elem wf-180">
+                                    <b class="d-inline-block position-relative badge badge-dark" style="top:-2px" v-if="record.number2">{{ record.number2type }}</b>
+                                    <span class="wf-75 text-justify d-inline-block"  style="text-justify:inter-word" :class="[(meltNumbers.indexOf(parseInt(record.number2)) != -1)?'text-danger':'']"> 
+                                        {{ record.number2 }} </span>
+                                    <span v-if="record.number2" style="top:2px" class="position-relative m-0 wf-25 d-inline-block badge" :class="[(record.number2call == 0)?'badge-success':(record.number2call < 10)?'badge-warning':'badge-danger']">{{ record.number2call }}</span>
+                                    <i class="bi bi-shuffle" v-if="record.swapper2 == 1"></i>
                                 </div>
+                                <div class="divtbody-elem wf-180 bg-dark1">
+                                    <b class="d-inline-block position-relative badge badge-dark" style="top:-2px" v-if="record.number3">{{ record.number3type }}</b>
+                                    <span class="wf-75 text-justify d-inline-block"  style="text-justify:inter-word" :class="[(meltNumbers.indexOf(parseInt(record.number3)) != -1)?'text-danger':'']"> 
+                                        {{ record.number3 }} </span>
+                                    <span v-if="record.number3" style="top:2px" class="position-relative m-0 wf-25 d-inline-block badge" :class="[(record.number3call == 0)?'badge-success':(record.number3call < 10)?'badge-warning':'badge-danger']">{{ record.number3call }}</span>
+                                    <i class="bi bi-shuffle" v-if="record.swapper3 == 1"></i>
+                                </div>
+
+                                <div class="divtbody-elem wf-60">{{ record.ext1 }}</div>
+                                <div class="divtbody-elem wf-60">{{ record.ext2 }}</div>
+                                <div class="divtbody-elem wf-60">{{ record.ext3 }}</div>
                                 <div class="divtbody-elem mwf-125">{{ record.company }}</div>
                                 <div class="divtbody-elem wf-80">
                                     <button class="btn btn-sm btn-danger" type="button" @click="deleteRecord(rkey)">
@@ -289,6 +354,85 @@
                 <p class="alert alert-warning"> Something is missing</p>
             </div>
         </div>
+        <div class="fullsidebar" id="prospectModal">
+            <div class="sidebar-content">
+                <div class="sidebar-header">
+                    <h5 class="sidebar-title">Call Details For Prospect - {{ prospect.name }}</h5>
+                    <button type="button" class="close" @click="closeSideBar()">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </div>
+                <div class="sidebar-body">
+                    <p class="text-center p-4" v-if="loading">
+                        <img :src="loader_url" alt="loading...">
+                    </p>
+                    <div v-else>
+                        <div>
+                            <table class="table table-striped table-bordered mb-2 table-condensed" v-if="prospect.mobilePhone">
+                                <tbody>
+                                    <tr>
+                                        <th colspan="2">Mobile Phone -  {{ prospect.mobilePhone.phone }}</th>
+                                        <th colspan="2">Called / Received - {{ prospect.mobilePhone.called }} / {{ prospect.mobilePhone.received }}</th>
+                                    </tr>
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>Dials</th>
+                                        <th>Recevied</th>
+                                        <th>Disposition</th>
+                                    </tr>
+                                    <tr v-for="(mrecord, mk) in prospect.mobilePhone.records" :key="'mk'+mk">
+                                        <td>{{ mrecord.timestamp | setFulldate }}</td>
+                                        <td>{{ mrecord.dial_attempts }}</td>
+                                        <td>{{ mrecord.call_received }}</td>
+                                        <td>{{ mrecord.disposition }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>  
+                            <table class="table table-striped table-bordered mb-2 table-condensed" v-if="prospect.workPhone">
+                                <tbody>
+                                    <tr>
+                                        <th colspan="2">Work Phone - {{ prospect.workPhone.phone }}</th>
+                                        <th colspan="2">Called / Received - {{ prospect.workPhone.called }} / {{ prospect.workPhone.received }}</th>
+                                    </tr>
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>Dials</th>
+                                        <th>Recevied</th>
+                                        <th>Disposition</th>
+                                    </tr>
+                                    <tr v-for="(wrecord, wk) in prospect.workPhone.records" :key="'wk'+wk">
+                                        <td>{{ wrecord.timestamp  | setFulldate }}</td>
+                                        <td>{{ wrecord.dial_attempts }}</td>
+                                        <td>{{ wrecord.call_received }}</td>
+                                        <td>{{ wrecord.disposition }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>  
+                            <table class="table table-striped table-bordered mb-2 table-condensed" v-if="prospect.homePhone">
+                                <tbody>
+                                    <tr>
+                                        <th colspan="2">Home Phone - {{ prospect.homePhone.phone }}</th>
+                                        <th colspan="2">Called / Received - {{ prospect.homePhone.called }} / {{ prospect.homePhone.received }}</th>
+                                    </tr>
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>Dials</th>
+                                        <th>Recevied</th>
+                                        <th>Disposition</th>
+                                    </tr>
+                                    <tr v-for="(hrecord, hk) in prospect.homePhone.records" :key="'hk'+hk">
+                                        <td>{{ hrecord.timestamp | setFulldate  }}</td>
+                                        <td>{{ hrecord.dial_attempts }}</td>
+                                        <td>{{ hrecord.call_received }}</td>
+                                        <td>{{ hrecord.disposition }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>   
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 <script>
@@ -297,6 +441,7 @@ export default {
     props: {
         'data': [Array, Object],
         'step': Number,
+        'selection': Number,
     },
     data() {
         return {
@@ -308,6 +453,7 @@ export default {
             prev_step:0,
             startnow:false,
             loader:false,
+            loading:false,
             loader_url: '/img/spinner.gif',
             donelists:[],
             meltNumbers:[],
@@ -315,6 +461,7 @@ export default {
             refinedview:false,
             comparable_list:[],
             time:0,
+            prospect:'',
             form: new Form({
                 records:[],
                 action: '',
@@ -326,6 +473,9 @@ export default {
         }
     },
     computed: {
+        duplicateCount() {
+            return this.form.records.map(e => e['number1']).map((e, i, final) => final.indexOf(e) !== i && i).filter(obj=> arr[obj]).map(e => arr[e]["number1"])
+        },
         numberStatus: {
             get: function () {
                 return false
@@ -458,23 +608,42 @@ export default {
                 }
                 if(subrec.number1 == '' && subrec.number2 != '') {
                     subrec.number1 = subrec.number2;
+                    subrec.number1type = subrec.number2type;
+                    subrec.number1call = subrec.number2call;
+                    subrec.ext1 = subrec.ext2;
+                    subrec.swapper1 = 1;
                     subrec.number2 = '';
                 }
                 else if(ele.number1 == '' && subrec.number2 == '' && subrec.number3 != '') {
                     subrec.number1 = subrec.number3;
+                    subrec.number1type = subrec.number3type;
+                    subrec.number1call = subrec.number3call;
+                    subrec.ext1 = subrec.ext3;
                     subrec.number3 = '';
+                    subrec.swapper1 = 1;
                 }
                 if(subrec.number1 != '' && subrec.number2 == '' && subrec.number3 != '') {
                     subrec.number2 = subrec.number3;
+                    subrec.number2type = subrec.number3type;
+                    subrec.number2call = subrec.number3call;
+                    subrec.ext2 = subrec.ext3;
                     subrec.number3 = '';
+                    subrec.swapper2 = 1;
                 }
+                let dupcNu = subrec.number1;
                 if(subrec.number1 == '' && subrec.number2 == '' && subrec.number3 == '') {
                     // Do nothing
                 } else {
                     newRecords.push(subrec);
                 }
             })
+            newRecords.sort((a, b) => (a.number1 > b.number1) ? 1 : -1)
             this.form.records = newRecords
+        },
+        sortObject(arr) {
+            return arr.slice().sort(function(a, b) {
+                return a.number1 == b.number1;
+            });
         },
         nextStep() {
             if(this.active_step < 4) {
@@ -591,6 +760,21 @@ export default {
             this.prev_step = 4;
             this.time = this.form.ac_list.length+5;
             this.form.reset();
+        },
+        showProspect(record_id) {
+            this.loading = true;
+            $('#prospectModal').addClass('show-sidebar');
+            axios.get('/api/get-short-details/'+record_id).then((response) => { this.prospect = response.data.result; this.loading = false;})
+        },
+        closeSideBar() {
+            this.prospect = '';
+            $('#prospectModal').removeClass('show-sidebar');
+        },
+        checkDuplicacy(n1) {
+            let dcount = this.form.records.filter((rec) => { return rec.number1 == n1})
+            if(dcount.length >= 2) {
+                return true
+            } else { return false }
         }
     },
     mounted() {

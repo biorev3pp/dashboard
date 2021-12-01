@@ -20,6 +20,7 @@
                             <small>({{ detail.percentage }})</small> 
                         </h4>
                         <p>{{ detail.value }}</p>
+                        <time-clock :time="detail.time" :callTime="detail.callTime" :timezone="detail.timezone" />
                     </div>
                </div>
                 <div class="outer-synop cursor-pointer text-danger" style="right:0" @click="showListModal">
@@ -200,10 +201,12 @@ import DateRangePicker from 'vue2-daterange-picker';
 import 'vue2-daterange-picker/dist/vue2-daterange-picker.css';
 import 'vue-select/dist/vue-select.css';
 import draggable from 'vuedraggable'
+import TimeClock from './TimeClock.vue'
 
 export default {
-    components:{DateRangePicker, draggable},
+    components:{DateRangePicker, draggable, TimeClock},
     data() {
+        TimeClock
         return {
             drag:false,
             gfList:[],

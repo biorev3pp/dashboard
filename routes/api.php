@@ -196,10 +196,24 @@ Route::get('/delete-all-from-list', [App\Http\Controllers\API\FiveNineController
 Route::get('/delete-list', [App\Http\Controllers\API\FiveNineController::class, 'deleteList']);
 Route::get('/create-new-list/{listName}', [App\Http\Controllers\API\FiveNineController::class, 'createNewList']);
 Route::get('/update-list', [App\Http\Controllers\API\FiveNineController::class, 'updateList']);
+Route::get('/get-short-details/{id}', [App\Http\Controllers\API\ContactsController::class, 'getShortDetails']);
+
+Route::post("/get-emails-all-data", [App\Http\Controllers\API\EmailsController::class, "index"]);
+Route::post("/get-emails", [App\Http\Controllers\API\EmailsController::class, "getEmails"]);
 
 //testing
 Route::get('/get-five-nine-all-list-report', [App\Http\Controllers\API\FiveNineController::class, 'getAllList']);
 Route::get('/get-five-nine-all-list-report-results/{id}', [App\Http\Controllers\API\FiveNineController::class, 'getAllListResults']);
 Route::post('/outreach-records', [App\Http\Controllers\API\OutreachController::class, 'getOutreachRecords']);
 
+//database fields manipulation
 
+Route::get("/get-display-names", [App\Http\Controllers\API\UpdateDatabaseController::class, 'displayNames']);
+
+Route::post("/get-null-fields", [App\Http\Controllers\API\UpdateDatabaseController::class, 'getNullFields']);
+Route::post("/get-table-fields", [App\Http\Controllers\API\UpdateDatabaseController::class, 'index']);
+Route::post("/get-table-data", [App\Http\Controllers\API\UpdateDatabaseController::class, 'getTableData']);
+Route::post("/mearge-records", [App\Http\Controllers\API\UpdateDatabaseController::class, 'meargeRecords']);
+Route::post("/update-records", [App\Http\Controllers\API\UpdateDatabaseController::class, 'updateRecords']);
+Route::post("/reset-records", [App\Http\Controllers\API\UpdateDatabaseController::class, 'resetRecords']);
+Route::post("/transfer-records", [App\Http\Controllers\API\UpdateDatabaseController::class, 'transferRecords']);

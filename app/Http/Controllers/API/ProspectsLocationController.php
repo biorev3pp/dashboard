@@ -99,8 +99,8 @@ class ProspectsLocationController extends Controller
     public function updateOutreachContactsOnOutreachServer($id){
         ini_set('max_execution_time', 3600);
         // $id = 20;
-        $contact = Contacts::whereDate("updated_at", '2021-11-16')->where("record_id", ">" , $id)->first();
-        
+        $contact = Contacts::where("country", 'LIKE', 'United States')->where("record_id", ">" , $id)->first();
+        //dd($contact->record_id);
         $accessToken = $this->__outreachsessionProspects();
         
         $curl = curl_init();
@@ -109,8 +109,8 @@ class ProspectsLocationController extends Controller
             "type" => "prospect",
             "id" => intval($contact->record_id),
             "attributes" => [
-                "addressCountry" => $contact->country,
                 "addressState" => $contact->state,
+                "custom29" => $contact->custom29
             ]
         ];
         $d = json_encode($data);        
@@ -288,102 +288,54 @@ class ProspectsLocationController extends Controller
         // return view('fetchNxx', compact('id', 'count', 'lastid'));
     }
     public function states($id){
-        
-        $contacts = Contacts::where("country", "LIKE", "united states")->where("id", ">", $id)->orderBy("id", "asc")->limit(100)->get();
+        if($id > 46100){
+            die;
+        }
+        $contacts = Contacts::where("country", "LIKE", "united states")->where("id", ">", $id)->orderBy("id", "asc")->limit(500)->get();
         $country_id = 228;
         $count = 0;
+        $state_code = null;
         foreach($contacts as $contact){
             $state = $contact["state"];
             $state_id = null;
-            $timezone_id = null;
-            $timezone = null;
             $code = null;
-                if($contact["workPhones"]){
-                    $workPhones = $contact["workPhones"];
-                    $workPhones = $this->__NumberFormater($workPhones);
-                    $code = intval(substr($workPhones, 0, 3));
-                    if($code){
-                        $city = City::where("area_code", $code)->first();
-                        if($city){
-                            $recordState = State::where("code", "LIKE", $city["state_code"])->first();
-                            $state_id = $recordState->id;
-                            $timezone_id = $recordState->timezone_id;
-                            $recordTimezone = Timezone::where("id", $recordState->timezone_id)->first();
-                            if($recordTimezone){
-                                $timezone = $recordTimezone->timezone_type;
-                            }
-                        }
-                    }
+            if($contact["workPhones"]){
+                $workPhones = $contact["workPhones"];
+                $workPhones = $this->__NumberFormater($workPhones);
+                $npa =  intval(substr($workPhones, 0, 3));
+                $nxx = intval(substr($workPhones, 3, 3));
+                $NxxRecord = NxxRecord::where("npa",$npa)->where("nxx", $nxx)->first();
+                if($NxxRecord){
+                    $state_code = $NxxRecord->state;
                 }
-                if(is_null($state_id) && $contact["homePhones"]){
-                    $homePhones = $contact["homePhones"];
-                    $homePhones = $this->__NumberFormater($homePhones);
-                    $code = intval(substr($homePhones, 0, 3));
-                    if($code){
-                        $city = City::where("area_code", $code)->first();
-                        if($city){
-                            $recordState = State::where("code", "LIKE", $city["state_code"])->first();
-                            $state_id = $recordState->id;
-                            $timezone_id = $recordState->timezone_id;
-                            $recordTimezone = Timezone::where("id", $recordState->timezone_id)->first();
-                            if($recordTimezone){
-                                $timezone = $recordTimezone->timezone_type;
-                            }
-                        }
-                    }
-                }
-                if(is_null($state_id) && $contact["mobilePhones"]){
-                    $mobilePhones = $contact["mobilePhones"];
-                    $mobilePhones = $this->__NumberFormater($mobilePhones);
-                    $code = intval(substr($mobilePhones, 0, 3));
-                    if($code){
-                        $city = City::where("area_code", $code)->first();
-                        if($city){
-                            $recordState = State::where("code", "LIKE", $city["state_code"])->first();
-                            $state_id = $recordState->id;
-                            $timezone_id = $recordState->timezone_id;
-                            $recordTimezone = Timezone::where("id", $recordState->timezone_id)->first();
-                            if($recordTimezone){
-                                $timezone = $recordTimezone->timezone_type;
-                            }
-                        }
-                    }
-                }
-            $city_id = null;
-            // if(is_null($state_id))
-            //     $city_id = null;
-            // else{
-            //     $city = $contact["city"];
-            //     if($city){
-            //         $recordCity = City::where("city", "LIKE", $city)->first();
-            //         if($recordCity){
-            //             $city_id = $recordCity->id;
-            //         }else{
-            //             $city_id = null;
-            //         }
-            //     }
-            // }
-            if(ContactTime::where("contact_id", $contact["record_id"])->count() > 0){
-                ContactTime::where("contact_id", $contact["record_id"])
-                ->update([
-                    "contact_id" => $contact["record_id"],
-                    "state_id" => $state_id,
-                    "country_id" => $country_id,
-                    "city_id" => $city_id,
-                    "timezone_id" => $timezone_id,
-                    "timezone" => $timezone
-                ]);
-            }else{
-                ContactTime::create([
-                    "contact_id" => $contact["record_id"],
-                    "state_id" => $state_id,
-                    "country_id" => $country_id,
-                    "city_id" => $city_id,
-                    "timezone_id" => $timezone_id,
-                    "timezone" => $timezone
-                ]);
             }
-            $id = $contact->id;
+            if(is_null($state_code) && $contact["homePhones"]){
+                $homePhones = $contact["homePhones"];
+                $homePhones = $this->__NumberFormater($homePhones);
+                $npa =  intval(substr($homePhones, 0, 3));
+                $nxx = intval(substr($homePhones, 3, 3));
+                $NxxRecord = NxxRecord::where("npa",$npa)->where("nxx", $nxx)->first();
+                if($NxxRecord){
+                    $state_code = $NxxRecord->state;
+                }
+            }
+            if(is_null($state_code) && $contact["mobilePhones"]){
+                $mobilePhones = $contact["mobilePhones"];
+                $mobilePhones = $this->__NumberFormater($mobilePhones);
+                $npa =  intval(substr($mobilePhones, 0, 3));
+                $nxx = intval(substr($mobilePhones, 3, 3));
+                $NxxRecord = NxxRecord::where("npa",$npa)->where("nxx", $nxx)->first();
+                if($NxxRecord){
+                    $state_code = $NxxRecord->state;
+                }
+            }
+            if($state_code){
+                $state = State::where("code", "LIKE", $state_code)->first();
+                if($state){
+                    Contacts::where("record_id", $contact["record_id"])->update([ "state" => $state->state ]);
+                }
+            }
+            $id = $contact["id"];
             $count++;
         }
         return view("get_state_city_timezone", compact('id', 'count'));

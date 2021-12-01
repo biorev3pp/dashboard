@@ -23,6 +23,8 @@ import SyncReport from './components/reports/Sync.vue';
 import SyncReportDetail from './components/reports/SyncDetail.vue';
 import Tasks from './components/tasks/index.vue';
 import ProspectsLocation from './components/ProspectsLocation.vue';
+import DatabaseUpdate from './components/UpdateDatabaseFields.vue';
+import EmailDetailDashboard from './components/dashboard/DashboardEmail.vue';
 
 export const routes = [{
         path: '/',
@@ -245,5 +247,21 @@ export const routes = [{
             requiresAuth: true,
             title: 'Prospects Index New',
         }
-    }
+    },
+    {
+        path: '/dashboard/email-details',
+        component: EmailDetailDashboard,
+        meta: {
+            requiresAuth: true,
+            title: 'Dashboard - Email Details',
+        }
+    },
+    {
+        path: '/database-update',
+        component: DatabaseUpdate,
+        meta: {
+            requiresAuth: true,
+            title: 'Data Enrichment',
+        }
+    },
 ];

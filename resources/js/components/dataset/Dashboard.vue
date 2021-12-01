@@ -304,7 +304,7 @@
             </div>
         </div>
         <div v-else-if="step >= 1">
-            <export-wizard :step="step" :data="fivenineData" />
+            <export-wizard :selection="exportForm.exports.length" :step="step" :data="fivenineData" />
         </div>
         <div v-else>
         </div>
@@ -974,7 +974,7 @@ export default {
                     for(var i = 0; i <= records.length; i++){
                         var id = records[i]["id"]
                         if(this.recordContainer.indexOf(id) > -1){
-                            if(document.getElementById('record-'+id).checked == false){
+                            if(document.getElementById('record-'+id).checked == false) {
                                 document.getElementById('record-'+id).checked = true
                             }
                         }

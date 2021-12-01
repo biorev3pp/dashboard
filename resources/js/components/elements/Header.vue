@@ -10,6 +10,7 @@
                         <option value="">Prospect </option>
                         <option value="calls">Calls </option>
                         <option value="agents">Agents </option>
+                        <option value="emails">Emails </option>
                     </select>
                     <span class="page-title" v-html="title"></span>
                 </div>

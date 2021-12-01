@@ -5,12 +5,14 @@
 
 ::-webkit-scrollbar {
     width: 10px;
+    cursor: pointer;
     height: 10px;
 }
 
 ::-webkit-scrollbar-track {
     -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
     box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -19,10 +21,12 @@
     background: #55185d;
     -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.5);
     box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.5);
+    cursor: pointer;
 }
 
 ::-webkit-scrollbar-thumb:window-inactive {
     background: #3F1245;
+    cursor: pointer;
 }
 
 .bt-bottom-border {
@@ -349,6 +353,12 @@
 
 .fit-content-wf {
     height: calc(100vh - 177px);
+    overflow: auto;
+}
+.fit-content-wf-200 {
+    max-height: 250px;
+    overflow: auto;
+    margin: 5px 0;
 }
 
 .table-badge {
@@ -741,7 +751,7 @@ table span.badge {
 }
 
 .fit-divt-content2 {
-    height: calc(100vh - 300px);
+    height: calc(100vh - 305px);
     overflow-y: auto;
     overflow-x: hidden;
 }
@@ -2152,6 +2162,93 @@ table span.badge {
     height: calc(100vh - 135px);
     overflow-y: auto;
     overflow-x: hidden;
+}
+.bg-dark1{
+    background: #f4f4f4 !important;
+}
+.brv-info-icon{
+    font-size: 15px;
+    position: relative;
+    top: 2px;
+    cursor: pointer;
+}
+.fullsidebar{
+    position: fixed;
+    top: 0;
+    right: -400px;
+    background: #f4f4f4;
+    width: 400px;
+    z-index: 111;
+    box-shadow: 0px -6px 14px #ccc;
+    -webkit-transition: all 300ms ease-in;
+    -moz-transition: all 300ms ease-in;
+    -ms-transition: all 300ms ease-in;
+    -o-transition: all 300ms ease-in;
+    transition: all 300ms ease-in;
+    -webkit-box-shadow: 0px -6px 14px #ccc;
+    .sidebar-header{
+        height: 50px;
+        padding: 10px 10px 10px 15px;
+        border-bottom: 1px solid #e4e4e4;
+        position: relative;
+        h5{
+            margin: 0;
+            line-height: 25px;
+        }
+        button.close {
+            position: absolute;
+            right: 5px;
+            top: 12px;
+            i {
+                font-size: 25px;
+            }
+        }
+    }
+    .sidebar-body{
+        height: calc(100vh - 50px);
+        overflow: auto;
+        background: #fff;
+        padding: 10px 12px;
+    }
+}
+.show-sidebar{
+    right:0px !important;
+}
+.swapper{
+    background: #ffed4a;
+    border: 1px solid #857b26;
+    padding: 0 3px;
+    border-radius: 2px;
+    position: relative;
+    top: -2px;
+}
+.dropdown-toggle::after {
+    float: right;
+    top: 6px;
+    position: relative;
+}
+.divtable-heaeder{
+    background: #ddd;
+    padding:6px 8px;
+    h4 {
+        margin: 0;
+        font-size: 13px;
+    }
+}
+.fit-cluster{
+    height: 215px;
+    .fit-cluster-inner{
+        max-height: 190px;
+        overflow: auto;
+    }
+    .divthead .divthead-elem {
+        padding: 5px !important;
+        height: 27px !important;
+    }
+    .divtbody .divtbody-elem {
+        padding: 5px !important;
+        height: 27px !important;
+    }
 }
 @media (max-width:768px) {
     .wizard>.steps>ul{margin-bottom:20px}

@@ -31,6 +31,7 @@
         "firebase": "^9.0.1",
         "laravel-vue-pagination": "^2.3.1",
         "moment": "^2.29.1",
+        "moment-timezone": "^0.5.34",
         "numeral": "^2.0.6",
         "vform": "^1.0.1",
         "vue-apexcharts": "^1.6.2",

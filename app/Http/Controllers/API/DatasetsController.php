@@ -913,7 +913,7 @@ class DatasetsController extends Controller
         
         $totalContacts = 0;
         $records = $records->get();
-        $recordsNull = $recordsNull->whereNull("contacts.$graphFilter")->count();        
+        $recordsNull = $recordsNull->whereNull("contacts.$graphFilter")->count();
         foreach($records as $value) {
             $totalContacts += $value["count"];
         }
@@ -956,7 +956,10 @@ class DatasetsController extends Controller
                             "count" => $value["count"],
                             "field" => $graphFilter,
                             "value" => substr($value[$graphFilter], 0, 50),
-                            "percentage" => number_format(($value["count"]*100)/$totalContacts, 1, '.', '')."%"
+                            "percentage" => number_format(($value["count"]*100)/$totalContacts, 1, '.', '')."%",
+                            "time" => ($graphFilter == "custom29") ? $this->__getTime($value[$graphFilter]) : '',
+                            "callTime" => ($graphFilter == "custom29") ? $this->__getCallTime($value[$graphFilter]) : '',
+                            "timezone" => ($graphFilter == "custom29") ? $this->__getCallTimeZone($value[$graphFilter]) : ''
                         ];
                     }
                 }
@@ -986,6 +989,25 @@ class DatasetsController extends Controller
             "historyKey" => $historyKey,
             "historyValue" => $historyValue,
         ];
+    }
+    private function __getTime($timezone){
+        $record = DB::table("timezones")->where("timezone_type", "LIKE", $timezone)->orderBy("id", "desc")->first();
+        date_default_timezone_set($record->timezone);
+        return date("h:i A", strtotime("now"));
+    }
+    private function __getCallTime($timezone){
+        $record = DB::table("timezones")->where("timezone_type", "LIKE", $timezone)->orderBy("id", "desc")->first();
+        date_default_timezone_set($record->timezone);
+        $callTime = intval(date("H", strtotime("now")));
+        if(($callTime >= 8) && ($callTime <= 17)){
+            return 1;
+        }else{
+            return 0;
+        }
+    }
+    private function __getCallTimeZone($timezone){
+        $record = DB::table("timezones")->where("timezone_type", "LIKE", $timezone)->orderBy("id", "desc")->first();
+        return $record->timezone;
     }
     public function getGraphSearchCriteriaRecord(Request $request){
         return["results" => DB::table("graph_search_criterias")->where("value", "=", $request->input("value"))->first()];
@@ -1172,6 +1194,21 @@ class DatasetsController extends Controller
         $string = substr($string, -10);
         return $string;
     }
+
+    private function __NumberType($number, $rid)
+    {
+        $data = DB::table('fivenine_call_logs')
+        //->select(DB::raw('sum(dial_attempts) as sum_dial_attempts'))
+        ->where('record_id', $rid)
+        ->where('dnis', $number)->get();
+        $total = 0;
+        foreach($data as $value){
+            $value = get_object_vars($value);
+            $total += intval($value["dial_attempts"]);
+        }
+        return $total;
+    }
+
     private function __NumberExtFormater1($var = null)
     {
         if(strpos(strtolower($var), "ext") > -1){
@@ -1193,7 +1230,7 @@ class DatasetsController extends Controller
                 $mobilePhones = $record->mobilePhones;
                 $workPhones = $record->workPhones;
                 $homePhones = $record->homePhones;
-                if($mobilePhones == ''){
+                /* if($mobilePhones == ''){
                     if($workPhones != '' && $homePhones != ''){
                         $mobilePhones = $workPhones;
                         $workPhones = $homePhones;
@@ -1210,13 +1247,19 @@ class DatasetsController extends Controller
                         $workPhones = $homePhones;
                         $homePhones = null;
                     }
-                }
+                } */
                 $results[] = [
                     "first_name" => ucfirst($record->first_name),
                     "last_name" => ucfirst($record->last_name),
                     "number1" => $this->__NumberFormater1($mobilePhones),
                     "number2" => $this->__NumberFormater1($workPhones),
                     "number3" => $this->__NumberFormater1($homePhones),
+                    "number1type" => 'M',
+                    "number2type" => 'W',
+                    "number3type" => 'H',
+                    "number1call" => $this->__NumberType($this->__NumberFormater1($mobilePhones), $record->record_id),
+                    "number2call" => $this->__NumberType($this->__NumberFormater1($workPhones), $record->record_id),
+                    "number3call" => $this->__NumberType($this->__NumberFormater1($homePhones), $record->record_id),
                     "ext1" => $this->__NumberExtFormater1($mobilePhones),
                     "ext2" => $this->__NumberExtFormater1($workPhones),
                     "ext3" => $this->__NumberExtFormater1($homePhones),
@@ -1226,5 +1269,8 @@ class DatasetsController extends Controller
             }
         }
         return $results;
+    }
+    function getTimezoneTime(){
+        
     }
 }

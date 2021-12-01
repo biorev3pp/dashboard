@@ -21,7 +21,7 @@ import vSelect from 'vue-select';
 import JsonExcel from "vue-json-excel";
 import VueSweetalert2 from 'vue-sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
-import { TabsPlugin, BSpinner, VBTooltip, BModal, BFormCheckbox } from 'bootstrap-vue';
+import { TabsPlugin, BSpinner, VBTooltip, BModal, BFormCheckbox, BCollapse } from 'bootstrap-vue';
 import VueApexCharts from 'vue-apexcharts'
 Vue.use(VueApexCharts)
 Vue.component('apexchart', VueApexCharts)
@@ -44,7 +44,7 @@ Vue.use(VueToast, {
 
 Vue.use(VueSweetalert2);
 window.Form = Form;
-// window.swal = swal;
+//window.swal = swal;
 Vue.component(HasError.name, HasError);
 Vue.component(AlertError.name, AlertError)
 Vue.component("downloadExcel", JsonExcel);
