@@ -12,22 +12,6 @@ Route::get('/run-queue', function(){
     Artisan::call('queue:work --stop-when-empty', []);
     echo "queue is stopped";
 });
-//database fields manipulation
-Route::get("/get-display-names", [App\Http\Controllers\API\UpdateDatabaseController::class, 'displayNames']);
-Route::post("/get-null-fields", [App\Http\Controllers\API\UpdateDatabaseController::class, 'getNullFields']);
-Route::post("/get-table-fields", [App\Http\Controllers\API\UpdateDatabaseController::class, 'index']);
-Route::post("/get-table-data", [App\Http\Controllers\API\UpdateDatabaseController::class, 'getTableData']);
-Route::post("/mearge-records", [App\Http\Controllers\API\UpdateDatabaseController::class, 'meargeRecords']);
-Route::post("/update-records", [App\Http\Controllers\API\UpdateDatabaseController::class, 'updateRecords']);
-Route::post("/reset-records", [App\Http\Controllers\API\UpdateDatabaseController::class, 'resetRecords']);
-Route::post("/transfer-records", [App\Http\Controllers\API\UpdateDatabaseController::class, 'transferRecords']);
-
-Route::post("/get-field-based-data", [App\Http\Controllers\API\UpdateDatabaseController::class, 'getFieldBasedData']);
-Route::post("/get-count-based-data", [App\Http\Controllers\API\UpdateDatabaseController::class, 'getCountBasedData']);
-
-//email dashboard
-Route::post("/get-emails-all-data", [App\Http\Controllers\API\EmailsController::class, "index"]);
-Route::post("/get-emails", [App\Http\Controllers\API\EmailsController::class, "getEmails"]);
 Route::post("/get-prospects-location", [App\Http\Controllers\API\ProspectsLocationController::class, 'index']);
 //agent occupancy
 
@@ -222,4 +206,14 @@ Route::get('/get-five-nine-all-list-report', [App\Http\Controllers\API\FiveNineC
 Route::get('/get-five-nine-all-list-report-results/{id}', [App\Http\Controllers\API\FiveNineController::class, 'getAllListResults']);
 Route::post('/outreach-records', [App\Http\Controllers\API\OutreachController::class, 'getOutreachRecords']);
 
+//database fields manipulation
 
+Route::get("/get-display-names", [App\Http\Controllers\API\UpdateDatabaseController::class, 'displayNames']);
+
+Route::post("/get-null-fields", [App\Http\Controllers\API\UpdateDatabaseController::class, 'getNullFields']);
+Route::post("/get-table-fields", [App\Http\Controllers\API\UpdateDatabaseController::class, 'index']);
+Route::post("/get-table-data", [App\Http\Controllers\API\UpdateDatabaseController::class, 'getTableData']);
+Route::post("/mearge-records", [App\Http\Controllers\API\UpdateDatabaseController::class, 'meargeRecords']);
+Route::post("/update-records", [App\Http\Controllers\API\UpdateDatabaseController::class, 'updateRecords']);
+Route::post("/reset-records", [App\Http\Controllers\API\UpdateDatabaseController::class, 'resetRecords']);
+Route::post("/transfer-records", [App\Http\Controllers\API\UpdateDatabaseController::class, 'transferRecords']);

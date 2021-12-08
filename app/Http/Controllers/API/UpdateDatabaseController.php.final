@@ -11,25 +11,24 @@ use App\Models\Contacts;
 class UpdateDatabaseController extends Controller
 {
     function getNullFields(Request $request){
+        $fields = DB::getSchemaBuilder()->getColumnListing($request->input("tableName"));
+        $tableName = $request->input("tableName");
         $nullFields = [];
-        if(DB::table("temp_contacts")->count() == 0){
-            $fields = DB::getSchemaBuilder()->getColumnListing("contact_customs");
-            foreach($fields as $field){
-                $count = DB::table("contact_customs")->whereNotNull($field)->count();
-                if($count == 0){
-                    $nullFields[] = $field;
-                    DB::table("temp_contacts")->insert([ "field" =>  $field]);
-                }
+        foreach($fields as $field){
+            $count = DB::table($tableName)->whereNotNull($field)->count();
+            if($count == 0){
+                $nullFields[] = $field;
             }
         }
-        $nullFields = DB::table("temp_contacts")->pluck("field")->toArray();
         return $nullFields;
     }
+
     function index(Request $request){
         $fields = DB::getSchemaBuilder()->getColumnListing($request->input("tableName"));
         $non_changable = ['id', 'record_id', 'account_id', 'first_name', 'last_name', 'mobilePhones', 'homePhones', 'workPhones', 'voipPhones', 'otherPhones', 'emails', 'hnumber', 'mnumber', 'wnumber', 'old_stage', 'name', 'created_at', 'updated_at', 'email_opened', 'email_replied', 'email_bounced', 'email_clicked', 'email_delivered', 'dataset', 'mcall_attempts', 'mcall_received', 'hcall_attempts', 'hcall_received', 'wcall_attempts', 'wcall_received', 'last_outreach_email', "last_outreach_activity", "last_campaign", "last_export", "last_agent_dispo_time", "last_agent", "last_dispo", "dial_attempts", "last_update_at", "fivenine_created_at", "outreach_touched_at", "outreach_created_at", "websiteUrl1", "linkedInUrl"];
         return array_diff($fields, $non_changable);
     }
+
     function getTableData(Request $request){
         $field = $request->input("field");
         $tableName = $request->input("tableName");
@@ -42,7 +41,7 @@ class UpdateDatabaseController extends Controller
         $records = DB::table($tableName)
         ->selectRaw("$field as field, count($field) as total")
         ->groupBy($field)
-        ->orderBy('field', 'asc')
+        ->orderBy('total', 'desc')
         ->get();
         $nrecords = [];
         foreach($records as $key => $value){
@@ -59,17 +58,9 @@ class UpdateDatabaseController extends Controller
                 $nrecords[$key] = $value;
             }
         }
-        if($field == 'stage'){
-            $records = DB::table('stages')->select('name', 'oid')->get();
-            $stage = [];
-            foreach($records as $value){
-                $value = get_object_vars($value);
-                $stage[$value["oid"]] = $value["name"];
-            }
-        return ['results' => $nrecords, 'stage' => $stage];
-        }
-        return ['results' => $nrecords];
+        return $nrecords;
     }
+
     function meargeRecords(Request $request){
         $tableName = $request->input("tableName");
         $field = $request->input("field");
@@ -97,6 +88,7 @@ class UpdateDatabaseController extends Controller
         }
         return [];
     }
+
     function updateRecords(Request $request){
         $tableName = $request->input("tableName");
         $field = $request->input("field");
@@ -112,7 +104,8 @@ class UpdateDatabaseController extends Controller
             }
         }
         return [];
-    }    
+    }  
+
     function resetRecords(Request $request){
         $tableName = $request->input("tableName");
         $field = $request->input("field");
@@ -129,25 +122,25 @@ class UpdateDatabaseController extends Controller
         }
         return [];
     }
+
     function transferRecords(Request $request){
         $tableName = $request->input("tableName");
         $field = $request->input("field");
         $meargRecords = $request->input("meargRecords");
         $nullField = $request->input("nullField");
         $newNullField = $request->input("newNullField");
-        $fields = DB::getSchemaBuilder()->getColumnListing("contact_customs");
+        $fields = DB::getSchemaBuilder()->getColumnListing($request->input("tableName"));
         if(in_array($newNullField, $fields)){
             return ["status" => "exists"];
         }
+
         if($newNullField){
-            $result = DB::statement("ALTER TABLE 'contact_customs' ADD $newNullField VARCHAR(250) NULL DEFAULT NULL");
+            $result = DB::statement("ALTER TABLE $tableName ADD $newNullField VARCHAR(250) NULL DEFAULT NULL");
             foreach($meargRecords as $value){
-                $records = DB::table($tableName)->select("record_id")->where($field, "LIKE", $value)->pluck("record_id");
-                DB::table($tableName)->whereIn('record_id', $records)->update([ 
-                    $field => null
-                ]);
-                DB::table("contact_customs")->whereIn('contact_id', $records)->update([ 
+                $records = DB::table($tableName)->select("id")->where($field, "LIKE", $value)->pluck("id");
+                DB::table($tableName)->whereIn('id', $records)->update([ 
                     $newNullField => $value,
+                    $field => null
                 ]);
             }
             return ["status" => "success"];
@@ -159,21 +152,18 @@ class UpdateDatabaseController extends Controller
             unset($meargRecords[array_search("Empty", $meargRecords)]);
         }
         foreach($meargRecords as $value){
-            $records = DB::table($tableName)->select("record_id")->where($field, "LIKE", $value)->pluck("record_id");
-            DB::table($tableName)->whereIn('record_id', $records)->update([ 
+            $records = DB::table($tableName)->select("id")->where($field, "LIKE", $value)->pluck("id");
+            DB::table($tableName)->whereIn('id', $records)->update([ 
+                $nullField => $value,
                 $field => null
             ]);
-            DB::table("contact_customs")->whereIn('contact_id', $records)->update([ 
-                $nullField => $value,
-            ]);
-        }
-        DB::table("temp_contacts")->where('field', "LIKE", $nullField)->delete();
+        }        
         return ["status" => "success"];
     }
+
     public function displayNames()
     {
-        return [
-                'custom1' => 'Purchase Authorization',
+        return ['custom1' => 'Purchase Authorization',
                 'custom2' => 'Department',
                 'custom9' => 'Industry',
                 'custom10' => 'Primary Industry',
@@ -181,20 +171,5 @@ class UpdateDatabaseController extends Controller
                 'custom12' => 'Company Rev Range',
                 'custom29' => 'Timezone Group'
             ];
-    }
-
-    function getFieldBasedData(Request $request){
-        $fieldName = $request->input("fieldName");
-        $field = $request->input("field");
-        if($fieldName == 'Null' || $fieldName == 'Empty'){
-            return DB::table('contacts')->select('company', 'first_name', 'last_name', 'emails', 'mobilePhones', 'homePhones', 'workPhones')->whereNull($field)->get();    
-        }
-        return DB::table('contacts')->select('company', 'first_name', 'last_name', 'emails', 'mobilePhones', 'homePhones', 'workPhones')->where($field, "LIKE", $fieldName)->get();
-    }
-
-    function getCountBasedData(Request $request){
-        $fieldNameContainer = $request->input("fieldNameContainer");
-        $field = $request->input("field");
-        return DB::table('contacts')->select('company', 'first_name', 'last_name', 'emails', 'mobilePhones', 'homePhones', 'workPhones')->whereIn($field, $fieldNameContainer)->get();
     }
 }

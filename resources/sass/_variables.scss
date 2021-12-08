@@ -1,3 +1,4 @@
+@use 'sass:math';
 // Body
 $body-bg: #f8fafc;
 // Typography
@@ -22,7 +23,7 @@ $themehover:#6d18aa;
 $wamounts: (1, 2, 3, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 75, 80, 90, 100);
 @each $wamount in $wamounts {
     .w-#{$wamount} {
-        width: percentage($wamount/100) !important;
+        width: percentage(math.div($wamount, 100)) !important;
     }
     .wf-#{$wamount} {
         width: #{$wamount}px !important;

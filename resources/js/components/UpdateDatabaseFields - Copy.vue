@@ -1,0 +1,1217 @@
+<template>
+    <div>
+        <div class="filterbox">
+            <div style="white-space: nowrap; overflow-x: auto; height: 50px;">
+                <button class="btn btn-sm m-1 theme-btn" :class="[(form.field == field)?'btn-dark':'btn-outline-dark ']" v-for="(field,index) in form.fields" :key="'input-fields-'+index" @click="getData(field)">
+                    {{ (display_name_key.indexOf(field) >= 0)? display_name_value[display_name_key.indexOf(field)]:field | inputFields }}
+                </button>
+            </div>
+        </div>
+        <div class="bg-white pt-2">
+            <p class="p-4" v-if="loader">
+                <img :src="loader_url" alt="loading...">
+            </p>
+            <div class="row m-0" v-else>
+                <div class="col-md-3">
+                    <div class="divtable border" v-if="form.field">
+                        <div class="divthead">
+                            <div class="divthead-row">
+                                <div class="divthead-elem wf-50">SNo</div>
+                                <div class="divthead-elem mwf-100">Record ({{form.records.length | freeNumber}})</div>
+                                <div class="divthead-elem wf-80 text-center">Count</div>
+                            </div>
+                        </div>
+                        <div class="divtbody fit-content">
+                            <div class="divtbody-row" v-for="(field,index) in form.records" :key="'input-field-record-'+index">
+                                <div class="divtbody-elem wf-50"> {{ index+1 }} </div>
+                                <div class="divtbody-elem mwf-100"> {{ field.field }} </div>
+                                <div class="divtbody-elem wf-80 text-center"> <b> {{ field.total | freeNumber }} </b> </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-7 border-right pt-2">
+                    <button type="button" class="btn btn-sm theme-btn btn-primary max-with-200" v-show="clusterBtn" @click="showCluster">Create Clusters</button>
+                    <div class="row my-2 fit-content-wf">
+                        <div class="col-md-6 col-sm-12">
+                            <div class="divtable-heaeder">
+                                <button class="close" type="button" @click="form.clusterEmptyRecords = []">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                                <h4>Empty Set Cluster</h4>
+                            </div>
+                            <div class="divtable border fit-cluster" id="empty-cluster-div">
+                                <div class="divthead">
+                                    <div class="divthead-row">
+                                        <div class="divthead-elem wf-50">SNo</div>
+                                        <div class="divthead-elem mwf-200">Record ({{form.clusterEmptyRecordContainer.length | freeNumber}}/{{form.clusterEmptyRecords.length | freeNumber}})</div>
+                                        <div class="divthead-elem wf-80 text-center">Count</div>
+                                        <div class="divthead-elem wf-50 text-center"><input type="checkbox" value="" id="empty-checkbox" @click="selectEmptyRecords"></div>
+                                    </div>
+                                </div>
+                                <div class="divtbody fit-cluster-inner">
+                                    <div class="divtbody-row" v-for="(field,index) in form.clusterEmptyRecords" :key="'input-field-record-'+index">
+                                        <div class="divtbody-elem wf-50"> {{ index+1 }} </div>
+                                        <div class="divtbody-elem mwf-200"> {{ field.field }} </div>
+                                        <div class="divtbody-elem wf-80 text-center"> <b> {{ field.total | freeNumber }} </b> </div>
+                                        <div class="divtbody-elem wf-50 text-center">
+                                            <input type="checkbox" name="records[]" :value="field.field" @click="selectSingleEmptyRecord(field.field)"  class="empty-record" :id="'empty-record-' + field.field">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-sm-12" v-if="form.clusterNumericRecords.length > 0" >
+                            <div class="divtable border fit-content-wf-200" id="numeric-cluster-div">
+                                <div class="divthead">
+                                    <div class="divthead-row">
+                                        <div class="divthead-elem wf-60">Cluster </div>
+                                        <div class="divthead-elem wf-60">Numeric</div>
+                                        <div class="divthead-elem wf-120">
+                                            <input class="form-check-input " type="checkbox" value="" id="numeric-checkbox" @click="selectNumericRecords">Select All
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="divthead">
+                                    <div class="divthead-row">
+                                        <div class="divthead-elem wf-80">SNo</div>
+                                        <div class="divthead-elem mwf-200">
+                                            <i class="bi bi-arrow-up" @click="numericSorting='field',numericSortingType='asc'"></i>
+                                            Record ({{form.clusterNumericRecordContainer.length | freeNumber}}/{{form.clusterNumericRecords.length | freeNumber}})
+                                            <i class="bi bi-arrow-down" @click="numericSorting='field',numericSortingType='desc'"></i>
+                                        </div>
+                                        <div class="divthead-elem wf-100 text-center">
+                                            <i class="bi bi-arrow-up" @click="numericSorting='total',numericSortingType='asc'"></i>
+                                            Count
+                                            <i class="bi bi-arrow-down" @click="numericSorting='total',numericSortingType='desc'"></i>
+                                        </div>
+                                        <div class="divthead-elem wf-80 text-center">Action</div>
+                                    </div>
+                                </div>
+                                <div class="divtbody fit-divt-content">
+                                    <div class="divtbody-row" v-for="(field,index) in formclusterNumericRecords" :key="'input-field-record-'+index">
+                                        <div class="divtbody-elem wf-80"> {{ index+1 }} </div>
+                                        <div class="divtbody-elem mwf-200"> {{ field.field }} </div>
+                                        <div class="divtbody-elem wf-100 text-center"> <b> {{ field.total | freeNumber }} </b> </div>
+                                        <div class="divtbody-elem wf-80 text-center">
+                                            <span v-if="form.clusterNumericRecordContainer.length > 0 && form.clusterNumericRecordContainer.indexOf(field.field) > -1">
+                                                <input type="checkbox" name="records[]" :value="field.field" @click="selectSingleNumericRecord(field.field)"  class="numeric-record" :id="'numeric-record-' + field.field" :checked="true">
+                                            </span>
+                                            <span v-else>
+                                                <input type="checkbox" name="records[]" :value="field.field" @click="selectSingleNumericRecord(field.field)"  class="numeric-record" :id="'numeric-record-' + field.field">
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-sm-12" v-if="form.clusterStringRecords.length > 0" >
+                            <div class="divtable border fit-content-wf-200" id="string-cluster-div">
+                                <!-- fit-content-wf-200 -->
+                                <div class="divthead">
+                                    <div class="divthead-row">
+                                        <div class="divthead-elem wf-60">Cluster </div>
+                                        <div class="divthead-elem wf-60">String</div>
+                                        <div class="divthead-elem wf-120">
+                                            <input class="form-check-input " type="checkbox" value="" id="string-checkbox" @click="selectStringRecords">Select All
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="divthead">
+                                    <div class="divthead-row">
+                                        <div class="divthead-elem wf-80">SNo</div>
+                                        <div class="divthead-elem mwf-200">
+                                            <i class="bi bi-arrow-up" @click="stringSorting='field',stringSortingType='asc'"></i>
+                                                Record ({{form.clusterStringRecordContainer.length | freeNumber}}/{{form.clusterStringRecords.length | freeNumber}})
+                                            <i class="bi bi-arrow-down" @click="stringSorting='field',stringSortingType='desc'"></i>
+                                        </div>
+                                        <div class="divthead-elem wf-100 text-center">
+                                            <i class="bi bi-arrow-up" @click="stringSorting='total',stringSortingType='asc'"></i>
+                                            Count
+                                            <i class="bi bi-arrow-down" @click="stringSorting='total',stringSortingType='desc'"></i>
+                                        </div>
+                                        <div class="divthead-elem wf-80 text-center">Action</div>
+                                    </div>
+                                </div>
+                                <div class="divtbody fit-divt-content">
+                                    <!-- fit-divt-content -->
+                                    <div class="divtbody-row" v-for="(field,index) in formclusterStringRecords" :key="'input-field-record-'+index">
+                                        <div class="divtbody-elem wf-80"> {{ index+1 }} </div>
+                                        <div class="divtbody-elem mwf-200"> {{ field.field }} </div>
+                                        <div class="divtbody-elem wf-100 text-center"> <b> {{ field.total | freeNumber }} </b> </div>
+                                        <div class="divtbody-elem wf-80 text-center">
+                                            <span v-if="form.clusterStringRecordContainer.length > 0 && form.clusterStringRecordContainer.indexOf(field.field) > -1">
+                                                <input type="checkbox" :checked="true" name="records[]" :value="field.field" @click="selectSingleStringRecord(field.field)"  class="string-record" :id="'string-record-' + field.field">
+                                            </span>
+                                            <span v-else>
+                                                <input type="checkbox" name="records[]" :value="field.field" @click="selectSingleStringRecord(field.field)"  class="string-record" :id="'string-record-' + field.field">
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-sm-12" v-if="form.clusterTextdataRecords.length > 0" >
+                            <div class="divtable border fit-content-wf-200" id="textdata-cluster-div">
+                                <!-- fit-content-wf-200 -->
+                                <div class="divthead">
+                                    <div class="divthead-row">
+                                        <div class="divthead-elem wf-60">Cluster </div>
+                                        <div class="divthead-elem wf-60">Textdata</div>
+                                        <div class="divthead-elem wf-120">
+                                            <input class="form-check-input " type="checkbox" value="" id="textdata-checkbox" @click="selectTextdataRecords">Select All
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="divthead">
+                                    <div class="divthead-row">
+                                        <div class="divthead-elem wf-80">SNo</div>
+                                        <div class="divthead-elem mwf-200">
+                                            <i class="bi bi-arrow-up" @click="textdataSorting='field',textdataSortingType='asc'"></i>
+                                                Record ({{form.clusterTextdataRecordContainer.length | freeNumber}}/{{form.clusterTextdataRecords.length | freeNumber}})
+                                            <i class="bi bi-arrow-down" @click="textdataSorting='field',textdataSortingType='desc'"></i>
+                                        </div>
+                                        <div class="divthead-elem wf-100 text-center">
+                                            <i class="bi bi-arrow-up" @click="textdataSorting='total',textdataSortingType='asc'"></i>
+                                                Count
+                                            <i class="bi bi-arrow-down" @click="textdataSorting='total',textdataSortingType='desc'"></i>
+                                        </div>
+                                        <div class="divthead-elem wf-80 text-center">Action</div>
+                                    </div>
+                                </div>
+                                <div class="divtbody fit-divt-content">
+                                    <div class="divtbody-row" v-for="(field,index) in formclusterTextdataRecords" :key="'input-field-record-'+index">
+                                        <div class="divtbody-elem wf-80"> {{ index+1 }} </div>
+                                        <div class="divtbody-elem mwf-200"> {{ field.field }} </div>
+                                        <div class="divtbody-elem wf-100 text-center"> <b> {{ field.total | freeNumber }} </b> </div>
+                                        <div class="divtbody-elem wf-80 text-center">
+                                            <span v-if="form.clusterTextdataRecordContainer.length > 0 && form.clusterTextdataRecordContainer.indexOf(field.field) > -1">
+                                                <input type="checkbox" :checked="true" name="records[]" :value="field.field" @click="selectSingleTextdataRecord(field.field)"  class="textdata-record" :id="'textdata-record-' + field.field">
+                                            </span>
+                                            <span v-else>
+                                                <input type="checkbox" name="records[]" :value="field.field" @click="selectSingleTextdataRecord(field.field)"  class="textdata-record" :id="'textdata-record-' + field.field">
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-sm-12" v-if="form.clusterLargeNumberRecords.length > 0" >
+                            <div class="divtable border fit-content-wf-200" id="large-number-cluster-div">
+                                <!-- fit-content-wf-200 -->
+                                <div class="divthead">
+                                    <div class="divthead-row">
+                                        <div class="divthead-elem wf-60">Cluster </div>
+                                        <div class="divthead-elem wf-60">Large Number</div>
+                                        <div class="divthead-elem wf-120">
+                                            <input class="form-check-input " type="checkbox" value="" id="large-number-checkbox" @click="selectLargeNumberRecords">Select All
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="divthead">
+                                    <div class="divthead-row">
+                                        <div class="divthead-elem wf-80">SNo</div>
+                                        <div class="divthead-elem mwf-200">
+                                            <i class="bi bi-arrow-up" @click="largeNumberSorting='field',largeNumberSortingType='asc'"></i>
+                                                Record ({{form.clusterLargeNumberRecordContainer.length | freeNumber}}/{{form.clusterLargeNumberRecords.length | freeNumber}})
+                                            <i class="bi bi-arrow-down" @click="largeNumberSorting='field',largeNumberSortingType='desc'"></i>
+                                        </div>
+                                        <div class="divthead-elem wf-100 text-center">
+                                            <i class="bi bi-arrow-up" @click="largeNumberSorting='total',largeNumberSortingType='asc'"></i>
+                                                Count
+                                            <i class="bi bi-arrow-down" @click="largeNumberSorting='total',largeNumberSortingType='desc'"></i>
+                                        </div>
+                                        <div class="divthead-elem wf-80 text-center">Action</div>
+                                    </div>
+                                </div>
+                                <div class="divtbody fit-divt-content">
+                                    <div class="divtbody-row" v-for="(field,index) in formclusterLargeNumberRecords" :key="'input-field-record-'+index">
+                                        <div class="divtbody-elem wf-80"> {{ index+1 }} </div>
+                                        <div class="divtbody-elem mwf-200"> {{ field.field }} </div>
+                                        <div class="divtbody-elem wf-100 text-center"> <b> {{ field.total | freeNumber }} </b> </div>
+                                        <div class="divtbody-elem wf-80 text-center">
+                                            <span v-if="form.clusterLargeNumberRecordContainer.indexOf(field.field) > -1">
+                                                <input type="checkbox" name="records[]" :value="field.field" @click="selectSingleLargeNumberRecord(field.field)"  class="large-number-record" :id="'large-number-record-' + field.field" :checked="true">
+                                            </span>
+                                            <span v-else>
+                                                <input type="checkbox" name="records[]" :value="field.field" @click="selectSingleLargeNumberRecord(field.field)"  class="large-number-record" :id="'large-number-record-' + field.field">
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-sm-12" v-if="form.clusterSmallNumberRecords.length > 0">
+                            <div class="divtable border fit-content-wf-200" id="unit-digit-cluster-div">
+                                <!-- fit-content-wf-200 -->
+                                <div class="divthead">
+                                    <div class="divthead-row">
+                                        <div class="divthead-elem wf-60">Cluster </div>
+                                        <div class="divthead-elem wf-60">Small Number</div>
+                                        <div class="divthead-elem wf-120">
+                                            <input class="form-check-input " type="checkbox" value="" id="small-number-checkbox" @click="selectSmallNumberRecords">Select All
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="divthead">
+                                    <div class="divthead-row">
+                                        <div class="divthead-elem wf-80">SNo</div>
+                                        <div class="divthead-elem mwf-200">
+                                            <i class="bi bi-arrow-up" @click="smallNumberSorting='field',smallNumberSortingType='asc'"></i>
+                                                Record ({{form.clusterSmallNumberRecordContainer.length | freeNumber}}/{{form.clusterSmallNumberRecords.length | freeNumber}})
+                                            <i class="bi bi-arrow-down" @click="smallNumberSorting='field',smallNumberSortingType='desc'"></i>
+                                        </div>
+                                        <div class="divthead-elem wf-100 text-center">
+                                            <i class="bi bi-arrow-up" @click="smallNumberSorting='total',smallNumberSortingType='asc'"></i>
+                                                Count
+                                            <i class="bi bi-arrow-down" @click="smallNumberSorting='total',smallNumberSortingType='desc'"></i>
+                                        </div>
+                                        <div class="divthead-elem wf-80 text-center">Action</div>
+                                    </div>
+                                </div>
+                                <div class="divtbody fit-divt-content">
+                                    <div class="divtbody-row" v-for="(field,index) in formclusterSmallNumberRecords" :key="'input-field-record-'+index">
+                                        <div class="divtbody-elem wf-80"> {{ index+1 }} </div>
+                                        <div class="divtbody-elem mwf-200"> {{ field.field }} </div>
+                                        <div class="divtbody-elem wf-100 text-center"> <b> {{ field.total | freeNumber }} </b> </div>
+                                        <div class="divtbody-elem wf-80 text-center">
+                                            <span v-if="form.clusterSmallNumberRecordContainer.length > 0 && form.clusterSmallNumberRecordContainer.indexOf(field.field) > -1">
+                                                <input type="checkbox" :checked="true" name="records[]" :value="field.field" @click="selectSingleSmallNumberRecord(field.field)"  class="small-number-record" :id="'small-number-record-' + field.field">
+                                            </span>
+                                            <span v-else>
+                                                <input type="checkbox" name="records[]" :value="field.field" @click="selectSingleSmallNumberRecord(field.field)"  class="small-number-record" :id="'small-number-record-' + field.field">
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-sm-12" v-if="form.clusterUnitDigitRecords.length > 0">
+                            <div class="divtable-heaeder">
+                                <button class="close" type="button" @click="form.clusterUnitDigitRecords = []; form.clusterUnitDigitRecordContainer = []">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                                <h4>Unit Digits Set Cluster</h4>
+                            </div>
+                            <div class="divtable border fit-cluster" id="unit-digit-cluster-div">
+                                <div class="divthead">
+                                    <div class="divthead-row">
+                                        <div class="divthead-elem wf-50">SNo</div>
+                                        <div class="divthead-elem mwf-100">
+                                            Record ({{form.clusterUnitDigitRecordContainer.length | freeNumber}}/{{form.clusterUnitDigitRecords.length | freeNumber}})
+                                            <i class="bi bi-arrow-up" :class="[(unitDigitSorting == 'field')?'text-dark':'']" v-if="unitDigitSorting=='field' && unitDigitSortingType=='desc'" @click="unitDigitSorting='field',unitDigitSortingType='asc'"></i>
+                                            <i class="bi bi-arrow-down" :class="[(unitDigitSorting == 'field')?'text-dark':'']" v-else @click="unitDigitSorting='field',unitDigitSortingType='desc'"></i>
+                                        </div>
+                                        <div class="divthead-elem wf-100 text-center">
+                                            Count
+                                            <i class="bi bi-arrow-up" :class="[(unitDigitSorting == 'total')?'text-dark':'']"  @click="unitDigitSorting='total',unitDigitSortingType='asc'" v-if="unitDigitSorting=='total' &&unitDigitSortingType=='desc'"></i>
+                                            <i class="bi bi-arrow-down" :class="[(unitDigitSorting == 'total')?'text-dark':'']" v-else @click="unitDigitSorting='total',unitDigitSortingType='desc'"></i>
+                                        </div>
+                                        <div class="divthead-elem wf-50 text-center">
+                                            <input type="checkbox" value="" id="unit-digit-checkbox" @click="selectUnitDigitRecords">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="divtbody fit-cluster-inner">
+                                    <div class="divtbody-row" v-for="(field,index) in formclusterUnitDigitRecords" :key="'input-field-record-'+index">
+                                        <div class="divtbody-elem wf-50"> {{ index+1 }} </div>
+                                        <div class="divtbody-elem mwf-100"> {{ field.field }} </div>
+                                        <div class="divtbody-elem wf-100 text-center"> <b> {{ field.total | freeNumber }} </b> </div>
+                                        <div class="divtbody-elem wf-50 text-center">
+                                            <span v-if="form.clusterUnitDigitRecordContainer.length > 0 && form.clusterUnitDigitRecordContainer.indexOf(field.field) > -1">
+                                                <input type="checkbox" :checked="true" name="records[]" :value="field.field" @click="selectSingleUnitDigitRecord(field.field)"  class="unit-digit-record" :id="'unit-digit-record-' + field.field">
+                                            </span>
+                                            <span v-else>
+                                                <input type="checkbox" name="records[]" :value="field.field" @click="selectSingleUnitDigitRecord(field.field)"  class="unit-digit-record" :id="'unit-digit-record-' + field.field">
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2 fit-content pt-2">
+                    <div class="row m-0">
+                        <div class="col-md-12" v-show="(transferBtn || resetBtn || meargeBtn || updateBtn)">
+                            <div class="dropdown show mb-3">
+                                <a class="btn btn-secondary theme-btn dropdown-toggle btn-block text-left" href="javascipt:void(0)" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    Actions
+                                </a>
+                                <div class="dropdown-menu text-left" aria-labelledby="dropdownMenuLink">
+                                    <button type="button" class="dropdown-item text-uppercase" v-show="resetBtn" @click="resetDateAction">Reset All Data</button>
+                                    <button type="button" class="dropdown-item text-uppercase" v-show="meargeBtn" @click="mearge">Merge Data</button>
+                                    <button type="button" class="dropdown-item text-uppercase" v-show="updateBtn" @click="update">Update Data</button>
+                                    <button type="button" class="dropdown-item text-uppercase" v-show="transferBtn" @click="transferBtn">Transfer Data</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-12 pt-2">
+                            <button type="button" class="btn btn-sm theme-btn btn-info btn-block mt-2" @click="setPrimary" v-show="primaryBtn && form.meargRecords.length >= 2">Set Primary For merging</button>
+                            <div v-show="primaryContainer && form.meargRecords.length >= 2">
+                                <h5>Select value to overright Others:</h5>
+                                <table class="table table-bordered table-condensed table-striped">
+                                    <tbody>
+                                        <tr v-for="(field,index) in form.meargRecords" :key="'primary-input-' + index">
+                                            <td>
+                                                <label class="form-check-label" for="'primary-' + index">{{ field }}</label>
+                                            </td>
+                                            <td style="width:40px">
+                                                <input type="radio" name="primaryInput" @click="setPrimaryField(field)"  :id="'primary-' + index"> 
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <div class="text-right">
+                                        <button type="button" class="btn btn-sm theme-btn btn-primary my-3" @click="meargRecordsAction">Start Merging</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-12 pt-2">
+                            <div v-show="updateContainer && form.meargRecords.length > 0">
+                                <h5>Enter Value to update this Field</h5>
+                                <input type="text" class="form-control" v-model="form.update">
+                                <button type="button" class="btn btn-sm theme-btn btn-primary my-3" v-show="form.update" @click="updateRecordsAction">
+                                    Update This Field
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-12 pt-2">
+                            <div v-show="transferContainer && form.meargRecords.length > 0">
+                                <div class="form-group">
+                                <select class="form-control" v-model="form.nullField">
+                                    <option>Select</option>
+                                    <option v-for="(field,index) in form.nullFields" :key="index" :value="field">{{ field | inputFields }}</option>
+                                </select>
+                                </div>
+                                <input type="text" class="form-control" v-model="form.newNullField" placeholder="enter temp field name" >
+                                <button type="button" class="btn btn-sm theme-btn btn-primary my-3" v-show="form.newNullField || form.nullField" @click="transferRecordsAction">
+                                    Transfer
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Modal -->
+        <div class="modal fade" id="clusterModal" tabindex="-1" role="dialog" aria-labelledby="clusterModalLabel" aria-hidden="true" data-backdrop="static">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title text-uppercase" id="clusterModalLabel">Create Cluster</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    </div>
+
+                    <div class="modal-body">
+                        <ul class="list-unstyled">
+                            <li class="border-bottom">
+                                <div>
+                                    <button class="btn theme-btn float-right" @click="selectCluster('empty')" type="button" :class="[(form.clusterEmptyRecords.length >= 1)?'btn-dark':'btn-outline-dark']">{{(form.clusterEmptyRecords.length >= 1)?'Selected':'Select'}}</button>
+                                    <h6 class="mt-2 mb-0 text-uppercase mb-1">Empty Set Cluster</h6>
+                                    <p class="mb-2">This cluster will create a set of empty records</p>
+                                </div>
+                            </li>
+                            <li class="border-bottom">
+                                <div>
+                                    <button class="btn theme-btn float-right" @click="selectCluster('numeric')" type="button" :class="[(form.clusterNumericRecords.length >= 1)?'btn-dark':'btn-outline-dark']">{{(form.clusterNumericRecords.length >= 1)?'Selected':'Select'}}</button>
+                                    <h6 class="mt-2 mb-0 text-uppercase mb-1">Numeric Set Cluster</h6>
+                                    <p class="mb-2">This cluster will create a set of empty records</p>
+                                </div>
+                            </li>
+                            <li class="border-bottom">
+                                <div>
+                                    <button class="btn theme-btn float-right" @click="selectCluster('string')" type="button" :class="[(form.clusterStringRecords.length >= 1)?'btn-dark':'btn-outline-dark']">{{(form.clusterStringRecords.length >= 1)?'Selected':'Select'}}</button>
+                                    <h6 class="mt-2 mb-0 text-uppercase mb-1">String Set Cluster</h6>
+                                    <p class="mb-2">This cluster will create a set of records having small string</p>
+                                </div>
+                            </li>
+                            <li class="border-bottom">
+                                <div>
+                                    <button class="btn theme-btn float-right" @click="selectCluster('textdata')" type="button" :class="[(form.clusterTextdataRecords.length >= 1)?'btn-dark':'btn-outline-dark']">{{(form.clusterTextdataRecords.length >= 1)?'Selected':'Select'}}</button>
+                                    <h6 class="mt-2 mb-0 text-uppercase mb-1">Long Text Set Cluster</h6>
+                                    <p class="mb-2">This cluster will create a set of records having long text like paragraph</p>
+                                </div>
+                            </li>
+                            <li class="border-bottom">
+                                <div>
+                                    <button class="btn theme-btn float-right" @click="selectCluster('large-number')" type="button" :class="[(form.clusterLargeNumberRecords.length >= 1)?'btn-dark':'btn-outline-dark']">{{(form.clusterLargeNumberRecords.length >= 1)?'Selected':'Select'}}</button>
+                                    <h6 class="mt-2 mb-0 text-uppercase mb-1">Large numbers Set Cluster</h6>
+                                    <p class="mb-2">This cluster will create a set of records having count more than 1000</p>
+                                </div>
+                            </li>
+                            <li class="border-bottom">
+                                <div>
+                                    <button class="btn theme-btn float-right" @click="selectCluster('small-number')" type="button" :class="[(form.clusterSmallNumberRecords.length >= 1)?'btn-dark':'btn-outline-dark']">{{(form.clusterSmallNumberRecords.length >= 1)?'Selected':'Select'}}</button>
+                                    <h6 class="mt-2 mb-0 text-uppercase mb-1">Small numbers Set Cluster</h6>
+                                    <p class="mb-2">This cluster will create a set of records having count from 20 to 1000</p>
+                                </div>
+                            </li>
+                            <li>
+                                <div>
+                                    <button class="btn theme-btn float-right" @click="selectCluster('unit-digit')" type="button" :class="[(form.clusterUnitDigitRecords.length >= 1)?'btn-dark':'btn-outline-dark']">{{(form.clusterUnitDigitRecords.length >= 1)?'Selected':'Select'}}</button>
+                                    <h6 class="mt-2 mb-0 text-uppercase mb-1">Unit Digits Set Cluster</h6>
+                                    <p class="mb-2">This cluster will create a set of records having count from 1 to 19</p>
+                                </div>
+                            </li>
+                        </ul>
+                        <select class="form-control invisible" @change="selectCluster" v-model="form.clusterType">
+                            <option value="">select</option>
+                            <option value="empty">Empty set</option>
+                            <option value="numeric">Numeric</option>
+                            <option value="string">String</option>
+                            <option value="textdata">Textdata</option>
+                            <option value="large-number">Large numbers</option> 
+                            <option value="small-number">Small numbers</option>
+                            <option  value="unit-digit">Unit digit</option>
+                        </select>
+                    </div>
+                    <div class="modal-footer d-block">
+                        <button type="button" @click="hideCluster()" class="btn btn-primary theme-btn float-right">
+                            Clustering is Done
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+<script>
+import DateRangePicker from 'vue2-daterange-picker';
+import 'vue2-daterange-picker/dist/vue2-daterange-picker.css';
+export default {
+    components:{DateRangePicker},
+    data(){
+        return {
+            stringSorting : "field",
+            stringSortingType : "asc",
+            textdataSorting : "field",
+            textdataSortingType : "asc",
+            smallNumberSorting : "field",
+            smallNumberSortingType : "asc",
+            largeNumberSorting : "field",
+            largeNumberSortingType : "asc",
+            unitDigitSorting : "field",
+            unitDigitSortingType : "asc",
+            numericSorting : "field",
+            numericSortingType : "asc",
+            loader:false,
+            loader_url: '/img/spinner.gif',
+            clusterBtn : false,
+            meargeBtn : false,
+            primaryBtn : false,
+            updateBtn : false,
+            resetBtn : false,
+            transferBtn : false,
+            meargeInput : false,
+            updateInput : false,
+            primaryContainer : false,
+            updateContainer : false,
+            transferContainer : false,
+            display_names:{},
+            form : new Form({
+                tableName : 'contacts',
+                fields : [],
+                field : '',
+                records : [],
+                updateRecords : '',
+                meargRecords : [],
+                primary : '',
+                update : '',
+                clusterType : '',
+                clusterUnitDigitRecords : [],
+                clusterUnitDigitRecordContainer : [],
+                clusterSmallNumberRecords : [],
+                clusterSmallNumberRecordContainer : [],
+                clusterLargeNumberRecords : [],
+                clusterLargeNumberRecordContainer : [],
+                clusterNumericRecords : [],
+                clusterNumericRecordContainer : [],
+                clusterStringRecords : [],
+                clusterStringRecordContainer : [],
+                clusterTextdataRecords : [],
+                clusterTextdataRecordContainer : [],
+                clusterEmptyRecords : [],
+                clusterEmptyRecordContainer : [],
+                nullFields : [],
+                nullField : '',
+                newNullField : '',
+            })
+        }
+    },
+    computed: {
+        formclusterStringRecords(){
+            if(this.form.clusterStringRecords.length < this.form.clusterStringRecordContainer.length){
+                $('.string-record').prop('checked', false);
+            }
+            return _.orderBy(this.form.clusterStringRecords, this.stringSorting, this.stringSortingType)
+        },
+        formclusterTextdataRecords(){
+            if(this.form.clusterTextdataRecords.length < this.form.clusterTextdataRecordContainer.length){
+                $('.textdata-record').prop('checked', false);
+            }
+            return _.orderBy(this.form.clusterTextdataRecords, this.textdataSorting, this.textdataSortingType)
+        },
+        formclusterSmallNumberRecords(){
+            if(this.form.clusterSmallNumberRecords.length < this.form.clusterSmallNumberRecordContainer.length){
+                $('.small-number-record').prop('checked', false);
+            }
+            return _.orderBy(this.form.clusterSmallNumberRecords, this.smallNumberSorting, this.smallNumberSortingType)
+        },
+        formclusterLargeNumberRecords(){
+            if(this.form.clusterLargeNumberRecords.length < this.form.clusterLargeNumberRecordContainer.length){
+                $('.large-number-record').prop('checked', false);
+            }
+            return _.orderBy(this.form.clusterLargeNumberRecords, this.largeNumberSorting, this.largeNumberSortingType)
+        },
+        formclusterUnitDigitRecords(){
+            if(this.form.clusterUnitDigitRecords.length < this.form.clusterUnitDigitRecordContainer.length){
+                $('.unit-digit-record').prop('checked', false);
+            }
+            return _.orderBy(this.form.clusterUnitDigitRecords, this.unitDigitSorting, this.unitDigitSortingType)
+        },
+        formclusterNumericRecords(){
+            if(this.form.clusterNumericRecords.length < this.form.clusterNumericRecordContainer.length){
+                $('.numeric-record').prop('checked', false);
+            }
+            return _.orderBy(this.form.clusterNumericRecords, this.numericSorting, this.numericSortingType)
+        },
+        display_name_key() {
+            return Object.keys(this.display_names)
+        },
+        display_name_value() {
+            return Object.values(this.display_names)
+        }
+    },
+    filters: {
+        inputFields(text){
+            if(text.indexOf("_")){
+                return text.replaceAll("_", " ").toUpperCase()
+            }
+            return text.toUpperCase()
+        }
+    },
+    methods: {
+        getTableFields(){
+            this.form.post('/api/get-table-fields').then((response) => {
+                this.form.fields = response.data
+            })
+        },
+        reset(){
+            this.form.tableName = ''
+            this.form.fields = []
+            this.form.field = ''
+            this.form.records = []
+            this.form.updateRecords = ''
+            this.form.meargRecords = []
+            this.form.primary = ''
+            this.form.update = ''
+            this.meargeBtn = false
+            this.primaryBtn = false
+            this.updateBtn = false
+            this.transferBtn = false
+            this.resetDate = false
+            this.meargeInput = false
+            this.updateInput = false
+            this.primaryContainer = false
+            this.updateContainer = false
+            this.transferContainer = false
+        },
+        afterAction() {
+            this.form.updateRecords = ''
+            this.form.meargRecords = []
+            this.form.primary = ''
+            this.form.update = ''
+            this.meargeBtn = true
+            this.primaryBtn = false
+            this.updateBtn = true
+            this.meargeInput = false
+            this.updateInput = false
+            this.primaryContainer = false
+            this.updateContainer = false
+            this.transferContainer = false
+            this.form.clusterUnitDigitRecords = []
+            this.form.clusterUnitDigitRecordContainer = []
+            this.form.clusterSmallNumberRecords = []
+            this.form.clusterSmallNumberRecordContainer = []
+            this.form.clusterLargeNumberRecords = []
+            this.form.clusterLargeNumberRecordContainer = []
+            this.form.clusterNumericRecords = []
+            this.form.clusterNumericRecordContainer = []
+            this.form.clusterStringRecords = []
+            this.form.clusterStringRecordContainer = []
+            this.form.clusterTextdataRecords = []
+            this.form.clusterTextdataRecordContainer = []
+            this.form.clusterEmptyRecords = []
+            this.form.clusterEmptyRecordContainer = []
+            // this.form.nullFields = []
+            this.form.nullField = ''
+            this.form.newNullField = ''
+            this.form.clusterType = ''
+            this.getNullFields()
+        },
+        setPrimary(){
+            this.primaryContainer = true
+        },
+        getData(field){
+            this.afterAction()
+            this.loader = true
+            this.form.field = field
+            this.form.post('/api/get-table-data').then((response) => {
+                this.form.records = response.data
+                this.meargeBtn = true
+                this.updateBtn = true
+                this.resetBtn = true
+                this.clusterBtn =  true
+                this.transferBtn = true
+                this.loader = false
+            })
+        },
+        setMeargeRecords(record){
+            if(this.form.meargRecords.length == 0){
+                this.form.meargRecords.push(record)
+            }else{
+                if(this.form.meargRecords.indexOf(record) == -1){
+                    this.form.meargRecords.push(record)
+                }else{
+                    var eleIndex = this.form.meargRecords.indexOf(record);
+                    this.form.meargRecords.splice(eleIndex, 1)
+                }
+            }
+        },
+        setUpdateRecords(records){
+            this.form.updateRecords = records
+        },
+        mearge(){
+            this.meargeInput = true
+            this.primaryBtn = true
+            this.updateInput = false
+            this.updateContainer = false
+            this.transferContainer = false
+        },
+        update(){
+            this.updateInput = true
+            this.meargeInput = false
+            this.primaryBtn = false
+            this.updateContainer = true
+            this.primaryContainer = false
+            this.transferContainer = false
+        },
+        showTransfer(){
+            this.transferContainer = true
+            this.updateContainer = false
+            this.primaryContainer = false
+        },
+        setPrimaryField(field){
+            this.form.primary = field
+        },
+        meargRecordsAction(){
+            this.$swal({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, Merge it!'
+                }).then((result) => {
+                if (result.isConfirmed) {
+                    this.form.post('/api/mearge-records').then((response) => {
+                        this.afterAction()
+                        this.getData(this.form.field)
+                        this.$swal('Merged!', 'Records has been merged successfully.', 'success')  
+                    })
+                }
+            })
+        },
+        resetDateAction(){
+            if(this.form.meargRecords.length == 0){
+                this.$swal('Warning!', 'Please select record(s) first.', 'error') 
+                return false
+            }
+            this.$swal({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, Reset All!'
+                }).then((result) => {
+                if (result.isConfirmed) {
+                    this.form.post('/api/reset-records').then((response) => {
+                        this.afterAction()
+                        this.getData(this.form.field)
+                        this.$swal('Reset!', 'Records has been reset successfully.', 'success')  
+                    })
+                }
+            })
+        },
+        updateRecordsAction(){
+            this.$swal({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, Merge it!'
+                }).then((result) => {
+                if (result.isConfirmed) {
+                    this.form.post('/api/update-records').then((response) => {
+                        this.afterAction()
+                        this.getData(this.form.field)
+                        this.$swal('Updated!', 'Records has been updated successfully.', 'success')  
+                    })
+                }
+            })
+        },
+        transferRecordsAction(){
+            this.$swal({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, Transfer All!'
+                }).then((result) => {
+                if (result.isConfirmed) {
+                    this.form.post('/api/transfer-records').then((response) => {
+                        if(response.data.status == "exists"){
+                            this.$swal('Transfered!', 'Tmp Field already exists.', 'error')
+                        }else{
+                            this.afterAction()
+                            this.getData(this.form.field)
+                            this.$swal('Transfered!', 'Records has been transfered successfully.', 'success')
+                        }
+                    })
+                }
+            })
+        },
+        showCluster(){
+            $('#clusterModal').modal('show');
+        },
+        hideCluster(){
+            $('#clusterModal').modal('hide');
+        },
+        selectCluster(val){
+            this.form.clusterType = val;
+            if(val == 'unit-digit'){
+                var k = -1
+                for (const key of Object.keys(this.form.records)) {
+                    var str = this.form.records[key]["field"]
+                    if(this.form.records[key]["total"] > 0 && this.form.records[key]["total"] < 21){
+                        if(str == "Null"){
+
+                        } else if(str == "Empty") {
+
+                        } else {
+                            k = k + 1
+                            this.form.clusterUnitDigitRecords[k] = {
+                                field : this.form.records[key]["field"],
+                                total : this.form.records[key]["total"]
+                            }
+                        }
+                    }
+                }
+            }
+            if(val == 'small-number'){
+                var k = -1
+                for (const key of Object.keys(this.form.records)) {
+                    var str = this.form.records[key]["field"]
+                    if(this.form.records[key]["total"] > 20 && this.form.records[key]["total"] < 1000){
+                        if(str == "Null"){
+
+                        } else if(str == "Empty") {
+
+                        } else {
+                            k = k + 1
+                            this.form.clusterSmallNumberRecords[k] = {
+                                field : this.form.records[key]["field"],
+                                total : this.form.records[key]["total"]
+                            }
+                        }
+                    }
+                }
+            }
+            if(val == 'large-number'){
+                var k = -1
+                for (const key of Object.keys(this.form.records)) {
+                    var str = this.form.records[key]["field"]
+                    if(this.form.records[key]["total"] > 1000){
+                        if(str == "Null"){
+
+                        } else if(str == "Empty") {
+
+                        } else {
+                            k = k + 1
+                            this.form.clusterLargeNumberRecords[k] = {
+                                field : this.form.records[key]["field"],
+                                total : this.form.records[key]["total"]
+                            }
+                        }
+                    }
+                }
+            }
+            if(val == 'numeric'){
+                var k = -1
+                for (const key of Object.keys(this.form.records)) {
+                    var str = this.form.records[key]["field"]
+                    if(Number.parseInt(this.form.records[key]["field"], 10) == this.form.records[key]["field"]){
+                        if(str == "Null"){
+
+                        } else if(str == "Empty") {
+
+                        } else {
+                            k = k + 1
+                            this.form.clusterNumericRecords[k] = {
+                                field : this.form.records[key]["field"],
+                                total : this.form.records[key]["total"]
+                            }
+                        }
+                    }
+                }
+            }
+            if(val == 'string'){
+                var k = -1
+                for (const key of Object.keys(this.form.records)) {
+                    var str = this.form.records[key]["field"]
+                    if(str.length < 100){
+                        if(str == "Null"){
+
+                        } else if(str == "Empty") {
+
+                        } else {
+                            console.log(str)
+                            k = k + 1
+                            this.form.clusterStringRecords[k] = {
+                                field : this.form.records[key]["field"],
+                                total : this.form.records[key]["total"]
+                            }
+                        }
+                    }
+                }
+            }
+            if(val == 'textdata'){
+                var k = -1
+                for (const key of Object.keys(this.form.records)) {
+                    var str = this.form.records[key]["field"]
+                    if(str.length > 100){
+                        if(str == "Null"){
+
+                        } else if(str == "Empty") {
+
+                        } else {
+                            k = k + 1
+                            this.form.clusterTextdataRecords[k] = {
+                                field : this.form.records[key]["field"],
+                                total : this.form.records[key]["total"]
+                            }
+                        }
+                    }
+                }
+            }
+            if(val == 'empty'){
+                var k = -1
+                for (const key of Object.keys(this.form.records)) {
+                    var str = this.form.records[key]["field"]
+                    if(str == "Null" || str == "Empty"){
+                        k = k + 1
+                        this.form.clusterEmptyRecords[k] = {
+                            field : this.form.records[key]["field"],
+                            total : this.form.records[key]["total"]
+                        }
+                    }
+                }
+            }
+        },
+        selectUnitDigitRecords(){
+            if (document.getElementById('unit-digit-checkbox').checked == true) {
+                for (const key of Object.keys(this.form.clusterUnitDigitRecords)) {
+                    if(this.form.clusterUnitDigitRecordContainer.indexOf(this.form.clusterUnitDigitRecords[key]["field"]) == -1){
+                        this.form.clusterUnitDigitRecordContainer.push(this.form.clusterUnitDigitRecords[key]["field"])
+                    }
+                    if(this.form.meargRecords.indexOf(this.form.clusterUnitDigitRecords[key]["field"]) == -1){
+                        this.form.meargRecords.push(this.form.clusterUnitDigitRecords[key]["field"])
+                    }
+                }
+            } else {
+                for (const key of Object.keys(this.form.clusterUnitDigitRecords)) {
+                    if(this.form.meargRecords.indexOf(this.form.clusterUnitDigitRecords[key]["field"]) > -1){
+                        var index = this.form.meargRecords.indexOf(this.form.clusterUnitDigitRecords[key]["field"])
+                        this.form.meargRecords.splice(index, 1)
+                    }
+                }
+                this.form.clusterUnitDigitRecordContainer = []
+            }
+        },
+        selectSingleUnitDigitRecord(field){
+            var fieldIndex = this.form.clusterUnitDigitRecordContainer.indexOf(field)
+            var index = this.form.meargRecords.indexOf(field)
+            if (document.getElementById('unit-digit-record-' + field).checked == true) {
+                if(fieldIndex == -1){
+                    this.form.clusterUnitDigitRecordContainer.push(field)
+                }
+                if(index == -1){
+                    this.form.meargRecords.push(field)
+                }
+            }else{
+                if(fieldIndex > -1){
+                    this.form.clusterUnitDigitRecordContainer.splice(fieldIndex, 1)
+                }
+                if(index > -1){
+                    this.form.meargRecords.splice(index, 1)
+                }
+            }
+        },
+        selectSmallNumberRecords(){
+            if (document.getElementById('small-number-checkbox').checked == true) {
+                for (const key of Object.keys(this.form.clusterSmallNumberRecords)) {
+                    if(this.form.clusterSmallNumberRecordContainer.indexOf(this.form.clusterSmallNumberRecords[key]["field"]) == -1){
+                        this.form.clusterSmallNumberRecordContainer.push(this.form.clusterSmallNumberRecords[key]["field"])
+                    }
+                    if(this.form.meargRecords.indexOf(this.form.clusterSmallNumberRecords[key]["field"]) == -1){
+                        this.form.meargRecords.push(this.form.clusterSmallNumberRecords[key]["field"])
+                    }
+                }
+            } else {
+                for (const key of Object.keys(this.form.clusterSmallNumberRecords)) {
+                    if(this.form.meargRecords.indexOf(this.form.clusterSmallNumberRecords[key]["field"]) > -1){
+                        var index = this.form.meargRecords.indexOf(this.form.clusterSmallNumberRecords[key]["field"])
+                        this.form.meargRecords.splice(index, 1)
+                    }
+                }
+                this.form.clusterSmallNumberRecordContainer = []
+            }
+        },
+        selectSingleSmallNumberRecord(field){
+            var fieldIndex = this.form.clusterSmallNumberRecordContainer.indexOf(field)
+            var index = this.form.meargRecords.indexOf(field)
+            if (document.getElementById('small-number-record-' + field).checked == true) {
+                if(fieldIndex == -1){
+                    this.form.clusterSmallNumberRecordContainer.push(field)
+                }
+                if(index == -1){
+                    this.form.meargRecords.push(field)
+                }
+            }else{
+                if(fieldIndex > -1){
+                    this.form.clusterSmallNumberRecordContainer.splice(fieldIndex, 1)
+                }
+                if(index > -1){
+                    this.form.meargRecords.splice(index, 1)
+                }
+            }
+        },
+        selectLargeNumberRecords(){
+            if (document.getElementById('large-number-checkbox').checked == true) {
+                for (const key of Object.keys(this.form.clusterLargeNumberRecords)) {
+                    if(this.form.clusterLargeNumberRecordContainer.indexOf(this.form.clusterLargeNumberRecords[key]["field"]) == -1){
+                        this.form.clusterLargeNumberRecordContainer.push(this.form.clusterLargeNumberRecords[key]["field"])
+                    }
+                    if(this.form.meargRecords.indexOf(this.form.clusterLargeNumberRecords[key]["field"]) == -1){
+                        this.form.meargRecords.push(this.form.clusterLargeNumberRecords[key]["field"])
+                    }
+                }
+            } else {
+                for (const key of Object.keys(this.form.clusterLargeNumberRecords)) {
+                    if(this.form.meargRecords.indexOf(this.form.clusterLargeNumberRecords[key]["field"]) > -1){
+                        var index = this.form.meargRecords.indexOf(this.form.clusterLargeNumberRecords[key]["field"])
+                        this.form.meargRecords.splice(index, 1)
+                    }
+                }
+                this.form.clusterLargeNumberRecordContainer = []
+            }
+        },
+        selectSingleLargeNumberRecord(field){
+            var fieldIndex = this.form.clusterLargeNumberRecordContainer.indexOf(field)
+            var index = this.form.meargRecords.indexOf(field)
+            if (document.getElementById('large-number-record-' + field).checked == true) {
+                //push this element in container and mergeRecords
+                if(fieldIndex == -1){
+                    this.form.clusterLargeNumberRecordContainer.push(field)
+                }
+                if(index == -1){
+                    this.form.meargRecords.push(field)
+                }
+            }else{
+                if(fieldIndex > -1){
+                    this.form.clusterLargeNumberRecordContainer.splice(fieldIndex, 1)
+                }
+                if(index > -1){
+                    this.form.meargRecords.splice(index, 1)
+                }
+            }
+        },
+        selectNumericRecords(){
+            if (document.getElementById('numeric-checkbox').checked == true) {
+                for (const key of Object.keys(this.form.clusterNumericRecords)) {
+                    if(this.form.clusterNumericRecordContainer.indexOf(this.form.clusterNumericRecords[key]["field"]) == -1){
+                        this.form.clusterNumericRecordContainer.push(this.form.clusterNumericRecords[key]["field"])
+                    }
+                    if(this.form.meargRecords.indexOf(this.form.clusterNumericRecords[key]["field"]) == -1){
+                        this.form.meargRecords.push(this.form.clusterNumericRecords[key]["field"])
+                    }
+                }
+            } else {
+                for (const key of Object.keys(this.form.clusterNumericRecords)) {
+                    if(this.form.meargRecords.indexOf(this.form.clusterNumericRecords[key]["field"]) > -1){
+                        var index = this.form.meargRecords.indexOf(this.form.clusterNumericRecords[key]["field"])
+                        this.form.meargRecords.splice(index, 1)
+                    }
+                }
+                this.form.clusterNumericRecordContainer = []
+            }
+        },
+        selectSingleNumericRecord(field){
+            var fieldIndex = this.form.clusterNumericRecordContainer.indexOf(field)
+            var index = this.form.meargRecords.indexOf(field)
+            if (document.getElementById('numeric-record-' + field).checked == true) {
+                if(fieldIndex == -1){
+                    this.form.clusterNumericRecordContainer.push(field)
+                }
+                if(index == -1){
+                    this.form.meargRecords.push(field)
+                }
+            }else{
+                if(fieldIndex > -1){
+                    this.form.clusterNumericRecordContainer.splice(fieldIndex, 1)
+                }
+                if(index > -1){
+                    this.form.meargRecords.splice(index, 1)
+                }
+            }
+        },
+        selectStringRecords(){
+            if (document.getElementById('string-checkbox').checked == true) {
+                for (const key of Object.keys(this.form.clusterStringRecords)) {
+                    if(this.form.clusterStringRecordContainer.indexOf(this.form.clusterStringRecords[key]["field"]) == -1){
+                        this.form.clusterStringRecordContainer.push(this.form.clusterStringRecords[key]["field"])
+                    }
+                    if(this.form.meargRecords.indexOf(this.form.clusterStringRecords[key]["field"]) == -1){
+                        this.form.meargRecords.push(this.form.clusterStringRecords[key]["field"])
+                    }
+                }
+            } else {
+                for (const key of Object.keys(this.form.clusterStringRecords)) {
+                    if(this.form.meargRecords.indexOf(this.form.clusterStringRecords[key]["field"]) > -1){
+                        var index = this.form.meargRecords.indexOf(this.form.clusterStringRecords[key]["field"])
+                        this.form.meargRecords.splice(index, 1)
+                    }
+                }
+                this.form.clusterStringRecordContainer = []
+            }
+        },
+        selectSingleStringRecord(field){
+            var fieldIndex = this.form.clusterStringRecordContainer.indexOf(field)
+            var index = this.form.meargRecords.indexOf(field)
+            if (document.getElementById('string-record-' + field).checked == true) {
+                if(fieldIndex == -1){
+                    this.form.clusterStringRecordContainer.push(field)
+                }
+                if(index == -1){
+                    this.form.meargRecords.push(field)
+                }
+            }else{
+                if(fieldIndex > -1){
+                    this.form.clusterStringRecordContainer.splice(fieldIndex, 1)
+                }
+                if(index > -1){
+                    this.form.meargRecords.splice(index, 1)
+                }
+            }
+        },
+        selectTextdataRecords(){
+            if (document.getElementById('textdata-checkbox').checked == true) {
+                for (const key of Object.keys(this.form.clusterTextdataRecords)) {
+                    if(this.form.clusterTextdataRecordContainer.indexOf(this.form.clusterTextdataRecords[key]["field"]) == -1){
+                        this.form.clusterTextdataRecordContainer.push(this.form.clusterTextdataRecords[key]["field"])
+                    }
+                    if(this.form.meargRecords.indexOf(this.form.clusterTextdataRecords[key]["field"]) == -1){
+                        this.form.meargRecords.push(this.form.clusterTextdataRecords[key]["field"])
+                    }
+                }
+            } else {
+                for (const key of Object.keys(this.form.clusterTextdataRecords)) {
+                    if(this.form.meargRecords.indexOf(this.form.clusterTextdataRecords[key]["field"]) > -1){
+                        var index = this.form.meargRecords.indexOf(this.form.clusterTextdataRecords[key]["field"])
+                        this.form.meargRecords.splice(index, 1)
+                    }
+                }
+                this.form.clusterTextdataRecordContainer = []
+            }
+        },
+        selectSingleTextdataRecord(field){
+            var fieldIndex = this.form.clusterTextdataRecordContainer.indexOf(field)
+            var index = this.form.meargRecords.indexOf(field)
+            if (document.getElementById('textdata-record-' + field).checked == true) {
+                if(fieldIndex == -1){
+                    this.form.clusterTextdataRecordContainer.push(field)
+                }
+                if(index == -1){
+                    this.form.meargRecords.push(field)
+                }
+            }else{
+                if(fieldIndex > -1){
+                    this.form.clusterTextdataRecordContainer.splice(fieldIndex, 1)
+                }
+                if(index > -1){
+                    this.form.meargRecords.splice(index, 1)
+                }
+            }
+        },
+        selectEmptyRecords(){
+            if (document.getElementById('empty-checkbox').checked == true) {
+                for (const key of Object.keys(this.form.clusterEmptyRecords)) {
+                    if(this.form.clusterEmptyRecordContainer.indexOf(this.form.clusterEmptyRecords[key]["field"]) == -1){
+                        this.form.clusterEmptyRecordContainer.push(this.form.clusterEmptyRecords[key]["field"])
+                    }
+                    if(this.form.meargRecords.indexOf(this.form.clusterEmptyRecords[key]["field"]) == -1){
+                        this.form.meargRecords.push(this.form.clusterEmptyRecords[key]["field"])
+                    }
+                }
+            } else {
+                for (const key of Object.keys(this.form.clusterEmptyRecords)) {
+                    if(this.form.meargRecords.indexOf(this.form.clusterEmptyRecords[key]["field"]) > -1){
+                        var index = this.form.meargRecords.indexOf(this.form.clusterEmptyRecords[key]["field"])
+                        this.form.meargRecords.splice(index, 1)
+                    }
+                }
+                this.form.clusterEmptyRecordContainer = []
+            }
+        },
+        selectSingleEmptyRecord(field){
+            var fieldIndex = this.form.clusterEmptyRecordContainer.indexOf(field)
+            var index = this.form.meargRecords.indexOf(field)
+            if (document.getElementById('empty-record-' + field).checked == true) {
+                if(fieldIndex == -1){
+                    this.form.clusterEmptyRecordContainer.push(field)
+                }
+                if(index == -1){
+                    this.form.meargRecords.push(field)
+                }
+            }else{
+                if(fieldIndex > -1){
+                    this.form.clusterEmptyRecordContainer.splice(fieldIndex, 1)
+                }
+                if(index > -1){
+                    this.form.meargRecords.splice(index, 1)
+                }
+            }
+        },
+        getNullFields(){
+            this.form.post('/api/get-null-fields').then((response) => {
+                this.form.nullFields = response.data
+            })
+        },
+    },
+    created() {
+        axios.get('/api/get-display-names').then((response) => {this.display_names = response.data })
+        this.getTableFields()
+        // this.getNullFields()
+    }
+}
+</script>

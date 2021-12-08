@@ -23,11 +23,15 @@
                             </a>
                         </li>
                         <li>
-                            <div class="profile-dropdown">
-                                <router-link class="d-block" to="/">
-                                    <i class="bi bi-person-circle"></i>
+                            <div class="dropdown profile-dropdown">
+                                <a class="d-block" href="javascipt:void(0)" role="button" data-toggle="dropdown">
+                                     <i class="bi bi-person-circle"></i>
                                     <span v-show="desktopview >= 1">Hi Admin,</span>
-                                </router-link>
+                                </a>
+                                <div class="dropdown-menu text-left p-0 logoutbox">
+                                    <button type="button" class="dropdown-item text-danger" @click="logout()">
+                                        <span>Logout</span> <i class="bi bi-box-arrow-right"></i></button>
+                                </div>
                             </div>
                         </li>
                     </ul>
@@ -142,6 +146,12 @@
                         <span v-show="fullmenu"> Cron Jobs</span>
                     </router-link>
                 </li>
+                <li>
+                    <router-link  to="/data-enrichment" class="side-menu-link"> 
+                        <i class="bi bi-clipboard-data"></i>
+                        <span v-show="fullmenu"> Data enrichment</span>
+                    </router-link>
+                </li>
                 
                 <li class="side-menu-item">
                     <router-link  to="/settings" class="side-menu-link"> 
@@ -198,6 +208,21 @@ export default {
         },
         chageDashabord() {
             this.$router.push({ path: '/dashboard/'+this.dash })
+        },
+        logout() {
+            this.$swal({
+                title: 'Are you sure?',
+                text: "You want lo logout !!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, Please Logout!'
+                }).then((result) => {
+                if (result.isConfirmed) {
+                    axios.post('/logout', {}).then(() => {location.reload();});
+                }
+            })
         }
     },
     beforeMount() {

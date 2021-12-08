@@ -18,14 +18,14 @@
 ::-webkit-scrollbar-thumb {
     -webkit-border-radius: 10px;
     border-radius: 10px;
-    background: #55185d;
+    background: rgba(85, 24, 93, 0.551);
     -webkit-box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.5);
     box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.5);
     cursor: pointer;
 }
 
 ::-webkit-scrollbar-thumb:window-inactive {
-    background: #3F1245;
+    background: rgba(85, 24, 93, 0.351);
     cursor: pointer;
 }
 
@@ -1594,6 +1594,11 @@ table span.badge {
     overflow: auto;
 }
 
+.custom-height-220 {
+	height: calc(100vh - 220px);
+	overflow: auto;
+}
+
 .table-without-search {
     height: calc(100vh - 142px);
     overflow: auto;
@@ -2236,11 +2241,11 @@ table span.badge {
     }
 }
 .fit-cluster{
-    height: 215px;
+    /* height: 215px;
     .fit-cluster-inner{
-        max-height: 190px;
+        max-height: 185px;
         overflow: auto;
-    }
+    } */
     .divthead .divthead-elem {
         padding: 5px !important;
         height: 27px !important;
@@ -2248,6 +2253,49 @@ table span.badge {
     .divtbody .divtbody-elem {
         padding: 5px !important;
         height: 27px !important;
+    }
+}
+.logoutbox{
+    left: -15px !important;
+    border-radius: 0px;
+    border-top: none;
+    button {
+        font-size: 14px;
+        font-weight: 500;
+        padding: 0px 10px;
+        text-align: center;
+        i {
+            font-size: 18px;
+            margin-left: 5px;
+        }
+    }
+}
+.slide-action {
+	-webkit-transition: all 300ms ease-in;
+	-moz-transition: all 300ms ease-in;
+	-ms-transition: all 300ms ease-in;
+	-o-transition: all 300ms ease-in;
+	transition: all 300ms ease-in;
+    position: absolute;
+    width: 300px;
+    z-index: 11;
+    background: #fff;
+    border: solid #ccc;
+    border-width: 1px;
+    height: calc(100vh - 181px);
+    padding: 6px;
+}
+.slidein-action{
+	right: 0px;
+}
+.slideout-action{
+	right: -300px;
+}
+.swal2-popup{
+    width: 27em !important;
+    font-size: 14px !important;
+    .swal2-styled {
+        font-weight: 400 !important;
     }
 }
 @media (max-width:768px) {

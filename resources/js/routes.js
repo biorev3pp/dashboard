@@ -257,7 +257,7 @@ export const routes = [{
         }
     },
     {
-        path: '/database-update',
+        path: '/data-enrichment',
         component: DatabaseUpdate,
         meta: {
             requiresAuth: true,
