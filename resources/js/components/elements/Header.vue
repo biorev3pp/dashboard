@@ -17,9 +17,18 @@
                 <div class="col-5 text-right">
                     <ul class="top-menu">
                         <li>
-                            <a href="javascript:;" class="text-danger notification">
+                            <a href="javascript:;" class="text-secondary notification">
+                                <i class="bi bi-sticky"></i>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="javascript:;" class="text-secondary notification">
                                 <i class="bi bi-bell"></i>
-                                <span class="badge badge-danger">5</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="javascript:;" class="text-secondary notification">
+                                <i class="bi bi-exclamation-triangle"></i>
                             </a>
                         </li>
                         <li>
@@ -29,8 +38,14 @@
                                     <span v-show="desktopview >= 1">Hi Admin,</span>
                                 </a>
                                 <div class="dropdown-menu text-left p-0 logoutbox">
+                                    <router-link to="/" class="dropdown-item border-bottom">
+                                        <i class="bi bi-pencil-square"></i> <span>Profile </span> 
+                                    </router-link>
+                                    <router-link to="/" class="dropdown-item border-bottom">
+                                        <i class="bi bi-tools"></i> <span>Settings </span> 
+                                    </router-link>
                                     <button type="button" class="dropdown-item text-danger" @click="logout()">
-                                        <span>Logout</span> <i class="bi bi-box-arrow-right"></i></button>
+                                        <i class="bi bi-power"></i> <span>Logout</span> </button>
                                 </div>
                             </div>
                         </li>
@@ -41,14 +56,14 @@
         <div class="menu-backdrop" @click="toggleMenu" v-if="desktopview == 0 && fullmenu"></div>
         <aside :class="[(fullmenu)?'side-menu':'side-menu side-menu-condensed']">
             <div class="logo">
-                <router-link to="/dashboard/" class="navbar-brand">
+                <router-link to="/dashboard/" class="navbar-brand" >
                     <img :src="currentConfig.company_logo" :alt="currentConfig.company_name" width="160px" v-if="fullmenu"> 
                     <img :src="currentConfig.company_icon" :alt="currentConfig.company_name" width="33px" v-else> 
                 </router-link>
             </div>
             <ul class="side-menu-list">
                 <li class="side-menu-item">
-                    <router-link to="/dashboard/" class="side-menu-link"> 
+                    <router-link to="/dashboard/" class="side-menu-link" @click="this.dash = ''"> 
                         <i class="bi bi-speedometer2 mr-1"></i>
                         <span v-show="fullmenu">Dashboard</span>
                     </router-link>
@@ -117,7 +132,7 @@
                 </li>
                 <li class="side-menu-item">
                     <router-link to="/export-history" class="side-menu-link"> 
-                        <i class="bi bi-clock-history mr-1"></i>
+                        <i class="bi bi-handbag mr-1"></i>
                         <span v-show="fullmenu"> Export History</span>
                     </router-link>
                 </li>
@@ -145,11 +160,16 @@
                         <span v-show="fullmenu"> Data enrichment</span>
                     </router-link>
                 </li>
-                
+                <li>
+                    <router-link to="/data-health" class="side-menu-link"> 
+                        <i class="bi bi-activity mr-1"></i>
+                        <span v-show="fullmenu"> Data Health</span>
+                    </router-link>
+                </li>
                 <li class="side-menu-item">
                     <router-link to="/settings" class="side-menu-link"> 
                         <i class="bi bi-gear mr-1"></i>
-                        <span v-show="fullmenu">Settings</span>
+                        <span v-show="fullmenu">Configuration</span>
                     </router-link>
                 </li>
             </ul>
@@ -223,15 +243,17 @@ export default {
         this.submenu = (this.$route.meta.parent >= 1)?this.$route.meta.parent:0;
     },
     mounted() {
-        if(this.$route.meta.hasOwnProperty('subtitle')) {
-           this.dash = (this.$route.meta.subtitle == 'prospect')?'':this.$route.meta.subtitle
-       } else {
-            this.dash = ''
-       }
+        
     },
     created() {
         window.addEventListener('resize', this.handleResize);
         this.handleResize();
+        if(this.$route.meta.hasOwnProperty('subtitle')) {
+           this.dash = (this.$route.meta.subtitle == 'prospect')?'':this.$route.meta.subtitle
+         //  this.chageDashabord()
+        } else {
+            this.dash = ''
+        }
     },
     destroyed() {
         window.removeEventListener('resize', this.handleResize);

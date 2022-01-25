@@ -27,14 +27,13 @@ class HomeController extends Controller
        // $this->middleware('auth');
     }
 
-    public function manualUpdate($limits = null)
+    public function manualUpdate()
     {
-        $stages = Stages::get();
-        foreach ($stages as $key => $value) {
-            $stage = Stages::where('id', $value->id)->get()->first();
-            $stage->update(['css' => 'stage-och stage-'.$value->id]);
-        }
-        echo 'all done'; die;
+        ini_set('memory_limit', '8192M');
+        echo '<pre>';
+        $calls = FivenineCallLogs::whereNull('record_id')->get()->pluck('dnis')->toArray();
+        print_r($calls);
+        die;
     }
 
 

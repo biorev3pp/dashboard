@@ -1,39 +1,92 @@
 <template>
     <div>
         <div v-if="step == 0">
-            <div class="table-responsive border-bottom">
-            </div>
             <div class="filterbox">
                 <div class="row mx-0 mb-1">
-                    <div class="col-md-9 col-12 p-0 filter-btns-holder">
-                        <!-- <span v-for="(filter,index) in form.filterConditionsArray" :key="'filter-'+filter.conditionText+'-'+filter.formula+'-'+filter.textCondition" class="filter-btns row" v-show="filter_expand" :class="'filterbtn-'+index">
-                            <span v-title="filter.textConditionLabel"  class="text-dark mx-1 pointer-hand wf-200"> {{ filter.textConditionLabel }}</span>
-                        </span> -->
-                        <span class="filter-btns row" v-for="seq in sequence" :key="seq">
-                            <span  class="text-dark mx-1 pointer-hand wf-180"> 
-                                <b v-if="seq == 'agentName'">AGENT: {{ form.agentName }}</b>
-                                <b v-else-if="seq == 'disposition'">DISPO: {{ form.disposition }}</b>
-                                <b v-else-if="seq == 'talk_time'"> TALK-TIME: 
-                                    <em v-if="form.talk_time == 5">0-5 Sec</em>
-                                    <em v-if="form.talk_time == 10">6-10 Sec</em>
-                                    <em v-if="form.talk_time == 20">11-20 Sec</em>
-                                    <em v-if="form.talk_time == '20+'">20+ Sec</em>
-                                </b>
-                                <b v-else-if="seq == 'acw'">ACW: 
-                                    <em v-if="form.acw == 1">0-1 Mins</em>
-                                    <em v-if="form.acw == 2">1-2 Mins</em>
-                                    <em v-if="form.acw == 3">2-3 Mins</em>
-                                    <em v-if="form.acw == '3+'">3+ Mins</em>
-                                </b>
+                    <div class="col-md-7 col-12 pl-0">
+                        <div class="filter-btns-holder">
+                            <span class="filter-btns mb-0" v-if="form.sdate" :key="'fk'+form.sdate">
+                                <span  class="text-dark mx-1 pointer-hand" v-title="'Date range is from '+form.sdate+' to '+form.edate"> 
+                                    Date is {{ form.sdate | setdate }} - {{ form.edate | setdate }}
+                                </span>
                             </span>
-                            <!-- <i v-if="seq == 'agentName'" class="bi bi-x pr-1  pointer-hand" @click="removeAgentName(1)"></i>
-                            <i v-else-if="seq == 'disposition'" class="bi bi-x pr-1  pointer-hand" @click="removeDisposition(1)"></i>
-                            <i v-else-if="seq == 'talk_time'" class="bi bi-x pr-1  pointer-hand" @click="removeTalkTime(1)"></i>
-                            <i v-else-if="seq == 'acw'" class="bi bi-x pr-1  pointer-hand" @click="removeACW(1)"></i> -->
+                            <span v-if="form.list" class="filter-btns mb-0" :key="'fk'+form.list">
+                                <span  class="text-dark mx-1 pointer-hand" v-title="'List is '+form.list"> 
+                                    List is {{ form.list }}
+                                </span>
+                            </span>
+                            <span v-if="form.number_type" class="filter-btns mb-0" :key="'fk'+form.number_type">
+                                <span  class="text-dark mx-1 pointer-hand" v-title="'Number Filter is '+form.number_type"> 
+                                    Number Filter is {{ form.number_type }}
+                                </span>
+                            </span>
+                            <span v-if="form.agentName" class="filter-btns mb-0" :key="'fk'+form.agentName">
+                                <span  class="text-dark mx-1 pointer-hand" v-title="'Agent is '+form.agentName"> 
+                                    Agent is {{ form.agentName }}
+                                </span>
+                            </span>
+                            <span class="filter-btns row mb-0" v-if="form.disposition" :key="'fk'+form.disposition">
+                                <span v-title="'Disposition is '+form.disposition.join(',')"  class="text-dark mx-1 pointer-hand">
+                                    Disposition is {{ form.disposition.join(',') }}
+                                </span>
+                            </span>
+                            <span class="filter-btns row mb-0" v-if="form.talk_time" :key="'fk'+form.talk_time">
+                                <span v-title="'Talk Time is '+((form.talk_time == 5)?'0-5':(form.talk_time == 10)?'6-10':(form.talk_time == 20)?'11-20':'20+')+' sec'"  class="text-dark mx-1 pointer-hand">
+                                    Talk Time is {{ (form.talk_time == 5)?'0-5':(form.talk_time == 10)?'6-10':(form.talk_time == 20)?'11-20':'20+' }} sec
+                                </span>
+                            </span>
+                            <span class="filter-btns row mb-0" v-if="form.acw" :key="'fk'+form.acw">
+                                <span v-title="'ACW is '+((form.acw == 1)?'0-1':(form.acw == 2)?'1-2':(form.acw == 3)?'2-3':'3+')+' mins'"  class="text-dark mx-1 pointer-hand">
+                                    ACW is {{ (form.acw == 1)?'0-1':(form.acw == 2)?'1-2':(form.acw == 3)?'2-3':'3+' }} mins
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-12 p-0 text-right">
+                        <img :src="loader_url" alt="Loading..." v-show="loader">
+                        <span class="float-right"  v-if="recordContainer.length >= 1">
+                            <span class="float-left d-inline-block mr-2 text-center">
+                                <b>{{ recordContainer.length | freeNumber }}</b> Records<br>
+                                <a class="cursor-pointer" style="position:relative;top:-5px" @click="selectAllRecords()"><u>Select All</u></a>
+                            </span>
+                            <div class="dropdown d-inline-block">
+                                <a class="btn btn-outline-danger btn-sm theme-btn dropdown-toggle" href="#" role="button" id="dropdownMenuLink2" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> EXPORT </a>
+                                <div class="dropdown-menu source-dropdown left--65" aria-labelledby="dropdownMenuLink2">
+                                    <a href="javascript:;" @click="StartExport" class="dropdown-item text-uppercase"> Five9</a>
+                                </div>
+                            </div>
+                        </span>
+                    </div>
+                    <div class="col-md-3 col-12 pr-0 text-right form-inline d-block">
+                        <span class="mr-1">
+                            <label class="form-control  pr-0  border-none"> Sort By : </label>
+                            <select class="form-control" v-model="form.sortType" @change="getDatasetsCall(1)">
+                                <option value="outreach_touched_at">Last Contacted</option>
+                                <option value="last_outreach_engage">Last Engaged</option>
+                                <option value="last_update_at">Last Updated</option>
+                                <option value="first_name">First Name</option>
+                            </select>
+                        </span>
+                        <span class="">
+                            <i class="bi bi-arrow-down active pointer-hand" v-if="form.sortBy == 'desc'" @click="updateSorting('asc')"></i>
+                            <i class="bi bi-arrow-up active pointer-hand" v-else  @click="updateSorting('desc')"></i>
+                        </span>
+                        <span class="ml-4">
+                            <button class="btn btn-sm btn-default" @click="refreshAll"> 
+                                <i class="bi bi-bootstrap-reboot"></i>
+                            </button>
+                        </span>
+                    </div>
+                </div>
+                <div class="row mx-0 mb-1">
+                    <div class="col-md-9 col-12 p-0 filter-btns-holder">
+                        <span v-for="(filter,index) in form.filterConditionsArray" :key="'filter-'+filter.conditionText+'-'+filter.formula+'-'+filter.textCondition" class="filter-btns row" v-show="filter_expand" :class="'filterbtn-'+index">
+                            <span v-title="filter.textConditionLabel"  class="text-dark mx-1 pointer-hand" @click="showFilterDetails(filter, index)"> {{ filter.textConditionLabel }}</span>
+                            <i class="bi bi-x pr-1  pointer-hand" @click="removeFilter(index)"></i>
                         </span>
                         <span class="filtertemp">
                             <span class="filter-btns row" v-show="(filter == true) && (typeof form.filter == 'object')" >
-                                <span  class="text-dark mx-1 pointer-hand wf-200"> {{ (form.filter)?form.filter.filter:'-' }}</span>
+                                <span  class="text-dark mx-1 pointer-hand"> {{ (form.filter)?form.filter.filter:'-' }}</span>
                                 <i class="bi bi-x pr-1  pointer-hand"></i>
                             </span>
                         </span>
@@ -112,7 +165,7 @@
                             </div> 
                         </div>
                         <div class="position-relative d-inline-block">
-                            <!-- <button type="button" class="btn btn-outline-dark btn-sm text-capitalize" @click="showFilter()"><i class="bi bi-plus"></i> Add filter</button> -->
+                            <button type="button" class="btn btn-outline-dark btn-sm text-capitalize" @click="showFilter()"><i class="bi bi-plus"></i> Add filter</button>
                             <div class="stage-select-box selection-box" v-show="showView">
                                 <div class="stage-box-header">
                                     <i class="bi bi-x close" @click="showView = false"></i>
@@ -127,25 +180,10 @@
                                     </div>
                                 </div> 
                             </div>
-                            <!-- <span class="text-secondary cursor-pointer ml-1" v-if="filter_expand" @click="filter_expand = false">Hide Filters</span>
+                            <span class="text-secondary cursor-pointer ml-1" v-if="filter_expand" @click="filter_expand = false">Hide Filters</span>
                             <span class="text-secondary cursor-pointer ml-1" v-else @click="filter_expand = true">{{ form.filterConditionsArray.length }} Hidden Filters</span>
-                            <span class="text-danger cursor-pointer ml-1" v-show="form.filterConditionsArray.length >= 1" @click="removeAllFilter">Clear All</span> -->
+                            <span class="text-danger cursor-pointer ml-1" v-show="form.filterConditionsArray.length >= 1" @click="removeAllFilter">Clear All</span>
                         </div>
-                    </div>
-                    <div class="col-md-4 col-12 p-0 text-right">
-                        <img :src="loader_url" alt="Loading..." v-show="loader">
-                        <span class="float-right"  v-if="recordContainer.length >= 1">
-                            <span class="float-left d-inline-block mr-2 text-center">
-                                <b>{{ recordContainer.length | freeNumber }}</b> Records Selected<br>
-                                <a class="cursor-pointer" style="position:relative;top:-5px" @click="selectAllRecords()"><u>Select All</u></a>
-                            </span>
-                            <div class="dropdown d-inline-block">
-                                <a class="btn btn-outline-danger btn-sm theme-btn dropdown-toggle" href="#" role="button" id="dropdownMenuLink2" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> EXPORT </a>
-                                <div class="dropdown-menu source-dropdown left--65" aria-labelledby="dropdownMenuLink2">
-                                    <a href="javascript:;" @click="StartExport" class="dropdown-item text-uppercase"> Five9</a>
-                                </div>
-                            </div>
-                        </span>
                     </div>
                     <div class="col-md-3 col-12 p-0 text-right pt-2">
                         <img :src="loader_url" alt="Loading..." v-show="loader">
@@ -155,77 +193,63 @@
                     </div>
                 </div>
             </div>
-            <div class="divtable border-top">
+            <div class="divtable border-top" v-show="!showProgress">
                 <div class="divthead">
                     <div class="divthead-row">
                         <div class="divthead-elem wf-45 text-center">
                             <input type="checkbox" name="" id="check-all" value="0" aria-label="..." @click="addAndRemoveAllRecordToContainer">
                         </div>
-                        <div class="divthead-elem mwf-200">
-                            Name                            
-                        </div>
-                        <div class="divthead-elem wf-175">
-                            Tag                        
-                        </div>
-                        <div class="divthead-elem wf-175">
-                            Stage                        
-                        </div>
-                        <div class="divthead-elem wf-150">
-                            Call Stack  
-                        </div>
-                        <div class="divthead-elem wf-220">
-                            Email Stack                   
-                        </div>
-                        <div class="divthead-elem wf-150">
-                            Time Stack
-                        </div>
+                        <div class="divthead-elem mwf-200">Name</div>
+                        <div class="divthead-elem wf-200">Tag</div>
+                        <div class="divthead-elem wf-200">Stage</div>
+                        <div class="divthead-elem wf-150">Call Stack</div>
+                        <div class="divthead-elem wf-220">Email Stack</div>
+                        <div class="divthead-elem wf-150">Time Stack</div>
                     </div>
                 </div>
-                <div class="divtbody full-page-with-search">
-                    <div class="divtbody-row" v-for="record in records.data" :key="'dsg-'+record.id" :class="[(active_row.id == record.record_id)?'expended':'']">
+                <div class="divtbody custom-height-220">
+                    <div class="divtbody-row" v-for="record in records.data" :key="'dsg-'+record.id">
                         <div class="divtbody-elem  wf-45 text-center">
-                            <div class="form-check">
-                                <input :id="'record-'+record.id" class="form-check-input me-1" type="checkbox" :value="record.id" @click="addAndRemoveRecordToContainer(record.id)">
-                            </div>
+                            <input :id="'record-'+record.id" class="form-check-input m-0" type="checkbox" :value="record.id" @click="addAndRemoveRecordToContainer(record.id)">
                         </div>
                         <div class="divtbody-elem mwf-200">
-                            <router-link target="_blank" :to="'prospects/' + record.record_id" class="text-capitalize"><b>{{ record.first_name }} {{ record.last_name }} </b></router-link>
+                            <router-link target="_blank" :to="'/prospects/' + record.record_id" class="text-capitalize"><b>{{ record.first_name }} {{ record.last_name }} </b></router-link>
                             <br>
                             <small class="fw-500" v-title="record.title" v-if="record.title">{{ record.title }}  in </small> 
                             <span class="company-sm" v-title="record.company" v-if="record.company">{{ record.company }}</span>
                         </div>
-                        <div class="divtbody-elem wf-175">
+                        <div class="divtbody-elem wf-200">
                             <span v-if="record.outreach_tag">
                                 <label class=" alert alert-primary m-1 py-1 px-2" v-for="(tag, ti) in (record.outreach_tag.split(','))" v-title="tag" :key="'otg'+ti">{{ tag }}</label>
                             </span>    
                         </div>
-                        <div class="divtbody-elem wf-175">
+                        <div class="divtbody-elem wf-200">
                             <span v-if="record.stage_name" :class="record.stage_css" v-title="record.stage_name">
                                 {{ record.stage_name }}
                             </span>
-                            <span class="no-stage" v-else>No Stage</span>
+                            <span class="stage-och stage-1" v-else>No Stage</span>
                         </div>
                         <div class="divtbody-elem wf-150">
-                            <span class="stack-box call-log">
+                            <span class="stack-box call-log cursor-pointer" @click="showDispo(record.record_id)" v-if="called">
                                 <label for="call">
                                     <i class="bi bi-telephone-fill"></i>
                                 </label>
-                                <call-log :call="record.mcall_attempts" :rcall="record.mcall_received" :title="record.mobilePhones" :fnumber="record.mnumber" :label="'MP'"></call-log>
-                                <call-log :call="record.wcall_attempts" :rcall="record.wcall_received" :title="record.workPhones" :label="'WP'"></call-log>
-                                <call-log :call="record.hcall_attempts" :rcall="record.hcall_received" :title="record.homePhones" :label="'HP'"></call-log>
+                                <call-log :called_numbers="called_numbers" :call="record.mcall_attempts" :rcall="record.mcall_received" :title="record.mobilePhones" :label="'MP'" :rid="record.record_id"></call-log>
+                                <call-log :called_numbers="called_numbers" :call="record.wcall_attempts" :rcall="record.wcall_received" :title="record.workPhones" :label="'WP'" :rid="record.record_id"></call-log>
+                                <call-log :called_numbers="called_numbers" :call="record.hcall_attempts" :rcall="record.hcall_received" :title="record.homePhones" :label="'HP'" :rid="record.record_id"></call-log>
                             </span>
                         </div>
                         <div class="divtbody-elem wf-220">
-                            <span class="stack-box email-log">
+                            <span class="stack-box email-log cursor-pointer" @click="showProspect(record.record_id)">
                                 <label for="email">
                                     <i class="bi bi-envelope-fill text-primary"></i>
                                 </label>
                                 <email-log :te="record.email_delivered" :tc="record.email_clicked" :to="record.email_opened" :tb="record.email_bounced" :tr="record.email_replied" :title="record.emails" :label="'B'"></email-log>
                                 <email-log :te="0" :tc="0" :to="0" :tb="0" :tr="0" :title="record.supplemental_email?record.supplemental_email:''" :label="'S'"></email-log>
                             </span>
-                        </div>                             
+                        </div>
                         <div class="divtbody-elem  wf-150">
-                            <span class="stack-box">
+                            <span class="stack-box stack-time-box">
                                 <label for="email">
                                     <i class="bi bi-clock-fill text-success"></i>
                                 </label>
@@ -252,9 +276,22 @@
                     </div>
                 </div>
             </div>
+            <div class="center" v-show="showProgress">
+                <radial-progress-bar 
+                    :startColor="startColor"
+                    :innerStrokeWidth="5"
+                    :stopColor="stopColor"
+                    :diameter="200"
+                    :completed-steps="completedSteps"
+                    :total-steps="totalSteps">
+                    <h1>{{ completedSteps }}/{{ totalSteps }}</h1>
+                    <!-- <button type="button" class="btn btn-primary btn-sm" @click="completedSteps = completedSteps + 1">Next</button> -->
+                </radial-progress-bar>
+            </div>
         </div>
         <div v-else-if="step >= 1">
-            <export-wizard :step="step" :data="fivenineData" />
+            <call-export-wizard :ntype="form.number_type" :step="step" :data="fivenineData" v-if="form.number_type" />
+            <call-wizard :step="step" :data="fivenineData" v-else />
         </div>
         <div v-else>
         </div>
@@ -275,10 +312,10 @@
                     <div class="modal-body" v-else-if="dispo_data.length >= 1">
                         <div class="row m-0">
                             <div class="col-md-4 p-0 border" v-for="(ddata, dkey) in dispo_data" :key="'dd'+dkey">
-                                <h5 class="dispo-title" :class="[(ddata.number_type == '' || ddata.number_type == '0')?'alert-danger':'']">
+                                <h5 class="dispo-title" :class="[(ddata.number_type == '' || ddata.number_type == '0')?'alert-danger '+calledGreen(ddata.number):''+calledGreen(ddata.number)]">
                                     <span v-if="ddata.number_type == 'm'">Mobile Phone</span>
                                     <span v-else-if="ddata.number_type == 'd'">Work Phone</span>
-                                    <span v-else-if="ddata.number_type == 'h'">Home Phone</span>
+                                    <span v-else-if="ddata.number_type == 'hq'">Home Phone</span>
                                     <span v-else>Other</span><br>
                                     {{ ddata.number | formatPhoneNumber }}
                                 </h5>
@@ -300,6 +337,165 @@
                 </div>
             </div>
         </div>
+        <div class="fullsidebar2" id="prospectModal">
+            <div class="sidebar-content">
+                <div class="sidebar-header">
+                    <h5 class="sidebar-title">Email Details For Prospect - {{ prospect }}</h5>
+                    <button type="button" class="close" @click="closeSideBar()">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </div>
+                <div class="sidebar-body">
+                    
+                    <p class="text-center p-4" v-if="loading">
+                        <img :src="loader_url" alt="loading...">
+                    </p>
+                    <div v-else>
+                        <ul class="nav nav-tabs">
+                            <li class="nav-item">
+                                <a class="nav-link" :class="[(emailShow == 1)?'active':'']" aria-current="page" href="#" @click="emailShow = 1">All</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" :class="[(emailShow == 2)?'active':'']" aria-current="page" href="#" @click="emailShow = 2">Single</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" :class="[(emailShow == 3)?'active':'']" aria-current="page" href="#" @click="emailShow = 3">Sequence</a>
+                            </li>
+                            <!-- 
+                            <li class="nav-item">
+                                <a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Disabled</a>
+                            </li> -->
+                        </ul>
+                    <br>
+                        <div>
+                            <table class="table table-striped table-bordered mb-2 table-condensed" v-show="emailShow == 1">
+                                <tbody>
+                                    <tr>
+                                        <th>Sno</th>
+                                        <th>Sender</th>
+                                        <th>Subject</th>
+                                        <th>Type</th>
+                                        <th>Delivered At</th>
+                                        <th>Opene At</th>
+                                        <th>Clicked At</th>
+                                        <th>Replied At</th>
+                                        <th>Bounced At</th>
+                                    </tr>
+                                    <tr v-for="(mail, mk) in allemails" :key="'mk'+mk">
+                                        <td>{{ mk + 1 }}</td>
+                                        <td>{{ mail.mailboxAddress }}</td>
+                                        <td>{{ mail.subject }}</td>
+                                        <td>{{ mail.mailingType }}</td>
+                                        <td>
+                                            <span v-if="mail.deliveredAt">{{ mail.deliveredAt | setFulldate }}</span>
+                                            <span v-else>---</span>
+                                        </td>
+                                        <td>
+                                            <span v-if="mail.openedAt" >{{ mail.openedAt | setFulldate }}</span>
+                                            <span v-else>---</span>
+                                        </td>
+                                        <td>
+                                            <span v-if="mail.clickedAt">{{ mail.clickedAt | setFulldate }}</span>
+                                            <sapn v-else>---</sapn>
+                                        </td>
+                                        <td>
+                                            <span v-if="mail.repliedAt">{{ mail.repliedAt | setFulldate }}</span>
+                                            <span v-else></span>
+                                        </td>                                        
+                                        <td>
+                                            <span v-if="mail.bouncedAt">{{ mail.bouncedAt | setFulldate }}</span>
+                                            <span v-else>---</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>  
+                            <table class="table table-striped table-bordered mb-2 table-condensed" v-show="emailShow == 2">
+                                <tbody>
+                                    <tr>
+                                        <th>Sno</th>
+                                        <th>Sender</th>
+                                        <th>Subject</th>
+                                        <th>Type</th>
+                                        <th>Delivered At</th>
+                                        <th>Opene At</th>
+                                        <th>Clicked At</th>
+                                        <th>Replied At</th>
+                                        <th>Bounced At</th>
+                                    </tr>
+                                    <tr v-for="(mail, mk) in singleemails" :key="'mk'+mk">
+                                        <td>{{ mk + 1 }}</td>
+                                        <td>{{ mail.mailboxAddress }}</td>
+                                        <td>{{ mail.subject }}</td>
+                                        <td>{{ mail.mailingType }}</td>
+                                        <td>
+                                            <span v-if="mail.deliveredAt">{{ mail.deliveredAt | setFulldate }}</span>
+                                            <span v-else>---</span>
+                                        </td>
+                                        <td>
+                                            <span v-if="mail.openedAt" >{{ mail.openedAt | setFulldate }}</span>
+                                            <span v-else>---</span>
+                                        </td>
+                                        <td>
+                                            <span v-if="mail.clickedAt">{{ mail.clickedAt | setFulldate }}</span>
+                                            <sapn v-else>---</sapn>
+                                        </td>
+                                        <td>
+                                            <span v-if="mail.repliedAt">{{ mail.repliedAt | setFulldate }}</span>
+                                            <span v-else></span>
+                                        </td>                                        
+                                        <td>
+                                            <span v-if="mail.bouncedAt">{{ mail.bouncedAt | setFulldate }}</span>
+                                            <span v-else>---</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>  
+                            <table class="table table-striped table-bordered mb-2 table-condensed" v-show="emailShow == 3">
+                                <tbody>
+                                    <tr>
+                                        <th>Sno</th>
+                                        <th>Sender</th>
+                                        <th>Subject</th>
+                                        <th>Type</th>
+                                        <th>Delivered At</th>
+                                        <th>Opene At</th>
+                                        <th>Clicked At</th>
+                                        <th>Replied At</th>
+                                        <th>Bounced At</th>
+                                    </tr>
+                                    <tr v-for="(mail, mk) in sequenceemails" :key="'mk'+mk">
+                                        <td>{{ mk + 1 }}</td>
+                                        <td>{{ mail.mailboxAddress }}</td>
+                                        <td>{{ mail.subject }}</td>
+                                        <td>{{ mail.mailingType }}</td>
+                                        <td>
+                                            <span v-if="mail.deliveredAt">{{ mail.deliveredAt | setFulldate }}</span>
+                                            <span v-else>---</span>
+                                        </td>
+                                        <td>
+                                            <span v-if="mail.openedAt" >{{ mail.openedAt | setFulldate }}</span>
+                                            <span v-else>---</span>
+                                        </td>
+                                        <td>
+                                            <span v-if="mail.clickedAt">{{ mail.clickedAt | setFulldate }}</span>
+                                            <sapn v-else>---</sapn>
+                                        </td>
+                                        <td>
+                                            <span v-if="mail.repliedAt">{{ mail.repliedAt | setFulldate }}</span>
+                                            <span v-else></span>
+                                        </td>
+                                        <td>
+                                            <span v-if="mail.bouncedAt">{{ mail.bouncedAt | setFulldate }}</span>
+                                            <span v-else>---</span>
+                                        </td>                                        
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 <script>
@@ -309,12 +505,19 @@ import DateRangePicker from 'vue2-daterange-picker';
 import 'vue2-daterange-picker/dist/vue2-daterange-picker.css';
 import { ToggleButton } from 'vue-js-toggle-button';
 import 'vue-select/dist/vue-select.css';
-import ExportWizard from '../dataset/FiveNineWizard';
-
+import CallExportWizard from '../dataset/CallFiveNineWizard';
+import CallWizard from '../dataset/CallWizard';
+import RadialProgressBar from 'vue-radial-progress';
 export default {
-    components:{CallLog, EmailLog, DateRangePicker, ToggleButton, ExportWizard},
+    components:{CallLog, EmailLog, DateRangePicker, ToggleButton, CallExportWizard, RadialProgressBar, CallWizard},
     data() {
         return {
+            callDiff : 100,
+            showProgress : false,
+            startColor: "#3490dc",
+            stopColor: "#f8f9fa",
+            completedSteps: 0,
+            totalSteps: 0,
             fivenineData : [],
             recordContainer:[],
             dispo_data:[],
@@ -333,7 +536,13 @@ export default {
             exportForm : new Form({
                 exports : []
             }),
+            emailShow : 1,
+            allemails : [],
+            singleemails : [],
+            sequenceemails : [],
             form: new Form({
+                agentName: '',
+                type : '',
                 sortType:'outreach_touched_at',
                 sortBy:'desc',
                 recordPerPage:20,
@@ -355,19 +564,20 @@ export default {
                 filterConditionsArray : [],
                 viewName : '',
                 sharing : 'private',
-                agentName : null,
-                agentEmail : null,
-                disposition : null,
-                stime : null,
-                etime : null,
-                sdate : null,
-                edate : null,
+                acw:'',
+                acw_plus:'',
+                agentName:'',
+                disposition:[],
+                edate:'',
+                sdate:'',
+                talk_time:'',
+                talk_time_plus:'',
+                list:'',
+                number_type:''
             }),
-            sequence:[],
             showView : false, //control appearance of view controls
             loader_url: '/img/spinner.gif',
             totalNumberOfRecords:'',
-            
             filter : false,
             filterEmail : false,
             filterPhone : false,
@@ -376,7 +586,7 @@ export default {
             filterDateRange : false,
             filterOptions : [],
             selects : [],
-            filterConditionsObject : {},
+            filterConditionsObject : {},            
             filterConditionsArrayOld : [],
             filterBtn : true,
             filterUpdateBtn: false,
@@ -384,14 +594,26 @@ export default {
             selectedOptionsId : [],
             filterItemsIds : [],
             showInputTextOrDropdown : true,
-            filter_keyword:''
+            filter_keyword:'',
+            prospect:{},
+            loading: false,
+            called_numbers:[],
+            called: false,
         }
     },
     filters: {
-           },
+        formatPhoneNumber(phoneNumberString) {
+            var cleaned = ('' + phoneNumberString).replace(/\D/g, '');
+            var match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/);
+            if (match) {
+                return '(' + match[1] + ') ' + match[2] + '-' + match[3];
+            }
+            return null;
+        }
+    },
     computed: {
-        datasets() {
-            return this.$store.getters.datasets
+        stageDetails() {
+            return this.$store.getters.stages
         },
         filterItems() {
             return this.$store.getters.datasetFilter
@@ -408,10 +630,39 @@ export default {
         },
     },
     methods: {
+        calledGreen(str) {
+            let nmbr;
+            str = str.replace(/([-() ])+/g, '');
+            if(str != null && str != 0 && str != 'undefined' && str != '') {
+                let fst_str = str.substr(0, 1);
+                const regex = / /gi;
+                str = str.replace(regex, '');
+                if(fst_str == '+') {
+                    str = str.substr(1, str.length-1);
+                }
+                fst_str = str.substr(0, 1);
+                if(fst_str == 1) {
+                    str = str.substr(1, str.length-1);
+                }
+                str = str.substr(0, 10);
+                if(str.length != 10) {
+                    nmbr = 0;
+                } else {
+                    nmbr = parseInt(str);
+                }
+            } else {
+                nmbr = 0;
+            }
+            if(this.called_numbers.indexOf(nmbr) >= 0) {
+                return 'bg-success text-white'
+            } else {
+                return '';
+            }
+        },
         addAndRemoveAllRecordToContainer(){
             var a = document.getElementById('check-all');
             var aa = document.querySelectorAll("input[type=checkbox]");
-            if(document.getElementById("check-all").checked == true){
+            if(document.getElementById("check-all").checked == true){ 
                 for (var i = 0; i < aa.length; i++){
                     if(parseInt(aa[i].value) > 0){
                         if((this.recordContainer.indexOf(parseInt(aa[i].value)) == -1)){
@@ -473,6 +724,8 @@ export default {
             this.filter_keyword = ''
         },
         showFilterOption(fitem){
+            this.selectedOptions = []
+            this.selectedOptionsId = []
             this.filter = true
             this.showView = false
             this.form.filterOption = ''
@@ -714,15 +967,11 @@ export default {
                 this.filterDropdown = true
                 this.filterDateRange = false
                 let api = filter.api
-                axios.get(api).then((response) => {
-                    this.selects = response.data.results;
-                });
                 this.selectedOptions = []
                 this.selectedOptionsId = []
-                if(filter.textCondition.indexOf(",") == -1){
-                    this.selectedOptionsId.push(filter.textCondition)
-                    this.selectedOptions.push(filter.textCondition)
-                }else{
+                axios.get(api).then((response) => {
+                    this.selects = response.data.results;                    
+                    
                     var newRecords = filter.textCondition.split(",")
                     for(var i = 0; i <= newRecords.length; i++){
                         var newStage = this.selects.filter(function(e){
@@ -733,9 +982,9 @@ export default {
                             this.selectedOptions.push(newStage[0].name)
                         }
                     }
-                }
-                this.filterEmail = false
-                this.filterPhone = false
+                    this.filterEmail = false
+                    this.filterPhone = false
+                });
             } else if(filter.type == 'calendar'){
                 this.form.filter = filter.conditionText
                 this.form.filterOption = filter.formula
@@ -813,11 +1062,23 @@ export default {
                     } else if(this.form.filterConditionsArray[i]["type"] == "dropdown"){
 
                         this.form.filterConditionsArray[i]["formula"] = this.form.filterOption
-                        this.form.filterConditionsArray[i]["textCondition"] = this.selectedOptionsId.join(',')        
+                        if(this.selectedOptionsId.length == 0){
+                            this.form.filterConditionsArray[i]["textCondition"] = this.form.dropdown
+                        }else{
+                            this.form.filterConditionsArray[i]["textCondition"] = this.selectedOptionsId.join(',')
+                        }
                         if(this.form.filterOption == 'is empty' || this.form.filterOption == 'is not empty'){
                             this.form.filterConditionsArray[i]['textConditionLabel'] = this.form.filter +' '+ this.form.filterOption
                         } else {
-                            this.form.filterConditionsArray[i]['textConditionLabel'] = this.form.filter +' '+ this.form.filterOption +' '+ this.selectedOptions.join(', ')
+                            if(this.selectedOptionsId.length == 0){
+                                var f = this.form.dropdown
+                                var s = this.selects.filter(function(e){
+                                    return e.oid == f
+                                })
+                                this.form.filterConditionsArray[i]['textConditionLabel'] = this.form.filter +' '+ this.form.filterOption +' '+s[0]["name"]
+                            }else{
+                                this.form.filterConditionsArray[i]['textConditionLabel'] = this.form.filter +' '+ this.form.filterOption +' '+ this.selectedOptions.join(', ')
+                            }
                         }
                         
                     } else if(this.form.filterConditionsArray[i]["type"] == "calendar"){
@@ -867,6 +1128,8 @@ export default {
                     this.showInputTextOrDropdown = true
                     this.searchfilterEmailMoreOption = []
                     this.searchfilterPhoneMoreOption = []
+                    this.selectedOptions = []
+                    this.selectedOptionsId = []
                     this.queryType = ""
                     this.bypassFIlterKey = ''
                     this.getDatasetsCall(1)
@@ -892,18 +1155,6 @@ export default {
         myDateFormat(txt, val) {
             return txt+' '+this.$options.filters.convertInDayMonth(val)+' ago';
         },
-        getDatasetsCall(page) {
-            this.loader = true;
-            this.$Progress.start();  
-            this.form.page = page
-            this.form.post('/api/dataset-values-data-call').then((response) => {                
-                this.records = response.data;
-                this.totalRecords = response.data.total;                
-                this.$Progress.finish();               
-                this.totalNumberOfRecords = response.data.total;
-                this.loader = false;
-            });
-        },
         getFilterData(){
             this.form.sortType = 'outreach_touched_at'
             this.form.sortBy = 'asc'
@@ -920,17 +1171,71 @@ export default {
             this.leftpos = fleft+'px';
             this.toppos = ftop+'px';
         },
-         updateSorting(by) {
+        updateSorting(by) {
             this.form.sortBy = by;
             this.getDatasetsCall(1);
         },
         refreshAll() {
             this.getDatasetsCall(1);
         },
-        StartExport(){
+        showDispo(rid) {
+            this.dispo_data = '';
             this.loader = true
+            $('#dispoModal').modal('show');
+            axios.get('/api/get-record-disposition/'+rid).then((resposne) => {
+                this.dispo_data = resposne.data
+                this.loader = false
+            })
+        },
+        incCompledSteps(){
+            if(this.completedSteps < this.totalSteps - 2){
+                this.completedSteps =  this.completedSteps  + 1
+            }else{
+                return false;
+            }
+        },
+        getDatasetsCall(page) {
+            this.loader = true;
+            this.$Progress.start();  
+            this.form.page = page
+            this.form.post('/api/dataset-values-data-call').then((response) => {                
+                this.records = response.data;
+                this.totalRecords = response.data.total;                
+                this.$Progress.finish();               
+                this.totalNumberOfRecords = response.data.total;
+                this.loader = false;
+            });
+        },
+        getNumbers() {
+            this.form.post('/api/called-numbers').then((response) => {
+                let obj = response.data;
+                this.called_numbers = Object.keys(obj).map((key) => parseInt(obj[key]));
+                this.called = true
+            });
+        },
+        StartExport(){
+            this.totalSteps = this.recordContainer.length
+            this.completedSteps = 1
+            this.showProgress = true
+            window.setInterval(() => {
+                this.incCompledSteps();
+            }, 800)
             this.exportForm.exports = this.recordContainer
-            this.exportForm.post('/api/get-record-container-info').then((response) => {
+            this.exportForm.called_numbers = this.called_numbers
+            this.exportForm.number_type = this.form.number_type
+            this.exportForm.acw = this.form.acw
+            this.exportForm.acw_plus = this.form.acw_plus
+            this.exportForm.agentName = this.form.agentName
+            this.exportForm.disposition = this.form.disposition
+            this.exportForm.edate = this.form.edate
+            this.exportForm.sdate = this.form.sdate
+            this.exportForm.talk_time = this.form.talk_time
+            this.exportForm.list = this.form.list
+            this.exportForm.talk_time_plus = this.form.talk_time_plus
+            this.exportForm.post('/api/get-record-container-info-call').then((response) => {
+                this.completedSteps = 0
+                this.totalSteps = 0
+                this.showProgress = false
                 this.fivenineData = response.data
                 this.step = 1
                 this.loader = false
@@ -943,7 +1248,7 @@ export default {
             this.form.page = 1
             this.form.post('/api/dataset-values-data-call-all').then((response) => {
                 var records = response.data
-                console.log(records)
+                this.recordContainer = []
                 for(var i = 0; i < records.length; i++){
                     if( (this.recordContainer.indexOf(parseInt(records[i])) == -1) ){
                         this.recordContainer.push(records[i]);
@@ -953,59 +1258,44 @@ export default {
                 this.$Progress.finish();
             });
         },
+        showProspect(record_id) {
+            this.loading = true;
+            $('#prospectModal').addClass('show-sidebar');
+            axios.get('/api/get-prospect-email-details/'+record_id).then((response) => { 
+                this.prospect = response.data.contact.first_name + ' ' + response.data.contact.last_name
+                this.allemails = response.data.allemails,
+                this.singleemails = response.data.singleemails,
+                this.sequenceemails = response.data.sequenceemails,
+                this.loading = false;
+            })
+        },
+        closeSideBar() {
+            this.prospect = '';
+            $('#prospectModal').removeClass('show-sidebar');
+        },
     },
-    created(){
-
+    mounted(){
+        this.getNumbers();
     },
     beforeMount() {
-        if(this.datasets == '') {
-           this.$store.dispatch('setDatasets');
-        }
+        
     },
-    mounted() {
+    created() {
+        const obj = this.$route.query;
+        this.form.acw = obj.acw
+        this.form.acw_plus = obj.acw_plus
+        this.form.agentName = obj.agentName
+        this.form.disposition = obj.disposition.split(',')
+        this.form.edate = obj.edate
+        this.form.sdate = obj.sdate
+        this.form.talk_time = obj.talk_time
+        this.form.list = obj.list
+        this.form.talk_time_plus = obj.talk_time_plus
+        this.form.number_type = obj.number_type
+        this.getDatasetsCall(1);
         if(this.filterItems == '') {
            this.$store.dispatch('setDatasetFilter');
         }
-        //route
-        const obj = this.$route.query
-        var i
-        for (const key of Object.keys(obj)) {
-            i = key
-        }
-        var di = JSON.parse(i)
-        this.sequence = di["sequence"]
-        this.form.stime = di["stime"]
-        this.form.etime = di["etime"]
-        
-        if(di["agentName"]){
-            this.form.agentName = di["agentName"]
-        }
-        if(di["disposition"]){
-            this.form.disposition = di["disposition"]
-        }
-        
-        this.form.talk_time_plus = di["talk_time_plus"]
-        if(di["talk_time"]){
-            this.form.talk_time = di["talk_time"]
-            if(di["talk_time_plus"] == 1){
-                var messageTalkTime =  "Talk-time : " + di["talk_time"].replace('/\s+/g', '') + "+sec"
-            }else{
-                var messageTalkTime =  "Talk-time : " + di["talk_time"] + "sec"
-            }
-        }
-        
-        
-        this.form.acw_plus = di["acw_plus"]
-        if(di["acw"]){
-            this.form.acw = di["acw"]
-            if(di["acw_plus"] == 1){
-                var messageACW = "After Call Work : " + di["acw"].replace('/\s+/g', '') + "+min"
-            }else{
-                var messageACW = "After Call Work : " + di["acw"] + "min"
-            }
-        }
-        
-        this.getDatasetsCall(1);
     }
 }
 </script>

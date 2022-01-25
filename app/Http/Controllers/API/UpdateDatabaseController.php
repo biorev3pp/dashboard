@@ -29,30 +29,27 @@ class UpdateDatabaseController extends Controller
         return $nullFields;
     }
     function getOverwriteInfo(Request $request){
-        //dd($request->all());
-        $allRecordsContainer = $request->input('allRecordsContainer');
+        $allRecordsContainer = $request->input('meargRecords');
         $nullField = $request->input('nullField');
         $field = $request->input('field');
-        $fields01 = DB::getSchemaBuilder()->getColumnListing('contacts');
-        if(in_array($nullField, $fields01)){
-            $records = Contacts::whereIn($field, $allRecordsContainer)->select('record_id')->get();
-            $recordIds = $records->pluck('record_id');
+        $transferTable = DB::table('contact_fields')->where('field', $nullField)->first();
+        $transferTable = $transferTable->table_name;
+        
+        if($transferTable == 'contacts'){
+            $recordIds = Contacts::whereIn($field, $allRecordsContainer)->pluck('record_id')->toArray();
             $nullValues = Contacts::whereIn('record_id', $recordIds)->whereNull($nullField)->count();
             $overwrite = Contacts::whereIn('record_id', $recordIds)->whereNotNull($nullField)->count();
         }
-        $fields02 = DB::getSchemaBuilder()->getColumnListing('contact_customs');
-        if(in_array($nullField, $fields02)){
-            $records = Contacts::whereIn($field, $allRecordsContainer)->select('record_id')->get();
-            $recordIds = $records->pluck('record_id'); //dd($recordIds);
+        if($transferTable == 'contact_customs'){
+            $recordIds = Contacts::whereIn($field, $allRecordsContainer)->pluck('record_id')->toArray();
             $nullValues = ContactCustoms::whereIn('contact_id', $recordIds)->whereNull($nullField)->count();
             $overwrite = ContactCustoms::whereIn('contact_id', $recordIds)->whereNotNull($nullField)->count();
-            
         }
         return ["nullValues" => $nullValues, "overwrite" => $overwrite];
     }
     function index(Request $request){
         $fields = DB::getSchemaBuilder()->getColumnListing($request->input("tableName"));
-        $non_changable = ['id', 'record_id', 'account_id', 'first_name', 'last_name', 'f_first_name', 'f_last_name', 'mobilePhones', 'homePhones', 'workPhones', 'voipPhones', 'otherPhones', 'emails', 'hnumber', 'mnumber', 'wnumber', 'old_stage', 'name', 'created_at', 'updated_at', 'email_opened', 'email_replied', 'email_bounced', 'email_clicked', 'email_delivered', 'dataset', 'mcall_attempts', 'mcall_received', 'hcall_attempts', 'hcall_received', 'wcall_attempts', 'wcall_received', 'last_outreach_email', 'number1', 'number2', 'number3', 'number1type', 'number2type', 'number3type', 'number1call', 'number2call', 'number3call', 'ext1', 'ext2', 'ext3', "last_outreach_activity", "last_campaign", "last_export", "last_agent_dispo_time", "last_agent", "last_dispo", "dial_attempts", "last_update_at", "fivenine_created_at", "outreach_touched_at", "outreach_created_at", "websiteUrl1", "linkedInUrl"];
+        $non_changable = ['id', 'record_id', 'account_id', 'first_name', 'last_name', 'f_first_name', 'f_last_name', 'mobilePhones', 'homePhones', 'workPhones', 'voipPhones', 'otherPhones', 'emails', 'hnumber', 'mnumber', 'wnumber', 'old_stage', 'name', 'created_at', 'updated_at', 'email_opened', 'email_replied', 'email_bounced', 'email_clicked', 'email_delivered', 'dataset', 'mcall_attempts', 'mcall_received', 'hcall_attempts', 'hcall_received', 'wcall_attempts', 'wcall_received', 'last_outreach_email', 'number1', 'number2', 'number3', 'number1type', 'number2type', 'number3type', 'number1call', 'number2call', 'number3call', 'ext1', 'ext2', 'ext3', "last_outreach_activity", "last_campaign", "last_export", "last_agent_dispo_time", "last_agent", "last_dispo", "dial_attempts", "last_update_at", "fivenine_created_at", "outreach_touched_at", "outreach_created_at", "websiteUrl1", "linkedInUrl", 'five9_tag', 'disposition', 'label'];
         return array_diff($fields, $non_changable);
     }
     function getTableData(Request $request){
@@ -173,20 +170,18 @@ class UpdateDatabaseController extends Controller
         }
         return [];
     }
-    function transferRecords(Request $request){
-        $tableName = $request->input("tableName");
+    function transferRecords(Request $request)
+    {
         $field = $request->input("field");
         $meargRecords = $request->input("meargRecords");
         $nullField = $request->input("nullField");//dropdown field data
         $newNullField = $request->input("newNullField");//input field data
         $emptySet = $request->input("emptySet");
         $allSet = $request->input("allSet");
-        $emptySet = $request->input("emptySet");
-        $allSet = $request->input("allSet");
-        $newSet = $request->input("newSet");
         $copyMoveType = $request->input("copyMoveType"); // move copy        
         $transferActionType = $request->input("transferActionType"); // overwrite skip
         $fields = DB::getSchemaBuilder()->getColumnListing("contact_customs");
+
         if(in_array($newNullField, $fields)){
             return ["status" => "exists"];
         }
@@ -194,8 +189,8 @@ class UpdateDatabaseController extends Controller
         if($newNullField){
             $result = DB::statement("ALTER TABLE 'contact_customs' ADD $newNullField VARCHAR(250) NULL DEFAULT NULL");
             foreach($meargRecords as $value){
-                $records = DB::table($tableName)->select("record_id")->where($field, "LIKE", $value)->pluck("record_id");
-                DB::table($tableName)->whereIn('record_id', $records)->update([ 
+                $records = DB::table('contacts')->select("record_id")->where($field, "LIKE", $value)->pluck("record_id");
+                DB::table('contacts')->whereIn('record_id', $records)->update([ 
                     $field => null
                 ]);
                 DB::table("contact_customs")->whereIn('contact_id', $records)->update([ 
@@ -204,51 +199,112 @@ class UpdateDatabaseController extends Controller
             }
             return ["status" => "success"];
         }
+        
         if(in_array("Null", $meargRecords)){
             unset($meargRecords[array_search("Null", $meargRecords)]);
         }
         if(in_array("Empty", $meargRecords)){
             unset($meargRecords[array_search("Empty", $meargRecords)]);
         }
-        $fields01 = DB::getSchemaBuilder()->getColumnListing('contacts');
-        $fields02 = DB::getSchemaBuilder()->getColumnListing('contact_customs');
+        $transferTable = '';
+        $transferTable = DB::table('contact_fields')->where('field', $nullField)->first();
+        $transferTable = $transferTable->table_name;
+
+        $matchContacts = ['custom1', 'custom2', 'custom9', 'custom10', 'custom11', 'custom12'];
+
         foreach($meargRecords as $value){
-            $records = DB::table($tableName)->select("record_id")->where($field, "LIKE", $value)->pluck("record_id");
+            $records = DB::table('contacts')->where($field, "LIKE", $value)->pluck("record_id");
             if($emptySet){
-                DB::table($tableName)->whereIn('record_id', $records)->update([ 
-                    $field => null
-                ]);
+                if($copyMoveType == 'move'){
+                    DB::table('contacts')->whereIn('record_id', $records)->update([ 
+                        $field => null
+                    ]);
+                    //$this->mulJobs($records, $field, null);
+                }
                 DB::table("contact_customs")->whereIn('contact_id', $records)->update([ 
                     $nullField => $value,
                 ]);
+                //$this->mulJobs($records, $nullField, $value);
+                if(in_array($nullField, $matchContacts)){
+                    DB::table('contacts')->whereIn('record_id', $records)->update([ 
+                        $nullField => $value,
+                    ]);
+                }
             }elseif($allSet){
                 if($transferActionType == 'overwrite'){
                     if($copyMoveType == 'copy'){
-                        if(in_array($nullField, $fields01)){
-                            DB::table($tableName)->whereIn('record_id', $records)->update([ 
+                        if($transferTable == 'contacts'){
+                            DB::table('contacts')->whereIn('record_id', $records)->update([ 
                                 $nullField => $value,
                             ]);
-                        }elseif(in_array($nullField, $fields02)){
+                            //$this->mulJobs($records, $nullField, $value);
+                        } elseif($transferTable == 'contact_customs') {
                             DB::table("contact_customs")->whereIn('contact_id', $records)->update([ 
                                 $nullField => $value,
                             ]);
+                            //$this->mulJobs($records, $nullField, $value);
+                            if(in_array($nullField, $matchContacts)){
+                                DB::table('contacts')->whereIn('record_id', $records)->update([ 
+                                    $nullField => $value,
+                                ]);
+                            }
                         }
-                    }
-                    if($copyMoveType == 'move'){
-                        if(in_array($nullField, $fields01)){
-                            DB::table($tableName)->whereIn('record_id', $records)->update([ 
+                    } elseif($copyMoveType == 'move') {
+                        if($transferTable == 'contacts'){
+                            DB::table('contacts')->whereIn('record_id', $records)->update([
                                 $field => null
                             ]);
-                            DB::table($tableName)->whereIn('record_id', $records)->update([ 
+                            //$this->mulJobs($records, $field, null);
+                            DB::table('contacts')->whereIn('record_id', $records)->update([
                                 $nullField => $value,
                             ]);
-                        }elseif(in_array($nullField, $fields02)){
-                            DB::table($tableName)->whereIn('record_id', $records)->update([ 
-                                $field => null
-                            ]);
-                            DB::table($tableName)->whereIn('record_id', $records)->update([ 
-                                $nullField => $value,
-                            ]);
+                            //$this->mulJobs($records, $nullField, $value);
+                        } elseif($transferTable == 'contact_customs') {
+                            if(in_array($nullField, $matchContacts) && in_array($field, $matchContacts)){
+
+                                DB::table('contacts')->whereIn('record_id', $records)->update([ 
+                                    $nullField => $value,
+                                ]);
+                                //$this->mulJobs($records, $nullField, $value);
+                                DB::table('contacts')->whereIn('record_id', $records)->update([ 
+                                    $field => null,
+                                ]);
+                                //$this->mulJobs($records, $field, null);
+                                DB::table('contact_customs')->whereIn('contact_id', $records)->update([ 
+                                    $nullField => $value,
+                                ]);
+                                //$this->mulJobs($records, $nullField, $value);
+                                DB::table('contact_customs')->whereIn('contact_id', $records)->update([ 
+                                    $field => null,
+                                ]);
+                                //$this->mulJobs($records, $field, null);
+                            } elseif(in_array($nullField, $matchContacts)) {
+                                DB::table('contacts')->whereIn('record_id', $records)->update([ 
+                                    $field => null
+                                ]);
+                                //$this->mulJobs($records, $field, null);
+                                DB::table('contacts')->whereIn('record_id', $records)->update([ 
+                                    $nullField => $value
+                                ]);
+                                //$this->mulJobs($records, $nullField, $value);
+                                DB::table('contact_customs')->whereIn('contact_id', $records)->update([ 
+                                    $nullField => $value
+                                ]);
+                                //$this->mulJobs($records, $nullField, $value);
+                            } elseif(in_array($field, $matchContacts)){
+                                DB::table('contacts')->whereIn('record_id', $records)->update([ 
+                                    $field => null
+                                ]);
+                                //$this->mulJobs($records, $field, null);
+                                DB::table('contact_customs')->whereIn('contact_id', $records)->update([ 
+                                    $field => null,
+                                ]);
+                                //$this->mulJobs($records, $field, null);
+                                DB::table('contact_customs')->whereIn('contact_id', $records)->update([ 
+                                    $nullField => $value,
+                                ]);
+                                //$this->mulJobs($records, $nullField, $value);
+                            }
                         }
                     }
                 }elseif($transferActionType == 'skip'){
@@ -257,48 +313,118 @@ class UpdateDatabaseController extends Controller
                         $rids = Contacts::where($field, "LIKE", $value)->select("record_id")->get();
                         $rids = $rids->pluck('record_id');
                         
-                        if(in_array($nullField, $fields01)){
+                        if($transferTable == 'contacts'){
                             foreach($rids as $rid){
                                 $c = DB::table("contacts")->where('record_id', $rid)->first();
                                 if(is_null($c->$nullField)){
                                     DB::table("contacts")->where('record_id', $rid)->update([ 
                                         $nullField => $value,
                                     ]);
+                                    //$this->singleJobs($record_id, $nullField, $value);
                                 }
                             }
-                        }elseif(in_array($nullField, $fields02)){
+                        }
+                        if($transferTable == 'contact_customs'){
                             foreach($rids as $rid){
                                 $cc = DB::table("contact_customs")->where('contact_id', $rid)->first();
                                 if(is_null($cc->$nullField)){
                                     DB::table("contact_customs")->where('contact_id', $rid)->update([ 
                                         $nullField => $value,
                                     ]);
+                                    //$this->singleJobs($record_id, $nullField, $value);
+                                    if(in_array($nullField, $matchContacts)){
+                                        DB::table('contacts')->whereIn('record_id', $records)->update([ 
+                                            $nullField => $value,
+                                        ]);
+                                    }
+                                    //$this->singleJobs($record_id, $nullField, $value);
+                                    if(in_array($field, $matchContacts)){
+                                        DB::table('contacts')->whereIn('record_id', $records)->update([ 
+                                            $field => null
+                                        ]);
+                                        //$this->singleJobs($record_id, $field, null);
+                                    }
                                 }
                             }
                         }
                     }elseif($copyMoveType == 'move'){
                         $rids = Contacts::where($field, "LIKE", $value)->select("record_id")->get();
                         $rids = $rids->pluck('record_id');
-                        DB::table($tableName)->whereIn('record_id', $records)->update([ 
+                        DB::table('contacts')->whereIn('record_id', $records)->update([ 
                             $field => null
                         ]);
-
-                        if(in_array($nullField, $fields01)){
+                        //$this->mulJobs($records, $field, null);
+                        if($transferTable == 'contacts'){
                             foreach($rids as $rid){
                                 $c = DB::table("contacts")->where('record_id', $rid)->first();
                                 if(is_null($c->$nullField)){
                                     DB::table("contacts")->where('record_id', $rid)->update([ 
                                         $nullField => $value,
                                     ]);
+                                    //$this->singleJobs($record_id, $nullField, $value);
                                 }
                             }
-                        }elseif(in_array($nullField, $fields02)){
+                        }
+                        if($transferTable == 'contact_customs'){
                             foreach($rids as $rid){
-                                $cc = DB::table("contact_customs")->where('contact_id', $rid)->first();
-                                if(is_null($cc->$nullField)){
-                                    DB::table("contact_customs")->where('contact_id', $rid)->update([ 
-                                        $nullField => $value,
+                                if(in_array($nullField, $matchContacts) && in_array($field, $matchContacts)){
+                                    $c = DB::table('contacts')->where('record_id', $rid)->first();
+                                    if(is_null($c->$nullField)){
+                                        DB::table('contacts')->where('record_id', $rid)->update([ 
+                                            $nullField => $value,
+                                        ]);
+                                        //$this->singleJobs($record_id, $nullField, $value);
+                                    }
+                                    DB::table('contacts')->where('record_id', $rid)->update([ 
+                                        $field => null,
                                     ]);
+                                    //$this->singleJobs($record_id, $field, null);
+                                    $cc = DB::table('contact_customs')->where('contact_id', $rid)->first();
+                                    if(is_null($cc->$nullField)){
+                                        DB::table('contact_customs')->where('contact_id', $rid)->update([ 
+                                            $nullField => $value,
+                                        ]);
+                                        //$this->singleJobs($record_id, $nullField, $value);
+                                    }
+                                    DB::table('contact_customs')->where('contact_id', $rid)->update([ 
+                                        $field => null,
+                                    ]);
+                                    //$this->singleJobs($record_id, $field, null);
+                                } elseif(in_array($nullField, $matchContacts)) {
+                                    DB::table('contacts')->where('record_id', $rid)->update([ 
+                                        $field => null
+                                    ]);
+                                    //$this->singleJobs($record_id, $field, null);
+                                    $c = DB::table('contacts')->where('record_id', $rid)->first();
+                                    if(is_null($c->$nullField)){
+                                        DB::table('contacts')->where('record_id', $rid)->update([ 
+                                            $nullField => $value
+                                        ]);
+                                        //$this->singleJobs($record_id, $nullField, $value);
+                                    }
+                                    $cc = DB::table('contact_customs')->where('contact_id', $rid)->first();
+                                    if(is_null($cc->$nullField)){
+                                        DB::table('contact_customs')->where('contact_id', $rid)->update([ 
+                                            $nullField => $value
+                                        ]);
+                                        //$this->singleJobs($record_id, $nullField, $value);
+                                    }
+                                } elseif(in_array($field, $matchContacts)){
+                                    DB::table('contacts')->where('record_id', $rid)->update([ 
+                                        $field => null
+                                    ]);
+                                    //$this->singleJobs($record_id, $field, null);
+                                    DB::table('contact_customs')->where('contact_id', $rid)->update([ 
+                                        $field => null,
+                                    ]);
+                                    //$this->singleJobs($record_id, $field, null);
+                                    $cc = DB::table('contact_customs')->where('contact_id', $rid)->first();
+                                    if(is_null($cc->$nullField)){
+                                        DB::table('contact_customs')->where('contact_id', $rid)->update([ 
+                                            $nullField => $value,
+                                        ]);
+                                        //$this->singleJobs($record_id, $nullField, $value);
+                                    }
                                 }
                             }
                         }
@@ -307,8 +433,21 @@ class UpdateDatabaseController extends Controller
 
             }
         }
-        DB::table("temp_contacts")->where('field', "LIKE", $nullField)->delete();
+        //Artisan::call('queue:work --stop-when-empty', []);
+        // DB::table("temp_contacts")->where('field', "LIKE", $nullField)->delete();
         return ["status" => "success"];
+    }
+    public function refineTagRecords(Request $request) 
+    {
+        $newTags = $request->tagRecords;
+        $field = $request->input("field");
+        $meargRecords = $request->input("meargRecords");
+        foreach($meargRecords as $value) {
+            $oldTags = explode(',', $value);
+            $finalTags = array_intersect($newTags, $oldTags);
+            Contacts::where($field, "LIKE", $value)->update([$field => implode(',', $finalTags)]);
+        }
+        return ['status' => 'success'];
     }
     public function displayNames()
     {

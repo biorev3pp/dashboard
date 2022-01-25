@@ -82,7 +82,7 @@
                                 <label for="call">
                                     <i class="bi bi-telephone-fill"></i>
                                 </label>
-                                <call-log :call="record.mcall_attempts" :rcall="record.mcall_received" :title="record.mobilePhones" :fnumber="record.mnumber" :label="'MP'"></call-log>
+                                <call-log :call="record.mcall_attempts" :rcall="record.mcall_received" :title="record.mobilePhones" :label="'MP'"></call-log>
                                 <call-log :call="record.wcall_attempts" :rcall="record.wcall_received" :title="record.workPhones" :label="'WP'"></call-log>
                                 <call-log :call="record.hcall_attempts" :rcall="record.hcall_received" :title="record.homePhones" :label="'HP'"></call-log>
                             </span>

@@ -5,13 +5,17 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Haruncpi\LaravelUserActivity\Traits\Loggable;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
 
 class Contacts extends Model
 {
-		use Loggable, HasFactory;
+	use SoftDeletes, Loggable, HasFactory;
     
     protected $guarded = [];
     protected $table = 'contacts';
+
+
     public function stageData(){
         return $this->belongsTo('App\Models\Stages', 'stage', 'oid');
     }
@@ -99,6 +103,11 @@ class Contacts extends Model
 
     public function customfields(){
         return $this->hasOne('App\Models\ContactCustoms', 'contact_id', 'record_id');
+    }
+
+    public function prospects()
+    {
+        return $this->hasMany('App\Models\Contacts', 'id', 'id');
     }
 
 }

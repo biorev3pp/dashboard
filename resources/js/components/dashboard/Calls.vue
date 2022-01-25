@@ -4,21 +4,38 @@
             <div class="filterbox p-2 border-top" style="background:transparent">
                 <div class="row m-0">
                     <div class="col-md-3 col-6">
-                        <date-range-picker ref="picker" :locale-data="{ firstDay: 1, format: 'dd-mm-yyyy HH:mm:ss' }" :timePicker24Hour="false" :showWeekNumbers="true" :showDropdowns="true"  :dateFormat="dateFormat" :autoApply="false" v-model="form.dateRange" @update="getGraphData">
-                            <template v-slot:input="picker">
-                                <span v-if="form.dateRange.startDate">
-                                    {{ picker.startDate | setusdate }} - {{ picker.endDate | setusdate }}
-                                </span>
-                                <span v-else>
-                                    Select Date Range
-                                </span>
-                            </template>
-                        </date-range-picker>
+                        <span style="display: inline-block; width: calc(100% - 135px); margin-right: 10px;">
+                            <date-range-picker ref="picker" 
+                            :locale-data="{ firstDay: 1, format: 'dd-mm-yyyy HH:mm:ss' }" 
+                            :timePicker24Hour="false" 
+                            :showWeekNumbers="true" 
+                            :showDropdowns="true" 
+                            :dateFormat="dateFormat" 
+                            :autoApply="false" 
+                            v-model="form.dateRange" 
+                            @update="getGraphData" 
+                            :ranges="ranges"
+                            >
+                                <template v-slot:input="picker">
+                                    <span v-if="form.dateRange.startDate">
+                                        {{ picker.startDate | setusdate }} - {{ picker.endDate | setusdate }}
+                                    </span>
+                                    <span v-else>
+                                        Select Date Range
+                                    </span>
+                                </template>
+                            </date-range-picker>
+                        </span>
+                        <span>
+                            <toggle-button v-model="view" :margin="3" :width="120" :height="28" :labels="{checked: 'Graph View', unchecked: 'List View'}" :switch-color="{checked: '#800080', unchecked: '#27408B'}" :color="{checked: '#E599E5', unchecked: '#4E9FFE'}" />
+                        </span>
                     </div>
-                     <div class="col-md-7 col-12">
+                     <div class="col-md-7 col-12" v-if="view">
                         <span class="filter-btns row" v-for="seq in sequence" :key="seq">
                             <span  class="text-dark mx-1 pointer-hand wf-180"> 
+                                <b v-if="seq == 'list_name'">LIST: {{ form.list_name }}</b>
                                 <b v-if="seq == 'agentName'">AGENT: {{ form.agentName }}</b>
+                                <b v-if="seq == 'number'">Number Type: {{ form.number_type }}</b>
                                 <b v-else-if="seq == 'disposition'">DISPO: {{ form.disposition }}</b>
                                 <b v-else-if="seq == 'talk_time'"> TALK-TIME: 
                                     <em v-if="form.talk_time == 5">0-5 Sec</em>
@@ -33,11 +50,31 @@
                                     <em v-if="form.acw == '3+'">3+ Mins</em>
                                 </b>
                             </span>
+                            <i v-if="seq == 'list_name'" class="bi bi-x pr-1  pointer-hand" @click="removeListName(1)"></i>
                             <i v-if="seq == 'agentName'" class="bi bi-x pr-1  pointer-hand" @click="removeAgentName(1)"></i>
                             <i v-else-if="seq == 'disposition'" class="bi bi-x pr-1  pointer-hand" @click="removeDisposition(1)"></i>
                             <i v-else-if="seq == 'talk_time'" class="bi bi-x pr-1  pointer-hand" @click="removeTalkTime(1)"></i>
                             <i v-else-if="seq == 'acw'" class="bi bi-x pr-1  pointer-hand" @click="removeACW(1)"></i>
+                            <i v-else-if="seq == 'number'" class="bi bi-x pr-1  pointer-hand" @click="removeNumber(1)"></i>
                         </span>
+                    </div>
+                    <div class="col-md-7 col-12" v-else>
+                        <download-excel 
+                            class="btn btn-success theme-btn mt-1"
+                            :data="json_data"
+                            :fields="json_fields"
+                            worksheet="agent-worksheet"
+                            :name="filenameAgent"
+                            v-if="json_data.length >= 1"
+                            type="xls">
+                            Download Report
+                        </download-excel>
+                        <button class="btn btn-primary theme-btn mt-1" disabled v-else-if="loading">
+                            Generating Report
+                        </button>
+                        <button class="btn btn-danger theme-btn mt-1" disabled v-else>
+                            No Records Found
+                        </button>
                     </div>
                     <div class="col-md-2 col-12 text-right">
                         <button class="btn btn-danger theme-btn icon-left-btn" type="button" @click="getGraphData">
@@ -46,7 +83,7 @@
                     </div>
                 </div>
             </div>
-            <div class="calls-chart-div border-top p-1">
+            <div class="calls-chart-div border-top p-1" v-if="view">
                 <!-- <div class="chart-box"> -->
                     <div class="row m-0">
                         <div class="col-lg-4 col-md-6  col-sm-12 col-12 p-a-2">
@@ -56,9 +93,9 @@
                                         List Call Status
                                         <span class="float-right">
                                             <toggle-button v-model="form.only_list" @change="getGraphData" :margin="3" :width="130" :height="20" :labels="{checked: 'Lists Only', unchecked: 'Lists & None'}" :switch-color="{checked: '#800080', unchecked: '#27408B'}" :color="{checked: '#E599E5', unchecked: '#4E9FFE'}" />
-                                            <router-link target="_blank" class="btn btn-secondary btn-sm theme-btn" :to="'/dashboard/call-details?'+JSON.stringify({sequence:sequence,talk_time_plus:form.talk_time_plus, acw_plus:form.acw_plus,agentName:form.agentName,disposition:form.disposition,talk_time:form.talk_time,acw:form.acw,stime:stime,etime: etime,sdate:sdate,edate:edate}) ">
+                                            <button @click="filterDispo" class="btn btn-sm btn-secondary theme-btn" type="button">
                                                 <i class="bi bi-eye"></i> View
-                                            </router-link>
+                                            </button>
                                         </span>
                                     </h5>
                                 </div> 
@@ -80,12 +117,38 @@
                             <div class="card">
                                 <div class="card-header">
                                     <h5 class="text-capitalize m-0">
+                                        Number Status
+                                        <span class="float-right">
+                                            <button @click="filterDispo" class="btn btn-sm btn-secondary theme-btn" type="button">
+                                                <i class="bi bi-eye"></i> View
+                                            </button>
+                                        </span>
+                                    </h5>
+                                </div> 
+                                <div class="card-body">
+                                    <div id="chart-agent-call-status">
+                                        <apexchart 
+                                            v-if="labelNumberCallStatus.length > 0" 
+                                            type="pie" 
+                                            width="98%" 
+                                            :options="chartOptionsNumberCallStatus" 
+                                            :series="seriesNumberCallStatus" 
+                                            @dataPointSelection="dataPointSelectionHandlerNumberInfo">
+                                        </apexchart>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-md-6  col-sm-12 col-12 p-a-2">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="text-capitalize m-0">
                                         Agent Call Status
                                         <span class="float-right">
                                             <toggle-button v-model="form.only_agent" @change="getGraphData" :margin="3" :width="130" :height="20" :labels="{checked: 'Agents Only', unchecked: 'Agents & None'}" :switch-color="{checked: '#800080', unchecked: '#27408B'}" :color="{checked: '#E599E5', unchecked: '#4E9FFE'}" />
-                                            <router-link target="_blank" class="btn btn-secondary btn-sm theme-btn" :to="'/dashboard/call-details?'+JSON.stringify({sequence:sequence,talk_time_plus:form.talk_time_plus, acw_plus:form.acw_plus,agentName:form.agentName,disposition:form.disposition,talk_time:form.talk_time,acw:form.acw,stime:stime,etime: etime,sdate:sdate,edate:edate}) ">
+                                            <button @click="filterDispo" class="btn btn-sm btn-secondary theme-btn" type="button">
                                                 <i class="bi bi-eye"></i> View
-                                            </router-link>
+                                            </button>
                                         </span>
                                     </h5>
                                 </div> 
@@ -103,6 +166,7 @@
                                 </div>
                             </div>
                         </div>
+                        <!-- 
                         <div class="col-lg-4 col-md-6  col-sm-12 col-12 p-a-2">
                             <div class="card">
                                 <div class="card-header">
@@ -122,7 +186,7 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </div> -->
                         <div class="col-lg-4 col-md-6  col-sm-12 col-12 p-a-2">
                             <div class="card">
                                 <div class="card-header">
@@ -158,9 +222,9 @@
                                     <h5 class="text-capitalize m-0">
                                         Agent Based Talktime
                                         <span class="float-right">
-                                            <router-link target="_blank" class="btn btn-secondary btn-sm theme-btn" :to="'/dashboard/call-details?'+JSON.stringify({sequence:sequence,talk_time_plus:form.talk_time_plus,acw_plus:form.acw_plus,agentName:form.agentName,disposition:form.disposition,talk_time:form.talk_time,acw:form.acw,stime:stime,etime:etime,sdate:sdate,edate:edate})">
+                                            <button @click="filterDispo" class="btn btn-sm btn-secondary theme-btn" type="button">
                                                 <i class="bi bi-eye"></i> View
-                                            </router-link>
+                                            </button>
                                         </span>
                                     </h5>
                                 </div> 
@@ -184,9 +248,9 @@
                                     <h5 class="text-capitalize m-0">
                                         Agent Based ACW
                                         <span class="float-right">
-                                            <router-link target="_blank" class="btn btn-secondary btn-sm theme-btn" :to="'/dashboard/call-details?'+JSON.stringify({sequence:sequence,talk_time_plus:form.talk_time_plus,acw_plus:form.acw_plus,agentName:form.agentName,disposition:form.disposition,talk_time:form.talk_time,acw:form.acw,stime:stime,etime:etime,sdate:sdate,edate:edate})">
+                                            <button @click="filterDispo" class="btn btn-sm btn-secondary theme-btn" type="button">
                                                 <i class="bi bi-eye"></i> View
-                                            </router-link>
+                                            </button>
                                         </span>
                                     </h5>
                                 </div> 
@@ -207,18 +271,46 @@
                     </div>
                 <!-- </div> -->
             </div>
+            <div class="calls-chart-div border-top" v-else>
+                <div class="overlay-loader p-4" v-if="loading">
+                    <img :src="loader_url" alt="Loading..." />
+                    <p class="mt-2">Please wait while your report is being generated...</p>
+                </div>
+                <div v-else>
+                    <div>                    
+                        <table class="table table-bordered table-striped report-table">
+                            <thead>
+                                <tr>
+                                    <th v-for="(jf, jk) in json_fields" :key="'col-'+jk">
+                                        {{jk}}
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(jd, jdk) in json_data" :key="'vcol-'+jdk">
+                                    <td v-for="(jf, jk) in json_fields" :key="'vvcol-'+jk">
+                                        <span v-html="jd[jf]"></span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
         <div class="modal fade" id="dispoModal" aria-hidden="true" data-backdrop="static" data-keyboard="false">
             <div class="modal-dialog modal-dialog-centered" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="exampleModalLabel">Select Dispositions</h5>
+                        <h5 class="modal-title" id="exampleModalLabel">Select Dispositions
+                            <i class="ml-1 cursor-pointer" v-title="'Select or Deselect All'" :class="selectdispclass" @click="selectOrDeselectAll"></i>
+                        </h5>
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
                     <div class="modal-body">
-                        <ul class="list-group dispo-list">
+                        <ul class="list-group disposel-list">
                             <li class="list-group-item cursor-pointer" :class="[(form.dispoMul.indexOf(disposition) >= 0)?'active':'']" v-for="(disposition, index) in dispositins" :key="'disposition-' + index" @click="ToggleDispoInForm(disposition)">{{ disposition }}
                                 <i class="bi cursor-pointer float-right" :class="[(form.dispoMul.indexOf(disposition) >= 0)?'bi-check-square-fill text-white':'bi-x-square-fill text-danger']"></i>
                             </li>
@@ -238,17 +330,80 @@
 </template>
 <script>
 
+import moment from 'moment';
 import DateRangePicker from 'vue2-daterange-picker';
 import 'vue2-daterange-picker/dist/vue2-daterange-picker.css';
-import { ToggleButton } from 'vue-js-toggle-button'
+import { ToggleButton } from 'vue-js-toggle-button';
+
 export default {
     components:{DateRangePicker, ToggleButton},
     data() {
+        var today = new Date();
+        today.setHours(0, 0, 0, 0);
+        var todayEnd = new Date();
+        todayEnd.setHours(11, 59, 59, 999);
+        var yesterdayStart = new Date();
+        yesterdayStart.setDate(today.getDate() - 1);
+        yesterdayStart.setHours(0, 0, 0, 0);
+        var yesterdayEnd = new Date();
+        yesterdayEnd.setDate(today.getDate() - 1);
+        yesterdayEnd.setHours(11, 59, 59, 999);
+        var thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+        var thisMonthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0, 11, 59, 59, 999);
+        
+        var curWeekStart = new Date(today-1000*3600*24*(today.getDay()-1))
+        var lastWeekStart = new Date(today-1000*3600*24*(today.getDay()+6))
+        curWeekStart.setHours(0,0,0,0)
+        lastWeekStart.setHours(12,0,0,0)
+        var curWeekEnd = new Date(today-1000*3600*24*today.getDay() + 1000*3600*24*7)
+        var lastWeekEnd = new Date(today-1000*3600*24*today.getDay())
+        curWeekEnd.setHours(11, 59, 59, 999)
+        lastWeekEnd.setHours(11, 12, 59, 999)
         return {
+            loading : false,
+            // endDate: '2017-09-15',
+            opens: "center",//which way the picker opens, default "center", can be "left"/"right"
+            locale: {
+                direction: 'ltr', //direction of text
+                format: 'mm/dd/yyyy', //fomart of the dates displayed
+                separator: ' - ', //separator between the two ranges
+                applyLabel: 'Apply',
+                cancelLabel: 'Cancel',
+                weekLabel: 'W',
+                customRangeLabel: 'Custom Range',
+                daysOfWeek: moment.weekdaysMin(), //array of days - see moment documenations for details
+                monthNames: moment.monthsShort(), //array of month names - see moment documenations for details
+                firstDay: 1, //ISO first day of week - see moment documenations for details
+                showWeekNumbers: true //show week numbers on each row of the calendar
+            },
+            ranges: { //default value for ranges object (if you set this to false ranges will no be rendered)
+                'Today': [today, todayEnd],
+                'Yesterday': [yesterdayStart, yesterdayEnd],
+                'This week' : [curWeekStart, curWeekEnd],                
+                'This month': [thisMonthStart, thisMonthEnd],
+                'This year': [new Date(today.getFullYear(), 0, 1), new Date(today.getFullYear(), 11, 31, 11, 59, 59, 999)],
+                'Last week': [lastWeekStart, lastWeekEnd],
+                'Last month': [new Date(today.getFullYear(), today.getMonth() - 1, 1), new Date(today.getFullYear(), today.getMonth(), 0, 11, 59, 59, 999)],
+                'Last year': [new Date(today.getFullYear()-1, 0, 1), new Date(today.getFullYear()-1, 11, 31, 11, 59, 59, 999)],
+            },
+            loading : true,
+            json_data : {},
+            json_fields: {},
+            json_meta: [
+                [
+                    {
+                    key: "charset",
+                    value: "utf-8",
+                    },
+                ],
+            ],
+            numbers : [],
             sequence : [],
             loader:false,
+            view:true,
             records:{},
             lists : [],
+            filenameAgent : 'export.xls',
             form: new Form({
                 dateRange:{},
                 agentName : null,
@@ -260,7 +415,11 @@ export default {
                 only_agent:false,
                 only_list:false,
                 list_name : '',
-                dispoMul : []
+                number_type:'',
+                dispoMul : [],
+                labelAgentCallStatus : [],
+                sAgentCallStatus : [],
+                agentOccupandyDataExport : [],
             }),
             loader_url: '/img/spinner.gif',
             stime : null,
@@ -269,9 +428,6 @@ export default {
             edate : null,
             talk_time : null,
             acw : null,
-
-            labelAgentInfo : [],
-            sAgentInfo : [],
 
             labelAgentOccupancy : [],
             sAgentOccupancy : [],
@@ -298,9 +454,21 @@ export default {
 
             labelAgentBasedWaitingTime : [],
             sAgentBasedWaitingTime : [],
+
+            labelNumberCallStatus: [],
+            sNumberBasedData: [],
         }
     },
     computed: {
+        selectdispclass() {
+            if(this.form.dispoMul.length == this.dispositins.length) {
+                return 'bi bi-square-fill text-success'
+            } else if(this.form.dispoMul.length == 0) {
+                return 'bi bi-square text-danger'
+            } else {
+                return 'bi bi-dash-square-fill text-primary'
+            }
+        },
         seriesListStatus(){
             if(this.sAgentListStatus.length > 0){
                 return this.sAgentListStatus
@@ -346,51 +514,79 @@ export default {
                 return  []
             }
         },
-        seriesAgentInfo(){
-            if(this.sAgentInfo.length > 0){
-                return this.sAgentInfo
-            }else{
-                return []
-            }
-        },
-        chartOptionsAgentInfo(){
-            if(this.labelAgentInfo.length > 0){
+        chartOptionsNumberCallStatus () {
+            if(this.labelNumberCallStatus.length > 0){
                 return {
-                            tooltip: {
-                                custom: function({ series, seriesIndex, dataPointIndex, w }) {
-                                    return (
-                                        w.globals.labels[seriesIndex]
-                                    );
-                                }
-                            },
-                            stroke: {
-                                show: false,
-                                curve: 'stepline',
-                                lineCap: 'butt',
-                                width: 2,
-                                dashArray: 0,
-                            },
-                            chart: {
-                                width: '98%',
-                                type: 'pie',
-                            },
-                            labels: this.labelAgentInfo,
-                            responsive: [{
-                                breakpoint: 480,
-                                options: {
-                                    chart: {
-                                        width: 200
-                                    },
-                                    legend: {
-                                    position: 'bottom'
-                                    }
-                                }
-                            }]
+                    tooltip: {
+                        custom: function({ series, seriesIndex, dataPointIndex, w }) {
+                            return (
+                                w.globals.labels[seriesIndex]
+                            );
                         }
+                    },
+                    stroke: {
+                        show: false,
+                        curve: 'stepline',
+                        lineCap: 'butt',
+                        width: 2,
+                        dashArray: 0,      
+                    },
+                    chart: {
+                        width: '98%',
+                        type: 'pie',
+                        // toolbar:
+                        // {
+                        //     show: true,
+                        //     offsetX: 0,
+                        //     offsetY: 0,
+                        //     tools: {
+                        //     download: true,
+                        //     selection: true,
+                        //     zoom: true,
+                        //     zoomin: true,
+                        //     zoomout: true,
+                        //     pan: true,
+                        //     reset: true | '<img src="/static/icons/reset.png" width="20">',
+                        //     customIcons: []
+                        //     },
+                        //     export: {
+                        //     csv: {
+                        //         filename: undefined,
+                        //         columnDelimiter: ',',
+                        //         headerCategory: 'category',
+                        //         headerValue: 'value',
+                        //         dateFormatter(timestamp) { //If timestamps are provided as X values, those timestamps can be formatted to convert them to date strings.
+                        //         return new Date(timestamp).toDateString()
+                        //         }
+                        //     },
+                        //     svg: {
+                        //         filename: undefined,
+                        //     },
+                        //     png: {
+                        //         filename: undefined,
+                        //     }
+                        //     },
+                        //     autoSelected: 'zoom' 
+                        // },
+                    },
+                    labels: this.labelNumberCallStatus,
+                    responsive: [{
+                        breakpoint: 480,
+                        options: {
+                            chart: {
+                            width: 200
+                            },
+                            legend: {
+                            position: 'bottom'
+                            }
+                        }
+                    }]
+                }
             }else{
                 return  []
             }
         },
+        
         seriesAgentOccupancy(){
             if(this.sAgentOccupancy.length > 0){
                 return this.sAgentOccupancy
@@ -577,6 +773,13 @@ export default {
                 return []
             }
         },
+        seriesNumberCallStatus(){
+            if(this.sNumberBasedData.length > 0){
+                return this.sNumberBasedData
+            }else{
+                return []
+            }
+        },
         chartOptionsAgentBasedACW(){
             if(this.labelAgentBasedACW.length > 0){
                 return {
@@ -665,6 +868,13 @@ export default {
         filterDispo() {
             $('#dispoModal').modal('show');
         },
+        selectOrDeselectAll() {
+            if(this.form.dispoMul.length == this.dispositins.length) {
+                this.form.dispoMul = [];
+            } else {
+                this.form.dispoMul = this.dispositins
+            }
+        },
         ToggleDispoInForm(dis) {
             if(this.form.dispoMul.indexOf(dis) >= 0) {
                 this.form.dispoMul.splice(this.form.dispoMul.indexOf(dis), 1);
@@ -674,25 +884,42 @@ export default {
         },
         gotoList() {
             $('#dispoModal').modal('hide');
-            let CURL = '/dashboard/call-details?'+JSON.stringify({
+            let arr = {
                         sequence:this.sequence,
-                        talk_time_plus:this.form.talk_time_plus,
-                        acw_plus:this.form.acw_plus,
-                        agentName:this.form.agentName,
+                        agentName:(this.form.agentName)?this.form.agentName:'',
                         disposition:this.form.dispoMul,
-                        talk_time:this.form.talk_time,
-                        acw:this.form.acw,
-                        stime:this.stime,
-                        etime:this.etime,
+                        talk_time:(this.form.talk_time)?this.form.talk_time:'',
+                        list:(this.form.list_name)?this.form.list_name:'',
+                        acw:(this.form.acw)?this.form.acw:'',
+                        number_type:(this.form.number_type)?this.form.number_type:'',
                         sdate:this.sdate,
-                        edate:this.edate});
+                        edate:this.edate
+                    };
+            let eurl = [];
+            for (var key in arr) {
+                if (arr.hasOwnProperty(key)) {
+                    eurl.push(key + '=' + encodeURIComponent(arr[key]));
+                }
+            }
+            let CURL = '/dashboard/call-details?'+eurl.join('&');
             window.open(CURL, '_blank');
         },
         removeAgentName(typ){
+            this.form.agentName = null
             if(this.sequence.indexOf("agentName") != -1){
                 this.sequence.splice(this.sequence.indexOf("agentName"), 1)
+                this.NumberBasedStatus()
+                this.agentCallStatus()
             }
-            this.form.agentName = null
+            if(typ == 1) {
+                this.runAll()
+            }
+        },
+        removeListName(typ){
+            if(this.sequence.indexOf("list_name") != -1){
+                this.sequence.splice(this.sequence.indexOf("list_name"), 1)
+            }
+            this.form.list_name = null
             if(typ == 1) {
                 this.runAll()
             }
@@ -727,6 +954,18 @@ export default {
                 this.runAll()
             }
         },
+        removeNumber(typ){
+            this.form.number_type = ''
+            // this.form.acw_plus = 0
+            if(this.sequence.indexOf("number") != -1){
+                this.sequence.splice(this.sequence.indexOf("number"), 1)
+                this.NumberBasedStatus()
+                // this.agentCallStatus()
+            }
+            if(typ == 1) {
+                this.runAll()
+            }
+        },
         dateFormat(classes, date) {
             if(!classes.disabled) {
                // classes.disabled = date.getTime() > new Date()
@@ -738,37 +977,85 @@ export default {
             this.removeDisposition()
             this.removeTalkTime()
             this.removeACW()
-            this.labelAgentInfo = []
-            this.sAgentInfo = []
-            this.labelAgentOccpancy = []
-            this.sAgentOccpancy = []
             this.agentListStatus()
-            this.agentOccupancy()
+            this.NumberBasedStatus()
+            // this.agentOccupancy()
             this.agentCallStatus()
             this.agentDispositionStatus()
             this.agentBasedTalkTime()
             this.agentBasedACW()
+            this.getOccupancyDataExport()
             // this.agentBasedWaitingTime()
         },
         dataPointSelectionHandlerList(e, chartContext, config){
-            this.labelAgentListStatus = []
-            this.sAgentListStatus = []
+            if(this.sequence.indexOf("list_name") != -1){
+                this.sequence.splice(this.sequence.indexOf("list_name"), 1)
+            }
+            if(this.sequence.indexOf("list_name") == -1){
+                this.sequence.push("list_name")
+            }
             this.form.list_name = this.lists[config.dataPointIndex]
             this.removeAgentName()
             this.removeDisposition()
             this.removeTalkTime()
             this.removeACW()
-            this.labelAgentInfo = []
-            this.sAgentInfo = []
-            this.labelAgentOccpancy = []
-            this.sAgentOccpancy = []
-            this.agentListStatus()
-            this.agentOccupancy()
+            this.NumberBasedStatus()
+            // this.agentOccupancy()
             this.agentCallStatus()
             this.agentDispositionStatus()
             this.agentBasedTalkTime()
             this.agentBasedACW()
+            this.getOccupancyDataExport()
             // this.agentBasedWaitingTime()
+        },
+        NumberBasedStatus() {
+            this.loader = false
+            this.labelNumberCallStatus = []
+            this.sNumberBasedData = []
+            this.form.post("/api/get-number-based-data").then( (response) => {
+                this.labelNumberCallStatus = response.data.label
+                this.sNumberBasedData = response.data.series
+                this.numbers = response.data.numbers
+            })
+        },
+        dataPointSelectionHandlerNumberInfo(e, chartContext, config) {
+
+            if(this.sequence.indexOf("number") != -1){
+                this.sequence.splice(this.sequence.indexOf("number"), 1)
+            }
+            if(this.sequence.indexOf("number") == -1){
+                this.sequence.push("number")
+            }
+            this.form.number_type = this.numbers[config.dataPointIndex]            
+            // this.agentOccupancy()
+            if(this.sequence.indexOf("agentName") != -1){
+
+            }else{
+                this.agentCallStatus()
+            }
+            this.agentDispositionStatus()
+            this.agentBasedTalkTime()
+            this.agentBasedACW()
+            this.getOccupancyDataExport()
+        }, 
+        agentCallStatus(){
+            this.loader = false
+            this.labelAgentCallStatus = []
+            this.sAgentCallStatus = []
+            this.agentName = []
+            this.form.post("/api/get-agent-call-status").then( (response) => {
+                this.labelAgentCallStatus = response.data.label
+                this.form.labelAgentCallStatus = response.data.label
+                this.sAgentCallStatus = response.data.series
+                this.form.sAgentCallStatus = response.data.series
+                this.agentName = response.data.agentName
+                //this.form.agentName = response.data.agentName
+                this.stime = response.data.stime
+                this.etime = response.data.etime
+                this.sdate = response.data.sdate
+                this.edate = response.data.edate
+                this.loader = false
+            })
         },
         dataPointSelectionHandlerAgentInfo(e, chartContext, config) {
             if(this.sequence.indexOf("agentName") != -1){
@@ -777,22 +1064,19 @@ export default {
             if(this.sequence.indexOf("agentName") == -1){
                 this.sequence.push("agentName")
             }
-            this.labelAgentInfo = []
-            this.sAgentInfo = []
-            this.form.agentName = this.agentName[config.dataPointIndex]
-            this.form.post("/api/get-agent-info").then( (response) => {
-                this.labelAgentInfo = response.data.label
-                this.sAgentInfo = response.data.series
-                this.stime = response.data.stime
-                this.etime = response.data.etime
-                this.sdate = response.data.sdate
-                this.edate = response.data.edate
-                this.loader = false
-            })
-            this.agentOccupancy()
-            this.runAll()
+            this.form.agentName =  this.agentName[config.dataPointIndex]
+            if(this.form.number_type){
+
+            }else{
+                this.NumberBasedStatus()
+            }
+            this.agentDispositionStatus()
+            this.agentBasedTalkTime()
+            this.agentBasedACW()
+            this.getOccupancyDataExport()
             this.loader = false
-        },        
+        },
+          
         agentOccupancy(){
             this.loader = false
             this.labelAgentOccupancy = []
@@ -803,22 +1087,17 @@ export default {
                 this.loader = false
             })
         },
-        agentCallStatus(){
-            this.loader = false
-            this.labelAgentCallStatus = []
-            this.sAgentCallStatus = []
-            this.agentName = []
-            this.form.post("/api/get-agent-call-status").then( (response) => {
-                this.labelAgentCallStatus = response.data.label
-                this.sAgentCallStatus = response.data.series
-                this.agentName = response.data.agentName
-                this.stime = response.data.stime
-                this.etime = response.data.etime
-                this.sdate = response.data.sdate
-                this.edate = response.data.edate
-                this.loader = false
+        getOccupancyDataExport(){
+            this.json_fields = {}
+            this.json_data = {}
+			this.loading = true
+            this.form.post("/api/generate-export").then( (response) => {
+                this.json_fields = response.data.json_fields
+                this.json_data = response.data.json_data
+                this.loading = false
             })
         },
+        
         dataPointSelectionHandlerAgentBasedDisposition(e, chartContext, config){
             if(this.sequence.indexOf("disposition") != -1){
                 this.sequence.splice(this.sequence.indexOf("disposition"), 1)
@@ -856,24 +1135,25 @@ export default {
             })
         },
         dataPointSelectionHandlerAgentBasedTalkTime(e, chartContext, config){
-            if(this.sequence.indexOf("talk_time") != -1){
-                this.sequence.splice(this.sequence.indexOf("talk_time"), 1)
-            }
-            if(this.sequence.indexOf("talk_time") == -1){
-                this.sequence.push("talk_time")
-            }
-            if(this.talk_time){
+            if(this.form.agentName){
+                if(this.sequence.indexOf("talk_time") != -1){
+                    this.sequence.splice(this.sequence.indexOf("talk_time"), 1)
+                }
+                if(this.sequence.indexOf("talk_time") == -1){
+                    this.sequence.push("talk_time")
+                }
                 if(this.talk_time[config.dataPointIndex] == "20+"){
                     this.form.talk_time_plus = 1    
                 }else{
                     this.form.talk_time_plus = 0
                 }
                 this.form.talk_time = this.talk_time[config.dataPointIndex]
-
+                this.runAll()
             }else{
-                this.form.agentName =  this.talkTimeAgentName[config.dataPointIndex]
+                Vue.$toast.success("Please select agent first !!");
+                return false
             }
-            this.runAll()
+            
         },
         agentBasedTalkTime(){
             this.loader = false
@@ -910,6 +1190,7 @@ export default {
             }
             this.runAll()
         },
+        
         agentBasedACW(){
             this.loader = false
             this.labelAgentBasedACW = []
@@ -942,7 +1223,11 @@ export default {
         },
         runAll(){
             if(this.sequence.indexOf("agentName") != -1){
+                 this.agentCallStatus()
+            }
 
+            if(this.sequence.indexOf("number") != -1){
+                this.NumberBasedStatus()
             }
             if(this.sequence.indexOf("disposition") == -1){
                 this.agentDispositionStatus()
@@ -954,13 +1239,25 @@ export default {
                 this.agentBasedACW()
             }
         },
+        startDownloadAgent(){
+            // alert('show loading');
+        },
+        finishDownloadAgent(){
+            // alert('hide loading');
+        },
+        startDownloadDisposition(){
+            // alert('show loading');
+        },
+        finishDownloadDisposition(){
+            // alert('hide loading');
+        }
         
     },
     created() {
-        
+        this.getGraphData()
     },
     mounted() {
-        this.getGraphData()
+        
     }
 }
 </script>

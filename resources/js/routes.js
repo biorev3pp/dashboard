@@ -25,7 +25,7 @@ import Tasks from './components/tasks/index.vue';
 import ProspectsLocation from './components/ProspectsLocation.vue';
 import EmailDetailDashboard from './components/dashboard/DashboardEmail.vue';
 import DatabaseUpdate from './components/dataenrich/UpdateDatabaseFields.vue';
-import ColumnAnalysis from './components/dataenrich/ColumnAnalysis.vue';
+import DataHealth from './components/dataenrich/DataHealth.vue';
 
 export const routes = [{
         path: '/',
@@ -265,12 +265,12 @@ export const routes = [{
             title: 'Data Enrichment',
         }
     },
-		{
-			path: '/column-analysis',
-			component: ColumnAnalysis,
-			meta: {
-					requiresAuth: true,
-					title: 'Column Analysis and Parameters Validation',
-			}
+    {
+        path: '/data-health',
+        component: DataHealth,
+        meta: {
+                requiresAuth: true,
+                title: 'Data Health and Analysis',
+        }
 	},
 ];

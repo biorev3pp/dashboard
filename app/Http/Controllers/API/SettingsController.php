@@ -9,6 +9,10 @@ use App\Models\Stages;
 use App\Models\Contacts;
 use App\Models\DatasetGroups;
 use App\Models\GraphSearchFilters;
+use App\Models\FivenineCallLogs;
+use App\Models\OutreachMailings;
+use App\Models\OutreachSequences;
+use Illuminate\Support\Facades\DB;
 
 class SettingsController extends Controller
 {
@@ -93,5 +97,16 @@ class SettingsController extends Controller
     public function getGraphFilters()
     {
         return GraphSearchFilters::orderBy('order_no', 'asc')->get();
+    }
+
+    public function getCallEmailStatus(Request $request)
+    {
+        $return = [];
+        foreach ($request->data as $key => $value) {
+            $calls = FivenineCallLogs::where('record_id', $value)->count();
+            $emails = OutreachMailings::where('contact_id', $value)->count();
+            $return[] = ['record_id' => $value, 'calls' => $calls, 'emails' => $emails];
+        }
+        return $return;
     }
 }

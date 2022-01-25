@@ -8,7 +8,7 @@ Route::get('/run-queue', function(){
     Artisan::call('queue:work --stop-when-empty', []);
     echo "queue is stoped";
 });
-Route::get("/set-columns", [App\Http\Controllers\TestController::class, 'setColumn']);
+Route::get("/set-number", [App\Http\Controllers\TestController::class, 'setNumber']);
 Route::get("/get-state/{id}", [App\Http\Controllers\API\ProspectsLocationController::class, 'states']);
 Route::get("/fetchNxx/{id}", [App\Http\Controllers\API\ProspectsLocationController::class, 'fetchNxx']);
 Route::get('/updateStateCity', [App\Http\Controllers\API\ProspectsLocationController::class, 'updateStateCity']);
@@ -68,6 +68,8 @@ Route::get('/get-sequences',  [App\Http\Controllers\HomeController::class, 'getO
 Route::get('/get-sequence-states',  [App\Http\Controllers\HomeController::class, 'getOutreachSequenceStates']);//csynSequenceState.blade.php
 //prospect mailings data
 Route::get('/get-outreach-mailings', [App\Http\Controllers\HomeController::class, 'getOutreachMailings']);//csynMailings.blade.php
+
+Route::get('/check', [App\Http\Controllers\HomeController::class, 'manualUpdate']);//csynMailings.blade.php
 
 
 Route::get('/data-update', [App\Http\Controllers\DataUpdateController::class, 'index']);//csynMailings.blade.php

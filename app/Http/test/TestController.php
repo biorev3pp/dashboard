@@ -16,17 +16,32 @@ class TestController extends Controller
        // $this->middleware('auth');
     }
 
-    public function setColumn()
+    public function setNumber()
     {
-        echo 'Invalid Path'; die;
-        //$notAllowedFiedls = ['id', 'record_id', 'contact_id', 'account_id', 'f_first_name', 'f_last_name', 'number1', 'number2', 'number3', 'number1type', 'number2type', 'number3type', 'number1call', 'number2call', 'number3call', 'ext1', 'ext2', 'ext3', 'hnumber', 'wnumber', 'mnumber',  'stage', 'old_stage', 'disposition', 'last_outreach_email', 'last_outreach_activity', 'last_campaign', 'last_export', 'last_agent_dispo_time', 'dial_attempts', 'dial_attempts', 'last_update_at', 'fivenine_created_at', 'outreach_touched_at', 'mcall_attempts', 'mcall_received', 'hcall_attempts', 'hcall_received', 'wcall_attempts', 'wcall_received', 'email_delivered', 'email_opened', 'email_clicked', 'email_replied', 'email_bounced', 'dataset', 'custom1', 'custom2', 'custom9', 'custom10', 'custom11', 'custom12', 'custom29', 'created_at', 'updated_at'];
-        //$fields = DB::getSchemaBuilder()->getColumnListing("contacts");
+        $contacts = Contacts::select('record_id', 'mobilePhones', 'workPhones', 'homePhones')->where('id', '<=', 100)->get();
 
-        //$labels = ['', 'Purchase Authorization', 'Department', 'Job Function', 'Supplemental Email', 'Company HQ Phone', 'Education', 'Employment History', 'Interested In', 'Industry', 'Primary Industry', 'Company Revenue', 'Company Rev Range', 'Marketing Budget', 'VR / AR', 'Options & Selection Sys', 'Home Tech Challenge', 'Follow Up', 'ZoomInfo Contact ID', 'ZoomInfo Accuracy', 'ZoomInfo Score', '', '', '', '', '', '', '', '', 'Timezone Group', 'Number Swapping Status', 'Custom tag', 'OLD Direct Phone', 'OLD Company HQ', 'OLD Work Phone', 'ZoomInfo Listing'];
-        for ($i=36; $i <= 150; $i++) { 
-            DB::table("temp_contacts")->insert(['field' => 'custom'.$i, 'label' => 'Custom Field '.$i, 'group_name' => 'Outreach Additional Fields']);
+        echo '<table border="1"><thead>
+            <tr>
+            <th>RID</th>
+            <th>Mobile</th>
+            <th>Mobile F</th>
+            <th>Mobile Ext</th>
+            <th>Work</th>
+            <th>Work F</th>
+            <th>Work Ext</th>
+            <th>Home</th>
+            <th>Home F</th>
+            <th>Home Ext</th>
+            </tr>
+        </thead><tbody>';
+        foreach ($contacts as $value) {
+           echo '<tr><td>'.$value->record_id.'</td>
+           <td>'.$value->mobilePhones.'</td><td>'. $this->__NumberFormater1($value->mobilePhones).'</td><td>'.$this->__NumberExtFormater1($value->mobilePhones).'</td>
+           <td>'.$value->workPhones.'</td><td>'.$this->__NumberFormater1($value->workPhones).'</td><td>'.$this->__NumberExtFormater1($value->workPhones).'</td>
+           <td>'.$value->homePhones.'</td><td>'.$this->__NumberFormater1($value->homePhones).'</td><td>'.$this->__NumberExtFormater1($value->homePhones).'</td>
+           </tr>';
         }
-        echo 'all done'; die;
+        echo '</tbody> </table>'; die;
     }
 
     public function emailCounter($nom = 1)
@@ -132,6 +147,41 @@ class TestController extends Controller
             if($c4 >= $set[$k]['c4']) $label.='1'; else $label.='0';
             return $label;
         }
+    }
+    private function __NumberFormater1($var = null)
+    {
+        if(strpos($var, ",") > -1){
+            $mob = explode(",", $var);
+            $var = $mob[0];
+        }
+        if(strpos($var, "ext") > -1){
+            $mob = explode("ext", $var);
+            $var = $mob[0];
+        }
+        $string = str_replace(' ', '', $var); // Replaces all spaces.
+        $string = str_replace('-', '', $string); // Replaces all hyphens.
+        $string = str_replace('.', '', $string); // Replaces all hyphens.
+        $string = str_replace('(', '', $string); // Replaces all hyphens.
+        $string = str_replace(')', '', $string); // Replaces all hyphens.
+        $string = preg_replace('/[^0-9\-]/', '', $string); // Removes special chars
+        $string = substr($string, -10);
+        return $string;
+    }
+
+    private function __NumberExtFormater1($var = null)
+    {
+        if(strpos($var, ",") > -1){
+            $mob = explode(",", $var);
+            $var = $mob[0];
+        }
+        if(strpos(strtolower($var), "ext") > -1){
+            $mob = explode("ext", strtolower($var));
+            $string = str_replace(' ', '', trim($mob[1]));
+            $string = str_replace('.', '', $string);
+        } else {
+            $string = '';
+        }
+        return $string;
     }
 
 }

@@ -26,9 +26,13 @@ class DatasetsController extends Controller
         ->addSelect(['email_bounced' => DB::table('outreach_mailings')->selectRaw('count(*)')->whereNotNull("outreach_mailings.bouncedAt")->whereColumn('outreach_mailings.contact_id', 'contacts.record_id')])
             ->leftjoin('stages', 'stages.oid', '=', 'contacts.stage');
         if($search):
+            if(preg_match('([a-zA-Z])', $search) == false) {
+                $search = str_ireplace( array( '\'', '"',
+                ',' , ';', '<', '>', ')', '(', '-', ' '), '', $search);
+            } 
             $records = $records->when($search, function($query, $search){
                 $query->where(function($q) use ($search){
-                    $q->where('contacts.name', 'like', '%'.$search.'%')->orWhere('contacts.first_name', 'like', '%'.$search.'%')->orWhere('contacts.last_name', 'like', '%'.$search.'%')->orWhere('contacts.emails', 'like', '%'.$search.'%')->orWhere('contacts.company', 'like', '%'.$search.'%')->orWhere('contacts.mnumber', 'like', '%'.$search.'%')->orWhere('contacts.hnumber', 'like', '%'.$search.'%')->orWhere('contacts.wnumber', 'like', '%'.$search.'%');
+                    $q->where('contacts.name', 'like', '%'.$search.'%')->orWhere('contacts.first_name', 'like', '%'.$search.'%')->orWhere('contacts.last_name', 'like', '%'.$search.'%')->orWhere('contacts.emails', 'like', '%'.$search.'%')->orWhere('contacts.company', 'like', '%'.$search.'%')->orWhere('contacts.mnumber', 'like', '%'.$search.'%')->orWhere('contacts.hnumber', 'like', '%'.$search.'%')->orWhere('contacts.wnumber', 'like', '%'.$search.'%')->orWhere('contacts.mobilePhones', 'like', '%'.$search.'%')->orWhere('contacts.workPhones', 'like', '%'.$search.'%')->orWhere('contacts.homePhones', 'like', '%'.$search.'%');
                 });
             });
         endif; 
@@ -1247,29 +1251,9 @@ class DatasetsController extends Controller
                     "company" => $record->company,
                     "record_id" => $record->record_id,
                 ]; 
-                // $results[] = [
-                //     "first_name" => ucfirst($record->first_name),
-                //     "last_name" => ucfirst($record->last_name),
-                //     "number1" => $this->__NumberFormater1($mobilePhones),
-                //     "number2" => $this->__NumberFormater1($workPhones),
-                //     "number3" => $this->__NumberFormater1($homePhones),
-                //     "number1type" => 'M',
-                //     "number2type" => 'W',
-                //     "number3type" => 'H',
-                //     "number1call" => $this->__NumberType($this->__NumberFormater1($mobilePhones), $record->record_id),
-                //     "number2call" => $this->__NumberType($this->__NumberFormater1($workPhones), $record->record_id),
-                //     "number3call" => $this->__NumberType($this->__NumberFormater1($homePhones), $record->record_id),
-                //     "ext1" => $this->__NumberExtFormater1($mobilePhones),
-                //     "ext2" => $this->__NumberExtFormater1($workPhones),
-                //     "ext3" => $this->__NumberExtFormater1($homePhones),
-                //     "company" => $record->company,
-                //     "record_id" => $record->record_id,
-                // ];
             }
         }
         return $results;
     }
-    function getTimezoneTime(){
-        
-    }
+
 }

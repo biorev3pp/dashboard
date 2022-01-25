@@ -12,6 +12,21 @@ Route::get('/run-queue', function(){
     Artisan::call('queue:work --stop-when-empty', []);
     echo "queue is stopped";
 });
+//column analysis
+Route::post('get-column-health', [App\Http\Controllers\API\ColumnAnalysisController::class, 'index']);
+Route::post('get-duplicate-column-health', [App\Http\Controllers\API\ColumnAnalysisController::class, 'getDuplicateColumnHealth']);
+Route::post('get-non-empty-column-health', [App\Http\Controllers\API\ColumnAnalysisController::class, 'getNonEmptyColumnHealth']);
+Route::get('company-revenue-range', [App\Http\Controllers\API\ColumnAnalysisController::class, 'getCompanyRevenueRange']);
+Route::get('management-level', [App\Http\Controllers\API\ColumnAnalysisController::class, 'getManagementLevel']);
+Route::get('job-functions', [App\Http\Controllers\API\ColumnAnalysisController::class, 'getJobFunctions']);
+Route::get('job-titles', [App\Http\Controllers\API\ColumnAnalysisController::class, 'getJobTitles']);
+Route::get('company-industry', [App\Http\Controllers\API\ColumnAnalysisController::class, 'getCompanyIndustry']);
+Route::get('prospects-field-missing-data', [App\Http\Controllers\API\ColumnAnalysisController::class, 'getProspectsFieldMissingData']);
+Route::get('touch-points-data', [App\Http\Controllers\API\ColumnAnalysisController::class, 'getTouchPointsData']);
+Route::get('touch-points-data-others', [App\Http\Controllers\API\ColumnAnalysisController::class, 'getTouchPointsDataOthers']);
+Route::post('/get-related-prospects', [App\Http\Controllers\API\ColumnAnalysisController::class, 'getRelatedProspects']);
+Route::post('/get-related-and-prospects', [App\Http\Controllers\API\ColumnAnalysisController::class, 'getRelatedAndProspects']);
+
 //database fields manipulation
 Route::get("/get-display-names", [App\Http\Controllers\API\UpdateDatabaseController::class, 'displayNames']);
 Route::post("/get-null-fields", [App\Http\Controllers\API\UpdateDatabaseController::class, 'getNullFields']);
@@ -23,6 +38,8 @@ Route::post("/mearge-records", [App\Http\Controllers\API\UpdateDatabaseControlle
 Route::post("/update-records", [App\Http\Controllers\API\UpdateDatabaseController::class, 'updateRecords']);
 Route::post("/reset-records", [App\Http\Controllers\API\UpdateDatabaseController::class, 'resetRecords']);
 Route::post("/transfer-records", [App\Http\Controllers\API\UpdateDatabaseController::class, 'transferRecords']);
+Route::post("/refinetag-records", [App\Http\Controllers\API\UpdateDatabaseController::class, 'refineTagRecords']);
+
 
 Route::post("/get-field-based-data", [App\Http\Controllers\API\UpdateDatabaseController::class, 'getFieldBasedData']);
 Route::post("/get-count-based-data", [App\Http\Controllers\API\UpdateDatabaseController::class, 'getCountBasedData']);
@@ -53,6 +70,9 @@ Route::post("/get-agent-based-ACW",          [App\Http\Controllers\API\Dashboard
 Route::post("/get-agent-based-waiting-time", [App\Http\Controllers\API\DashboardCallController::class, 'getAgentBasedWaitingTime']);
 Route::post("/get-agent-info", [App\Http\Controllers\API\DashboardCallController::class, 'getAgentInfo']);
 Route::post("/get-dashboard-time", [App\Http\Controllers\API\DashboardCallController::class, 'getDashboardTime']);
+Route::post("/get-number-based-data", [App\Http\Controllers\API\DashboardCallController::class, 'getNumberBasedData']);
+Route::post("/get-occupancy-data-export", [App\Http\Controllers\API\DashboardCallController::class, 'getOccupancyDataExport']);
+Route::post("/generate-export", [App\Http\Controllers\API\DashboardCallController::class, 'generateExport']);
 
 Route::get('/get-record-disposition/{record_id}', [App\Http\Controllers\API\DatasetsController::class, 'getRecordDispositions']);
 
@@ -92,6 +112,7 @@ Route::get('/data-check', [App\Http\Controllers\API\DatasetsController::class, '
 Route::get('/get-record-disposition/{record_id}', [App\Http\Controllers\API\DatasetsController::class, 'getRecordDispositions']);
 Route::post('/dataset-values-data', [App\Http\Controllers\API\DatasetsController::class, 'getAllData']);
 Route::post('/dataset-values-data-all', [App\Http\Controllers\API\DatasetsController::class, 'getFullData']);
+Route::post('/called-numbers', [App\Http\Controllers\API\DashboardCallController::class, 'calledNumbers']);
 Route::post('/dataset-values-data-call', [App\Http\Controllers\API\DashboardCallController::class, 'getAllDataCall']);
 Route::post('/dataset-values-data-call-all', [App\Http\Controllers\API\DashboardCallController::class, 'getFullDataCall']);
 
@@ -99,6 +120,7 @@ Route::post('/reset-dataset', [App\Http\Controllers\API\DatasetsController::clas
 Route::get('/get-dataset', [App\Http\Controllers\API\DatasetsController::class, 'getDataset']);
 Route::post('/get-record-container-info', [App\Http\Controllers\API\DatasetsController::class, 'getRecordContainerInfo']);
 Route::post('/get-record-container-info-emaill', [App\Http\Controllers\API\DatasetsController::class, 'getRecordContainerInfoEmail']);
+Route::post('/get-record-container-info-call', [App\Http\Controllers\API\DashboardCallController::class, 'getRecordContainerInfoCall']);
 Route::post("/export-graph-data-to-fivenine", [App\Http\Controllers\API\DatasetExportController::class, 'export']);
 // Common API
 Route::any('/get-job-history', [App\Http\Controllers\API\JobHistoryController::class, 'index']);
@@ -165,6 +187,7 @@ Route::get('/get-all-filter', [App\Http\Controllers\API\OutreachController::clas
 Route::get('/get-all-filter-for-accounts', [App\Http\Controllers\API\OutreachController::class, 'getAllFilterForAccounts']);
 Route::get('/get-all-filter-dataset', [App\Http\Controllers\API\OutreachController::class, 'getAllFilterDataset']);
 Route::get('/get-all-outreach-stages', [App\Http\Controllers\API\OutreachController::class, 'AllStages']);
+Route::get('/get-all-outreach-persona', [App\Http\Controllers\API\OutreachController::class, 'AllPersonas']);
 
 Route::post('/get-outreach-account-lists', [App\Http\Controllers\API\OutreachController::class, 'getOutreachAccountLists']);
 Route::get('/get-account-info/{id}', [App\Http\Controllers\API\OutreachController::class, 'getOutreachAccountInfo']);
@@ -228,4 +251,7 @@ Route::get('/get-five-nine-all-list-report', [App\Http\Controllers\API\FiveNineC
 Route::get('/get-five-nine-all-list-report-results/{id}', [App\Http\Controllers\API\FiveNineController::class, 'getAllListResults']);
 Route::post('/outreach-records', [App\Http\Controllers\API\OutreachController::class, 'getOutreachRecords']);
 
+Route::post('/get-call-email-status', [App\Http\Controllers\API\SettingsController::class, 'getCallEmailStatus']);
 
+Route::post('/merge-selected-prospects', [App\Http\Controllers\API\MergerController::class, 'recordMerging']);
+Route::post('/delete-selected-prospects', [App\Http\Controllers\API\MergerController::class, 'recordDeleting']);

@@ -215,9 +215,9 @@
                                 <label for="call">
                                     <i class="bi bi-telephone-fill"></i>
                                 </label>
-                                <call-log :call="record.mcall_attempts" :rcall="record.mcall_received" :title="record.mobilePhones" :fnumber="record.mnumber" :label="'MP'" :rid="record.record_id"></call-log>
-                                <call-log :call="record.wcall_attempts" :rcall="record.wcall_received" :title="record.workPhones" :label="'WP'" :rid="record.record_id"></call-log>
-                                <call-log :call="record.hcall_attempts" :rcall="record.hcall_received" :title="record.homePhones" :label="'HP'" :rid="record.record_id"></call-log>
+                                <call-log :called_numbers="[]" :call="record.mcall_attempts" :rcall="record.mcall_received" :title="record.mobilePhones" :label="'MP'" :rid="record.record_id"></call-log>
+                                <call-log :called_numbers="[]" :call="record.wcall_attempts" :rcall="record.wcall_received" :title="record.workPhones" :label="'WP'" :rid="record.record_id"></call-log>
+                                <call-log :called_numbers="[]" :call="record.hcall_attempts" :rcall="record.hcall_received" :title="record.homePhones" :label="'HP'" :rid="record.record_id"></call-log>
                             </span>
                         </div>
                         <div class="divtbody-elem wf-220">
@@ -230,7 +230,7 @@
                             </span>
                         </div>
                         <div class="divtbody-elem  wf-150">
-                            <span class="stack-box">
+                            <span class="stack-box stack-time-box">
                                 <label for="email">
                                     <i class="bi bi-clock-fill text-success"></i>
                                 </label>
@@ -546,6 +546,7 @@ export default {
             }),
             showView : false, //control appearance of view controls
             loader_url: '/img/spinner.gif',
+            loading: false,
             totalNumberOfRecords:'',
             filter : false,
             filterEmail : false,
@@ -563,11 +564,21 @@ export default {
             selectedOptionsId : [],
             filterItemsIds : [],
             showInputTextOrDropdown : true,
-            filter_keyword:''
+            filter_keyword:'',
+            prospect:{},
+            loader:false
         }
     },
     filters: {
-           },
+        formatPhoneNumber(phoneNumberString) {
+            var cleaned = ('' + phoneNumberString).replace(/\D/g, '');
+            var match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/);
+            if (match) {
+                return '(' + match[1] + ') ' + match[2] + '-' + match[3];
+            }
+            return null;
+        }
+    },
     computed: {
         stageDetails() {
             return this.$store.getters.stages

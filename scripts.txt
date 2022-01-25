@@ -7,3 +7,5 @@ UPDATE `contacts` inner join contact_customs ON (contacts.id = contact_customs.c
 UPDATE `contacts` join states on (contacts.state = states.code) set contacts.state = states.state;
 
 update `contacts` inner join states on (contacts.state = states.state) inner join timezones on (states.timezone_id = timezones.id) set contacts.custom29 = timezones.timezone_type where contacts.custom29 is null;
+
+SELECT * FROM `fivenine_call_logs` WHERE `dnis` = `number1` AND `list_name` = 'SG_BIO_NS_INDUS-CON_CLD_CALL' AND `date` BETWEEN '2021-12-01' AND '2021-12-31';

@@ -679,6 +679,24 @@ export default {
                 if(this.meltNumbers.indexOf(parseInt(subrec.number3)) >= 0 || this.meltNumbers.indexOf(subrec.number3) >= 0) {
                     subrec.number3 = '';
                 }
+                if(subrec.number1 == subrec.number2) {
+                    subrec.number2 = '';
+                    subrec.ext2 = '';
+                    subrec.number2call = '';
+                    subrec.number2type = '';
+                }
+                if(subrec.number2 == subrec.number3) {
+                    subrec.number3 = '';
+                    subrec.ext3 = '';
+                    subrec.number3call = '';
+                    subrec.number3type = '';
+                }
+                if(subrec.number1 == subrec.number3) {
+                    subrec.number3 = '';
+                    subrec.ext3 = '';
+                    subrec.number3call = '';
+                    subrec.number3type = '';
+                }
                 if(subrec.number1 == '' && subrec.number2 != '') {
                     subrec.number1 = subrec.number2;
                     subrec.number1type = subrec.number2type;
@@ -686,6 +704,9 @@ export default {
                     subrec.ext1 = subrec.ext2;
                     subrec.swapper1 = 1;
                     subrec.number2 = '';
+                    subrec.ext2 = '';
+                    subrec.number2call = '';
+                    subrec.number2type = '';
                 }
                 else if(ele.number1 == '' && subrec.number2 == '' && subrec.number3 != '') {
                     subrec.number1 = subrec.number3;
@@ -693,6 +714,9 @@ export default {
                     subrec.number1call = subrec.number3call;
                     subrec.ext1 = subrec.ext3;
                     subrec.number3 = '';
+                    subrec.ext3 = '';
+                    subrec.number3call = '';
+                    subrec.number3type = '';
                     subrec.swapper1 = 1;
                 }
                 if(subrec.number1 != '' && subrec.number2 == '' && subrec.number3 != '') {
@@ -701,9 +725,12 @@ export default {
                     subrec.number2call = subrec.number3call;
                     subrec.ext2 = subrec.ext3;
                     subrec.number3 = '';
+                    subrec.ext3 = '';
+                    subrec.number3call = '';
+                    subrec.number3type = '';
                     subrec.swapper2 = 1;
                 }
-                let dupcNu = subrec.number1;
+
                 if(subrec.number1 == '' && subrec.number2 == '' && subrec.number3 == '') {
                     // Do nothing
                 } else {

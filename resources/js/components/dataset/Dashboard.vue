@@ -246,7 +246,7 @@
                                 <label for="call">
                                     <i class="bi bi-telephone-fill"></i>
                                 </label>
-                                <call-log :call="record.mcall_attempts" :rcall="record.mcall_received" :title="record.mobilePhones" :fnumber="record.mnumber" :label="'MP'" :rid="record.record_id"></call-log>
+                                <call-log :call="record.mcall_attempts" :rcall="record.mcall_received" :title="record.mobilePhones" :label="'MP'" :rid="record.record_id"></call-log>
                                 <call-log :call="record.wcall_attempts" :rcall="record.wcall_received" :title="record.workPhones" :label="'WP'" :rid="record.record_id"></call-log>
                                 <call-log :call="record.hcall_attempts" :rcall="record.hcall_received" :title="record.homePhones" :label="'HP'" :rid="record.record_id"></call-log>
                             </span>
@@ -261,7 +261,7 @@
                             </span>
                         </div>                             
                         <div class="divtbody-elem  wf-150">
-                            <span class="stack-box">
+                            <span class="stack-box stack-time-box">
                                 <label for="email">
                                     <i class="bi bi-clock-fill text-success"></i>
                                 </label>

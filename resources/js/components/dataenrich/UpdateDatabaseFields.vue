@@ -17,10 +17,10 @@
                         <div class="divthead">
                             <div class="divthead-row">
                                 <div class="divthead-elem wf-50">
-                                    <input :checked="form.records.length == form.allRecordsContainer.length" type="checkbox" id="all-record-checkbox" @click="selectAllRecords"> 
+                                    <input :checked="form.records.length == form.meargRecords.length" type="checkbox" id="all-record-checkbox" @click="selectAllRecords"> 
                                 </div>
                                 <div class="divthead-elem mwf-100">
-                                    Record ({{form.allRecordsContainer.length | freeNumber}}/{{form.records.length | freeNumber}})
+                                    Record ({{form.meargRecords.length | freeNumber}}/{{form.records.length | freeNumber}})
                                     <i class="bi bi-arrow-up" :class="[(recordSorting == 'field')?'text-dark':'']" v-if="recordSorting=='field' && recordSortingType=='desc'" @click="recordSorting='field',recordSortingType='asc'"></i>
                                     <i class="bi bi-arrow-down" :class="[(recordSorting == 'field')?'text-dark':'']" v-else @click="recordSorting='field',recordSortingType='desc'"></i>
                                 </div>
@@ -34,7 +34,7 @@
                         <div class="divtbody fit-content">
                             <div class="divtbody-row" v-for="(field,index) in formrecords" :key="'input-field-record-'+index">
                                 <div class="divtbody-elem wf-50">
-                                    <input type="checkbox" name="records[]" :value="field.field" @click="selectAllSingleCheckbox"  class="all-record" :id="'all-record-' + index" :checked="form.allRecordsContainer.length > 0 && form.allRecordsContainer.indexOf(field.field) > -1">
+                                    <input type="checkbox" name="records[]" :value="field.field" @click="selectAllSingleCheckbox"  class="all-record" :id="'all-record-' + index" :checked="form.meargRecords.length > 0 && form.meargRecords.indexOf(field.field) > -1">
                                 </div>
                                 <div class="divtbody-elem mwf-100"> 
                                     <span v-if="form.stage.length > 0">
@@ -49,7 +49,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-9 p-0" v-show="(transferBtn || resetBtn || meargeBtn || updateBtn)">
+                <div class="col-md-9 p-0" v-show="(transferBtn || resetBtn || meargeBtn || updateBtn || tagBtn)">
                     <div class="border-bottom pr-3" v-show="form.records.length && form.field">
                         <div class="mb-1">
                             <toggle-button @change="toggle = !toggle"  :margin="3" :width="235" :height="30" :labels="{checked: 'Unique Record Based Graph', unchecked: 'Unique Count Based Graph'}" :switch-color="{checked: '#800080', unchecked: '#27408B'}" :color="{checked: '#E599E5', unchecked: '#4E9FFE'}" />
@@ -57,7 +57,7 @@
                                 <option value="">Select Stage</option>
                                 <option v-for="(stage, index) in stages" :key="'stage-' + index" :value="stage.oid">{{ stage.name }}</option>
                             </select>
-                            <div class="float-right" v-show="form.allRecordsContainer.length">
+                            <div class="float-right" v-show="form.meargRecords.length">
                                 <i class="bi bi-gear-wide-connected icn-spinner cursor-pointer" @click="showaction = true"></i>
                             </div>
                         </div>
@@ -65,28 +65,34 @@
                             <div class="float-left outer-icon">
                                 <i class="bi bi-gear-wide-connected"></i>
                             </div>
-                            <div class="text-right">
-                                <i class="bi bi-x-circle fs-18 cursor-pointer" @click="showaction=false"></i>
+                            <h5 class="text-center my-2 ml-1  mr-4"> {{ this.totalCount | freeNumber }} prospects will be modified. </h5>
+                            <div class="float-right outer-icon-right">
+                                 <i class="bi bi-x-circle fs-18 cursor-pointer" @click="showaction=false"></i>
                             </div>
                             <div class="clearfix"></div>
                             <div class="action-btns" v-if="action_status === ''">
                                 <div class="action-btn" @click="action_status = 'resetBtn'">
-                                        <i class="bi bi-x-octagon"></i>
-                                        <span> Reset Data </span>
+                                    <i class="bi bi-x-octagon"></i>
+                                    <span> Reset Data </span>
                                 </div>
                                 <div class="action-btn" @click="action_status = 'mergeBtn'">
-                                        <i class="bi bi-tools"></i>
-                                        <span>Merge Data </span>
+                                    <i class="bi bi-tools"></i>
+                                    <span>Merge Data </span>
                                 </div>
                                 <div class="action-btn" @click="action_status = 'updateBtn'">
-                                        <i class="bi bi-pencil-square"></i>
-                                        <span>Update Data </span>
+                                    <i class="bi bi-pencil-square"></i>
+                                    <span>Update Data </span>
                                 </div>
                                 <div class="action-btn" @click="action_status = 'transferBtn'">
-                                        <i class="bi bi-arrow-left-right"></i>
-                                        <span>Transfer Data </span>
+                                    <i class="bi bi-arrow-left-right"></i>
+                                    <span>Transfer Data </span>
+                                </div>
+                                <div class="action-btn" @click="action_status = 'tagBtn'" v-if="enableTag == true">
+                                    <i class="bi bi-funnel"></i>
+                                    <span>Refine Tag </span>
                                 </div>
                             </div>
+
                             <div class="action-data" v-else>
                                 <div class="action-title">
                                     <i class="bi bi-arrow-left-square cursor-pointer fs-20" @click="action_status = ''"></i>
@@ -94,6 +100,7 @@
                                     <span class="fs-20 ml-3" v-else-if="action_status == 'mergeBtn'">Merge Data </span>
                                     <span class="fs-20 ml-3" v-else-if="action_status == 'updateBtn'">Update Data </span>
                                     <span class="fs-20 ml-3" v-else-if="action_status == 'transferBtn'">Transfer Data </span>
+                                    <span class="fs-20 ml-3" v-else-if="action_status == 'tagBtn'">Refine Tag Data </span>
                                     <span class="fs-20 ml-3" v-else>No Action Defined </span>
                                 </div>
                                 <div class="action-content p-2">
@@ -180,9 +187,42 @@
                                             </div>
                                         </div>
                                     </div>
+                                    <div class="pt-2" v-else-if="action_status == 'tagBtn'">
+                                        <div class="row mb-2">
+                                            <div class="col-12 col-sm-6">
+                                                <h5>Select Tag to keep</h5>
+                                                <!-- <div class="input-group mb-3">
+                                                    <input type="text" class="form-control" placeholder="Add New Tag to Add" v-model="new_tag" />
+                                                    <div class="input-group-append">
+                                                        <button class="btn btn-outline-secondary plus-btn" type="button" @click="addnewTag">
+                                                            <i class="bi bi-plus"></i>
+                                                        </button>
+                                                    </div>
+                                                </div> -->
+                                            </div>
+                                            <div class="col-12 col-sm-6">
+                                                <button class="btn btn-sm btn-primary theme-btn btn-block py-1" type="button" v-show="this.form.tagRecords.length >= 1" @click="tagRefineRecordsAction">Start Refining</button>
+                                            </div>
+                                        </div>
+                                        
+                                        <button class="tags-btn" type="button" v-for="ut in uniqueTags" :key="'ot'+ut" :class="[(form.tagRecords.indexOf(ut) >= 0)?'btn-added':'btn-not-added']" @click="toggleTag(ut)">
+                                            {{ ut }}
+                                        </button>
+                                    </div>
                                     <div class="pt-2" v-else>
                                     </div>
                                 </div>
+                            </div>
+                            <div class="text-center" v-show="progress">
+                                <radial-progress-bar 
+                                    :startColor="startColor"
+                                    :innerStrokeWidth="5"
+                                    :stopColor="stopColor"
+                                    :diameter="100"
+                                    :completed-steps="completedSteps"
+                                    :total-steps="totalSteps">
+                                    <h5>{{ completedSteps }}/{{ totalSteps }}</h5>
+                                </radial-progress-bar>
                             </div>
                         </div>
                     </div>
@@ -247,10 +287,6 @@
                         </div>
                     </div>
                 </div>
-                <!-- <div class="col-md-2 fit-content pt-2"> -->
-                <div>
-                    
-                </div>
             </div>
         </div>
     </div>
@@ -259,10 +295,16 @@
 import DateRangePicker from 'vue2-daterange-picker'
 import 'vue2-daterange-picker/dist/vue2-daterange-picker.css'
 import { ToggleButton } from 'vue-js-toggle-button'
+import RadialProgressBar from 'vue-radial-progress';
 export default {
-    components:{DateRangePicker, ToggleButton},
+    components:{DateRangePicker, ToggleButton, RadialProgressBar},
     data(){
         return {
+            progress:false,
+            startColor: "#3490dc",
+            stopColor: "#f8f9fa",
+            completedSteps: 0,
+            totalSteps: 0,
             stages : [],
             prospects : [],
             toggle : true,
@@ -276,6 +318,8 @@ export default {
             primaryBtn : false,
             updateBtn : false,
             resetBtn : false,
+            tagBtn : false,
+            enableTag : false,
             transferBtn : false,
             meargeInput : false,
             updateInput : false,
@@ -285,6 +329,8 @@ export default {
             updateContainer : false,
             transferContainer : false,
             display_names:{},
+            newTags : [],
+            new_tag:'',
             form : new Form({
                 allStage : '',
                 stage : [],
@@ -296,6 +342,7 @@ export default {
                 records : [],
                 updateRecords : '',
                 meargRecords : [],
+                tagRecords: [],
                 primary : '',
                 update : '',
                 clusterType : '',
@@ -312,11 +359,37 @@ export default {
                 defaultGraphLabels : [],
                 countGraphSeries : [],
                 countGraphLabels : [],
-                allRecordsContainer : [],
             })
         }
     },
     computed: {
+        uniqueTags() {
+            if(this.form.field == 'outreach_tag') {
+                let ot = this.form.meargRecords.join(',');
+                if(this.newTags.length >= 1) {
+                    let otn = this.newTags.join(',');
+                    ot = ot+','+otn;
+                }
+                ot = ot.split(',')
+                ot = ot.filter(function(el, index, arr) {
+                    return index == arr.indexOf(el);
+                });
+                return ot;
+            } else {
+                return [];
+            }
+        },
+        totalCount() {
+            let sm = 0;
+            if(this.form.records.length >= 1) {
+                this.form.records.forEach(item => {
+                    if(this.form.meargRecords.indexOf(item.field) >= 0) {
+                        sm = sm + item.total;
+                    }
+                })
+            }
+            return sm;
+        },
         seriesDefault(){
             if(this.form.records.length > 0){
                 return this.form.defaultGraphSeries
@@ -464,6 +537,26 @@ export default {
                 this.loader = false
             })
         },
+        toggleTag(record) {
+            if(this.form.tagRecords.length == 0) {
+                this.form.tagRecords.push(record)
+            }
+            else if(this.form.tagRecords.indexOf(record) == -1) {
+                this.form.tagRecords.push(record)
+            }else{
+                var eleIndex = this.form.tagRecords.indexOf(record);
+                this.form.tagRecords.splice(eleIndex, 1)
+            }
+        },
+        addnewTag() {
+            if(this.new_tag == '') {
+                Vue.$toast.error('Please enter the tag name.');
+                return false
+            }
+            this.newTags.push(this.new_tag);
+            this.new_tag = '';
+            Vue.$toast.success('new tag added in the list.');
+        },
         reset(){
             this.form.tableName = ''
             this.form.fields = []
@@ -487,28 +580,25 @@ export default {
         afterAction() {
             this.form.updateRecords = ''
             this.form.meargRecords = []
+            this.form.tagRecords = []
             this.form.primary = ''
             this.form.update = ''
-            this.meargeBtn = true
+            this.meargeBtn = false
             this.primaryBtn = false
-            this.updateBtn = true
+            this.updateBtn = false
             this.meargeInput = false
             this.updateInput = false
             this.primaryContainer = false
             this.updateContainer = false
             this.transferContainer = false
-
-            this.form.allRecordsContainer = [];
             this.form.emptySet = false
             this.form.allSet = false
             this.form.newSet = false
             this.form.copyMoveStep = false
             this.form.copyMoveType = null
-            // this.form.nullFields = []
             this.form.nullField = ''
             this.form.newNullField = ''
             this.form.clusterType = ''
-            //this.getNullFields()
         },
         setPrimary(){
             this.primaryContainer = true
@@ -550,11 +640,17 @@ export default {
                         this.form.defaultGraphLabels[key] = this.form.stage[this.form.defaultGraphLabels[key]]
                     }
                 }
+                this.showaction = false
                 this.meargeBtn = true
                 this.updateBtn = true
                 this.resetBtn = true
                 this.clusterBtn =  true
                 this.transferBtn = true
+                if(this.form.field == 'outreach_tag') {
+                    this.enableTag = true
+                } else {
+                    this.enableTag = false
+                }
                 this.loader = false
             })
         },
@@ -607,8 +703,17 @@ export default {
                 confirmButtonText: 'Yes, Merge it!'
                 }).then((result) => {
                 if (result.isConfirmed) {
+                    this.totalSteps = this.totalCount
+                    this.completedSteps = 1
+                    this.progress = true
+                    window.setInterval(() => {
+                        this.incCompledSteps();
+                    }, 500)
                     this.form.post('/api/mearge-records').then((response) => {
                         this.afterAction()
+                        this.completedSteps = 0
+                        this.totalSteps = 0
+                        this.progress = false
                         this.getData(this.form.field)
                         this.$swal('Merged!', 'Records has been merged successfully.', 'success')  
                     })
@@ -630,8 +735,17 @@ export default {
                 confirmButtonText: 'Yes, Reset All!'
                 }).then((result) => {
                 if (result.isConfirmed) {
+                    this.totalSteps = this.totalCount
+                    this.completedSteps = 1
+                    this.progress = true
+                    window.setInterval(() => {
+                        this.incCompledSteps();
+                    }, 500)
                     this.form.post('/api/reset-records').then((response) => {
                         this.afterAction()
+                        this.completedSteps = 0
+                        this.totalSteps = 0
+                        this.progress = false
                         this.getData(this.form.field)
                         this.$swal('Reset!', 'Records has been reset successfully.', 'success')  
                     })
@@ -646,25 +760,23 @@ export default {
                 showCancelButton: true,
                 confirmButtonColor: '#3085d6',
                 cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes, Merge it!'
+                confirmButtonText: 'Yes, Update it!'
                 }).then((result) => {
                 if (result.isConfirmed) {
+                    this.totalSteps = this.totalCount
+                    this.completedSteps = 1
+                    this.progress = true
+                    window.setInterval(() => {
+                        this.incCompledSteps();
+                    }, 500)
                     this.form.post('/api/update-records').then((response) => {
                         this.afterAction()
+                        this.completedSteps = 0
+                        this.totalSteps = 0
+                        this.progress = false
                         this.getData(this.form.field)
                         this.$swal('Updated!', 'Records has been updated successfully.', 'success')  
                     })
-                }
-            })
-        },
-        transferAllRecord(){
-            this.form.post('/api/transfer-records').then((response) => {
-                if(response.data.status == "exists"){
-                    this.$swal('Transfered!', 'Tmp Field already exists.', 'error')
-                }else{
-                    this.afterAction()
-                    this.getData(this.form.field)
-                    this.$swal('Transfered!', 'Records has been transfered successfully.', 'success')
                 }
             })
         },
@@ -679,14 +791,55 @@ export default {
                 confirmButtonText: 'Yes, Transfer All!'
                 }).then((result) => {
                 if (result.isConfirmed) {
+                    this.totalSteps = this.totalCount
+                    this.completedSteps = 1
+                    this.progress = true
+                    window.setInterval(() => {
+                        this.incCompledSteps();
+                    }, 500)
                     this.form.post('/api/transfer-records').then((response) => {
                         if(response.data.status == "exists"){
                             this.$swal('Transfered!', 'Tmp Field already exists.', 'error')
                         }else{
                             this.afterAction()
+                            this.completedSteps = 0
+                            this.totalSteps = 0
+                            this.progress = false
                             this.getData(this.form.field)
                             this.$swal('Transfered!', 'Records has been transfered successfully.', 'success')
                         }
+                    })
+                }
+            })
+        },
+        tagRefineRecordsAction() {
+            this.$swal({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, Refine All Tags!'
+                }).then((result) => {
+                if (result.isConfirmed) {
+                    this.totalSteps = this.totalCount
+                    this.completedSteps = 1
+                    this.progress = true
+                    window.setInterval(() => {
+                        this.incCompledSteps();
+                    }, 500)
+                    this.form.post('/api/refinetag-records').then((response) => {
+                         if(response.data.status == "exists"){
+                            this.$swal('Refine ERROR!', 'Tmp Field already exists.', 'error')
+                        }else{
+                            this.afterAction()
+                            this.completedSteps = 0
+                            this.totalSteps = 0
+                            this.progress = false
+                            this.getData(this.form.field)
+                            this.$swal('Refine Tags!', 'Tags have been refined successfully.', 'success')
+                        } 
                     })
                 }
             })
@@ -828,24 +981,16 @@ export default {
             if(this.form.meargRecords.indexOf(field) == -1){
                 this.form.meargRecords.push(field)
             }
-            if(this.form.allRecordsContainer.indexOf(field) == -1){
-                this.form.allRecordsContainer.push(field)
-            }
         },
         removeFromContainer(field){
             var index = this.form.meargRecords.indexOf(field)
             if(Number(index) > -1){
                 this.form.meargRecords.splice(index, 1)
             }
-            var index = this.form.allRecordsContainer.indexOf(field)
-            if(Number(index) > -1){
-                this.form.allRecordsContainer.splice(index, 1)
-            }
         },
         getProspectsBasedOnField(e, chartContext, config){
             this.loader1 = true
             var field = this.form.defaultGraphLabels[config.dataPointIndex]
-            this.form.allRecordsContainer = []
             this.form.meargRecords = []
             if(this.form.field == 'stage'){
                 var index = this.form.stage.indexOf(field)
@@ -864,7 +1009,6 @@ export default {
             var total = this.form.countGraphLabels[config.dataPointIndex]// total
             var fre = this.form.countGraphSeries[config.dataPointIndex]// frequency
             this.form.fieldNameContainer = []
-            this.form.allRecordsContainer = []
             this.form.meargRecords = []
             for(const key of Object.keys(this.form.records)){
                 if(this.form.records[key]["total"] == total){
@@ -882,7 +1026,14 @@ export default {
             axios.get('/api/get-all-outreach-stages').then((response) => {
                 this.stages = response.data.results
             })
-        }
+        },
+        incCompledSteps(){
+            if(this.completedSteps < this.totalSteps - 2){
+                this.completedSteps =  this.completedSteps  + 1
+            }else{
+                return false;
+            }
+        },
     },
     created() {
         axios.get('/api/get-display-names').then((response) => {this.display_names = response.data })

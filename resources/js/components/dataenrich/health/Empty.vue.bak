@@ -1,0 +1,27 @@
+<template>
+    <div class="dh-sections">
+        <div class="dh-headings">
+            <div class="dh-heading-sort">
+                <div class="row m-0">
+                    <div class="col-10 pl-0">
+                        <h5 class="dh-heading-title">Prostect with Empty Fields</h5>
+                    </div>
+                    <div class="col-2 pr-2">
+                        <b>100</b>
+                    </div>
+                </div>
+            </div>
+            <div class="dh-heading-data">
+
+            </div>
+        </div>
+        <div class="dh-contents">
+
+        </div>
+    </div>
+</template>
+<script>
+export default {
+    
+}
+</script>
