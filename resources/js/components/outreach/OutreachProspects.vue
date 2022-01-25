@@ -388,8 +388,7 @@ export default {
             let id = this.$route.params.id;
             axios.get('/api/get-outreach-prospect-details-emails/'+ id).then((response) => {
                 this.emails = response.data.details.data
-                var included = response.data.details.included
-                var emails = this.emails
+                var emails = (this.emails)?this.emails:[]
                 var emailsData = []
                 for(var i = 0; i < emails.length; i++){
                     var state = emails[i]['attributes']['state'] 
@@ -428,7 +427,7 @@ export default {
         },
         getCallDispositions(){
             axios.get('/api/get-call-dispositions').then((response) => {
-                this.dispositions = response.data.details.data;
+                this.dispositions = (response.data.details.data)?response.data.details.data:[]
                 this.dispositions.map((element) => {
                     this.dispositionsKeyArray[element.id] = 0
                 })

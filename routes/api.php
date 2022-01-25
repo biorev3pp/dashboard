@@ -15,6 +15,8 @@ Route::get('/run-queue', function(){
 //database fields manipulation
 Route::get("/get-display-names", [App\Http\Controllers\API\UpdateDatabaseController::class, 'displayNames']);
 Route::post("/get-null-fields", [App\Http\Controllers\API\UpdateDatabaseController::class, 'getNullFields']);
+Route::post("/get-null-fields-all", [App\Http\Controllers\API\UpdateDatabaseController::class, 'getNullFieldsAll']);
+Route::post("/get-overwrite-info", [App\Http\Controllers\API\UpdateDatabaseController::class, 'getOverwriteInfo']);
 Route::post("/get-table-fields", [App\Http\Controllers\API\UpdateDatabaseController::class, 'index']);
 Route::post("/get-table-data", [App\Http\Controllers\API\UpdateDatabaseController::class, 'getTableData']);
 Route::post("/mearge-records", [App\Http\Controllers\API\UpdateDatabaseController::class, 'meargeRecords']);
@@ -28,6 +30,7 @@ Route::post("/get-count-based-data", [App\Http\Controllers\API\UpdateDatabaseCon
 //email dashboard
 Route::post("/get-emails-all-data", [App\Http\Controllers\API\EmailsController::class, "index"]);
 Route::post("/get-emails", [App\Http\Controllers\API\EmailsController::class, "getEmails"]);
+Route::post("/get-emails-all", [App\Http\Controllers\API\EmailsController::class, "getEmailsAll"]);
 Route::post("/get-prospects-location", [App\Http\Controllers\API\ProspectsLocationController::class, 'index']);
 //agent occupancy
 
@@ -43,6 +46,7 @@ Route::get('/randon-string', [App\Http\Controllers\API\DatasetExportController::
 //call dashboard
 Route::post("/get-agent-call-status", [App\Http\Controllers\API\DashboardCallController::class, 'getAgentCallStatus']);
 Route::post("/get-agent-disposition-status", [App\Http\Controllers\API\DashboardCallController::class, 'getAgentDispositionStatus']);
+Route::post("/get-agent-list-status", [App\Http\Controllers\API\DashboardCallController::class, 'getAgentListStatus']);
 Route::post("/get-agent-occupancy-data", [App\Http\Controllers\API\DashboardCallController::class, 'getAgentOccupancyData']);
 Route::post("/get-agent-based-talk-time",    [App\Http\Controllers\API\DashboardCallController::class, 'getAgentBasedTalkTime']);
 Route::post("/get-agent-based-ACW",          [App\Http\Controllers\API\DashboardCallController::class, 'getAgentBasedACW']);
@@ -94,6 +98,7 @@ Route::post('/dataset-values-data-call-all', [App\Http\Controllers\API\Dashboard
 Route::post('/reset-dataset', [App\Http\Controllers\API\DatasetsController::class, 'resetDataset']);
 Route::get('/get-dataset', [App\Http\Controllers\API\DatasetsController::class, 'getDataset']);
 Route::post('/get-record-container-info', [App\Http\Controllers\API\DatasetsController::class, 'getRecordContainerInfo']);
+Route::post('/get-record-container-info-emaill', [App\Http\Controllers\API\DatasetsController::class, 'getRecordContainerInfoEmail']);
 Route::post("/export-graph-data-to-fivenine", [App\Http\Controllers\API\DatasetExportController::class, 'export']);
 // Common API
 Route::any('/get-job-history', [App\Http\Controllers\API\JobHistoryController::class, 'index']);
@@ -213,9 +218,10 @@ Route::get('/delete-list', [App\Http\Controllers\API\FiveNineController::class, 
 Route::get('/create-new-list/{listName}', [App\Http\Controllers\API\FiveNineController::class, 'createNewList']);
 Route::get('/update-list', [App\Http\Controllers\API\FiveNineController::class, 'updateList']);
 Route::get('/get-short-details/{id}', [App\Http\Controllers\API\ContactsController::class, 'getShortDetails']);
+Route::get('/get-prospect-email-details/{id}', [App\Http\Controllers\API\ContactsController::class, 'getProspectEmailDetails']);
 
 Route::post("/get-emails-all-data", [App\Http\Controllers\API\EmailsController::class, "index"]);
-Route::post("/get-emails", [App\Http\Controllers\API\EmailsController::class, "getEmails"]);
+Route::post("/get-emails", [App\Http\Controllers\API\EmailsController::class, "getAllData"]);
 
 //testing
 Route::get('/get-five-nine-all-list-report', [App\Http\Controllers\API\FiveNineController::class, 'getAllList']);

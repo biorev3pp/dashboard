@@ -16,6 +16,19 @@ class TestController extends Controller
        // $this->middleware('auth');
     }
 
+    public function setColumn()
+    {
+        echo 'Invalid Path'; die;
+        //$notAllowedFiedls = ['id', 'record_id', 'contact_id', 'account_id', 'f_first_name', 'f_last_name', 'number1', 'number2', 'number3', 'number1type', 'number2type', 'number3type', 'number1call', 'number2call', 'number3call', 'ext1', 'ext2', 'ext3', 'hnumber', 'wnumber', 'mnumber',  'stage', 'old_stage', 'disposition', 'last_outreach_email', 'last_outreach_activity', 'last_campaign', 'last_export', 'last_agent_dispo_time', 'dial_attempts', 'dial_attempts', 'last_update_at', 'fivenine_created_at', 'outreach_touched_at', 'mcall_attempts', 'mcall_received', 'hcall_attempts', 'hcall_received', 'wcall_attempts', 'wcall_received', 'email_delivered', 'email_opened', 'email_clicked', 'email_replied', 'email_bounced', 'dataset', 'custom1', 'custom2', 'custom9', 'custom10', 'custom11', 'custom12', 'custom29', 'created_at', 'updated_at'];
+        //$fields = DB::getSchemaBuilder()->getColumnListing("contacts");
+
+        //$labels = ['', 'Purchase Authorization', 'Department', 'Job Function', 'Supplemental Email', 'Company HQ Phone', 'Education', 'Employment History', 'Interested In', 'Industry', 'Primary Industry', 'Company Revenue', 'Company Rev Range', 'Marketing Budget', 'VR / AR', 'Options & Selection Sys', 'Home Tech Challenge', 'Follow Up', 'ZoomInfo Contact ID', 'ZoomInfo Accuracy', 'ZoomInfo Score', '', '', '', '', '', '', '', '', 'Timezone Group', 'Number Swapping Status', 'Custom tag', 'OLD Direct Phone', 'OLD Company HQ', 'OLD Work Phone', 'ZoomInfo Listing'];
+        for ($i=36; $i <= 150; $i++) { 
+            DB::table("temp_contacts")->insert(['field' => 'custom'.$i, 'label' => 'Custom Field '.$i, 'group_name' => 'Outreach Additional Fields']);
+        }
+        echo 'all done'; die;
+    }
+
     public function emailCounter($nom = 1)
     {
         $last = $nom+999;

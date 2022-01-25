@@ -18,12 +18,7 @@ class DatasetsController extends Controller
         $sortby = $request->sortby;
         $sort = $request->sort;
 
-        $records = Contacts::select('contacts.id', 'contacts.record_id', 'contacts.first_name', 'contacts.last_name', 'contacts.title', 'contacts.company', 'contacts.mobilePhones', 'contacts.workPhones', 'contacts.homePhones', 'contacts.emails', 'contacts.outreach_touched_at', 'contacts.outreach_created_at', 'contacts.last_agent_dispo_time', 'contacts.last_agent', 'contacts.mcall_attempts', 'contacts.mcall_received', 'contacts.wcall_attempts', 'contacts.wcall_received', 'contacts.hcall_attempts', 'contacts.hcall_received', 'stages.id as stage', 'stages.name as stage_name', 'stages.css as stage_css', 'contacts.dataset','contacts.outreach_tag')
-        ->addSelect(['email_delivered' => DB::table('outreach_mailings')->selectRaw('count(*)')->whereNotNull("outreach_mailings.deliveredAt")->whereColumn('outreach_mailings.contact_id', 'contacts.record_id')])
-        ->addSelect(['email_opened' => DB::table('outreach_mailings')->selectRaw('count(*)')->whereNotNull("outreach_mailings.openedAt")->whereColumn('outreach_mailings.contact_id', 'contacts.record_id')])
-        ->addSelect(['email_clicked' => DB::table('outreach_mailings')->selectRaw('count(*)')->whereNotNull("outreach_mailings.clickedAt")->whereColumn('outreach_mailings.contact_id', 'contacts.record_id')])
-        ->addSelect(['email_replied' => DB::table('outreach_mailings')->selectRaw('count(*)')->whereNotNull("outreach_mailings.repliedAt")->whereColumn('outreach_mailings.contact_id', 'contacts.record_id')])
-        ->addSelect(['email_bounced' => DB::table('outreach_mailings')->selectRaw('count(*)')->whereNotNull("outreach_mailings.bouncedAt")->whereColumn('outreach_mailings.contact_id', 'contacts.record_id')])
+        $records = Contacts::select('contacts.id', 'contacts.record_id', 'contacts.first_name', 'contacts.last_name', 'contacts.title', 'contacts.company', 'contacts.mobilePhones', 'contacts.workPhones', 'contacts.homePhones', 'contacts.emails', 'contacts.outreach_touched_at', 'contacts.outreach_created_at', 'contacts.last_agent_dispo_time', 'contacts.last_agent', 'contacts.email_delivered', 'contacts.email_opened', 'contacts.email_clicked', 'contacts.email_replied', 'contacts.email_bounced', 'contacts.mcall_attempts', 'contacts.mcall_received', 'contacts.wcall_attempts', 'contacts.wcall_received', 'contacts.hcall_attempts', 'contacts.hcall_received', 'stages.id as stage', 'stages.name as stage_name', 'stages.css as stage_css', 'contacts.dataset','contacts.outreach_tag')
             ->leftjoin('stages', 'stages.oid', '=', 'contacts.stage');
         if($search):
             $records = $records->when($search, function($query, $search){
@@ -256,11 +251,9 @@ class DatasetsController extends Controller
         else:
             $records = $records->orderByDesc($request->input('sortType'))->paginate($recordPerPage);    
         endif;
-        //$records = $records->orderByDesc('record_id')->paginate($recordPerPage);
         //$records = $records->orderBy('contacts.outreach_touched_at', 'desc')->paginate($recordPerPage);
         return $records;
     }
-    
     public function getFullData(Request $request){
         $recordPerPage  = $request->recordPerPage;
         $search = $request->textSearch;
@@ -1106,6 +1099,7 @@ class DatasetsController extends Controller
         
         return ['results' => $return, 'total' => $return[0]];
     }
+
     public function getDataset()
     {
         $sets = DatasetGroups::get();
@@ -1116,6 +1110,7 @@ class DatasetsController extends Controller
         
         return ['results' => $return, 'total' => $return[0]];
     }
+
     private function __GetDataset($var = null)
     {
         $c1 = 0; $c2 = 0; $c3 = 0; $c4 = 0; $c5 = 0; $t = 0; $ct = 0; $ft = 0;
@@ -1199,6 +1194,7 @@ class DatasetsController extends Controller
         $string = substr($string, -10);
         return $string;
     }
+
     private function __NumberType($number, $rid)
     {
         $data = DB::table('fivenine_call_logs')
@@ -1212,6 +1208,7 @@ class DatasetsController extends Controller
         }
         return $total;
     }
+
     private function __NumberExtFormater1($var = null)
     {
         if(strpos(strtolower($var), "ext") > -1){
@@ -1223,48 +1220,52 @@ class DatasetsController extends Controller
         }
         return $string;
     }
+
     public function getRecordContainerInfo(Request $request){
         $ids = $request->input("exports");
         $results = [];
         foreach($ids as $id){
             $record = Contacts::where("id", "=", $id)->first();
             if($record->mobilePhones != '' || $record->workPhones !== '' || $record->homePhones != ''){
+                $mobilePhones = $record->mobilePhones;
+                $workPhones = $record->workPhones;
+                $homePhones = $record->homePhones;
+                /* if($mobilePhones == ''){
+                    if($workPhones != '' && $homePhones != ''){
+                        $mobilePhones = $workPhones;
+                        $workPhones = $homePhones;
+                        $homePhones = null;
+                    }elseif($workPhones != '' && $homePhones == ''){
+                        $mobilePhones = $workPhones;
+                        $workPhones = null;
+                    }elseif($workPhones == '' && $homePhones != ''){
+                        $mobilePhones = $homePhones;
+                        $homePhones = null;
+                    }
+                }else{
+                    if($workPhones == '' && $homePhones != ''){
+                        $workPhones = $homePhones;
+                        $homePhones = null;
+                    }
+                } */
                 $results[] = [
-                    "first_name" => $record->first_name,
-                    "last_name" => $record->last_name,
-                    "number1" => ($record->number1 != 0)?$record->number1:'',
-                    "number2" => ($record->number2 != 0)?$record->number2:'',
-                    "number3" => ($record->number3 != 0)?$record->number3:'',
-                    "number1type" => ($record->number1 != 0)?$record->number1type:'',
-                    "number2type" => ($record->number2 != 0)?$record->number2type:'',
-                    "number3type" => ($record->number3 != 0)?$record->number3type:'',
-                    "number1call" => ($record->number1 != 0)?$record->number1call:'',
-                    "number2call" => ($record->number2 != 0)?$record->number2call:'',
-                    "number3call" => ($record->number3 != 0)?$record->number3call:'',
-                    "ext1" => $record->ext1,
-                    "ext2" => $record->ext2,
-                    "ext3" => $record->ext3,
+                    "first_name" => ucfirst($record->first_name),
+                    "last_name" => ucfirst($record->last_name),
+                    "number1" => $this->__NumberFormater1($mobilePhones),
+                    "number2" => $this->__NumberFormater1($workPhones),
+                    "number3" => $this->__NumberFormater1($homePhones),
+                    "number1type" => 'M',
+                    "number2type" => 'W',
+                    "number3type" => 'H',
+                    "number1call" => $this->__NumberType($this->__NumberFormater1($mobilePhones), $record->record_id),
+                    "number2call" => $this->__NumberType($this->__NumberFormater1($workPhones), $record->record_id),
+                    "number3call" => $this->__NumberType($this->__NumberFormater1($homePhones), $record->record_id),
+                    "ext1" => $this->__NumberExtFormater1($mobilePhones),
+                    "ext2" => $this->__NumberExtFormater1($workPhones),
+                    "ext3" => $this->__NumberExtFormater1($homePhones),
                     "company" => $record->company,
                     "record_id" => $record->record_id,
                 ]; 
-                // $results[] = [
-                //     "first_name" => ucfirst($record->first_name),
-                //     "last_name" => ucfirst($record->last_name),
-                //     "number1" => $this->__NumberFormater1($mobilePhones),
-                //     "number2" => $this->__NumberFormater1($workPhones),
-                //     "number3" => $this->__NumberFormater1($homePhones),
-                //     "number1type" => 'M',
-                //     "number2type" => 'W',
-                //     "number3type" => 'H',
-                //     "number1call" => $this->__NumberType($this->__NumberFormater1($mobilePhones), $record->record_id),
-                //     "number2call" => $this->__NumberType($this->__NumberFormater1($workPhones), $record->record_id),
-                //     "number3call" => $this->__NumberType($this->__NumberFormater1($homePhones), $record->record_id),
-                //     "ext1" => $this->__NumberExtFormater1($mobilePhones),
-                //     "ext2" => $this->__NumberExtFormater1($workPhones),
-                //     "ext3" => $this->__NumberExtFormater1($homePhones),
-                //     "company" => $record->company,
-                //     "record_id" => $record->record_id,
-                // ];
             }
         }
         return $results;

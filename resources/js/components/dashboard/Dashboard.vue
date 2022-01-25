@@ -164,7 +164,7 @@
         <div class="overlay-loader" v-show="loader">
             <b-spinner style="width: 3rem; height: 3rem;" label="Loading.."></b-spinner>
         </div>
-        <div class="modal fade" id="list-modal" aria-hidden="true" :backdrop="false" :keyboard="false">
+        <div class="modal fade" id="list-modal" aria-hidden="true" data-backdrop="static" data-keyboard="false">
             <div class="modal-dialog modal-dialog-centered" role="document">
                 <div class="modal-content">
                 <div class="modal-header">

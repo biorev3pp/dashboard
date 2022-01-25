@@ -115,38 +115,68 @@
                         <span class="btn theme-btn" :class="[(form.action == 'update')?'btn-dark':'btn-outline-dark']" @click="setAction('update')"> Update List(s) </span>
                     </div>
                     <div class="wf-300 d-inline-block my-2" style="margin:auto">
-                        <span class="btn theme-btn" :class="[(form.action == 'delete')?'btn-dark':'btn-outline-dark']" @click="setAction('delete')"> Delete From List(s) </span>
+                        <!-- <span class="btn theme-btn" :class="[(form.action == 'delete')?'btn-dark':'btn-outline-dark']" @click="setAction('delete')"> Delete From List(s) </span> -->
+                        <div class="form-check">
+                            <input class="form-check-input invisible" type="checkbox" id="delete-checkbox" @click="deleteCheckbox" >
+                            <label class="btn theme-btn m-0" for="delete-checkbox" :class="[(showCheckboxDelete)?'btn-danger':'btn-outline-danger']">
+                               Delete From List(s)
+                            </label>
+                        </div>
                     </div>
                 </div>
-                <div class="text-center p-4" v-if="form.action == 'create'">
-                    <label for="list_name" class="text-uppercase fw-500">List Name</label>
-                    <input type="text" v-model="form.list_name" id="list_name" class="form-control wf-300" placeholder="Enter name of new list" style="margin:auto">
-                </div>
-                <div class="text-center p-4" v-else-if="form.action == 'delete'">
-                    <h5 class="mb-3 d-inline-block mr-2">Matched List(s) with these Contacts</h5>
-                    <button @click="deMSelectAll" class="btn-btn-sm btn-warning theme-btn" type="button" v-if="isMListExist == true"> Deselect All </button>
-                    <button @click="selectMAll" class="btn-btn-sm btn-primary theme-btn" type="button" v-else> Select All </button>
-                    <div v-if="loader">
-                        <p class="text-center">
-                            <img :src="loader_url" alt="loading.."><br>
-                            Please wait, we are getting Five9 Lists
-                        </p>
+                <div class="row m-0">
+                    <div class="col-sm-8 col-12" v-if="form.action == 'create'">
+                        <div class="text-center p-4">
+                            <label for="list_name" class="text-uppercase fw-500">List Name</label>
+                            <input type="text" v-model="form.list_name" id="list_name" class="form-control wf-300" placeholder="Enter name of new list" style="margin:auto">
+                        </div>
                     </div>
-                    <div class="" style="margin:auto;height: calc(75vh - 135px); overflow-y: auto;    overflow-x: hidden; padding-right:20px" v-else>
-                        <button type="button" class="text-left btn theme-btn btn-block" style="margin:2px" :class="[(form.ac_list.indexOf(lname) >= 0)?'btn-warning':'btn-outline-primary']" @click="setList(lname)" v-for="(lname, lk) in five9_mlist" :key="'listid'+lk">
-                        {{ lname.name }} 
-                        <span class="float-right"> 
-                            (<b>{{ lname.matched }}</b> matched out of <b>{{ lname.size }}</b>)
-                        </span>
-                        </button>
+                    <div class="col-sm-8 col-12" v-else-if="form.action == 'update'">
+                        <div class="text-center p-4">
+                            <div class="row m-0">
+                                <div class="col-sm-6 col-12">
+                                    <h5 class="mb-3 d-inline-block mr-2">Matched List(s) with these Contacts</h5>
+                                    <button @click="deMSelectAll" class="btn-btn-sm btn-warning theme-btn" type="button" v-if="isMListExist == true"> Deselect All </button>
+                                    <button @click="selectMAll" class="btn-btn-sm btn-primary theme-btn" type="button" v-else> Select All </button>
+                                    <div v-if="loader">
+                                        <p class="text-center">
+                                            <img :src="loader_url" alt="loading.."><br>
+                                            Please wait, we are getting Five9 Lists
+                                        </p>
+                                    </div>
+                                    <div class="" style="margin:auto;height: calc(75vh - 135px); overflow-y: auto;    overflow-x: hidden; padding-right:20px" v-else>
+                                        <button type="button" class="text-left btn theme-btn btn-block" style="margin:2px" :class="[(form.ac_list.indexOf(lname) >= 0)?'btn-warning':'btn-outline-primary']" @click="setList(lname)" v-for="(lname, lk) in updateableList" :key="'listid'+lk">
+                                        {{ lname.name }} 
+                                        <span class="float-right"> 
+                                            (<b>{{ lname.matched }}</b> matched out of <b>{{ lname.size }}</b>)
+                                        </span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6 col-12">
+                                    <h5 class="mb-3 d-inline-block mr-2">Unmatched List(s) with these Contacts</h5>
+                                    <button @click="deUmSelectAll" class="btn-btn-sm btn-warning theme-btn" type="button" v-if="isUmListExist == true"> Deselect All </button>
+                                    <button @click="selectUmAll" class="btn-btn-sm btn-primary theme-btn" type="button" v-else> Select All </button>
+                                    <div v-if="loader">
+                                        <p class="text-center">
+                                            <img :src="loader_url" alt="loading.."><br>
+                                            Please wait, we are getting Five9 Lists
+                                        </p>
+                                    </div>
+                                    <div class="" style="margin:auto;height: calc(75vh - 135px); overflow-y: auto;    overflow-x: hidden; padding-right:20px" v-else>
+                                        <button type="button" class="text-left btn theme-btn btn-block" style="margin:2px" :class="[(form.ac_list.indexOf(lname) >= 0)?'btn-warning':'btn-outline-primary']" @click="setList(lname)" v-for="(lname, lk) in five9_umlist" :key="'listid'+lk">
+                                        {{ lname.name }} ({{ lname.size }})
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="text-center p-4" v-else-if="form.action == 'update'">
-                    <div class="row m-0">
-                        <div class="col-sm-6 col-12">
+                    <div class="col-sm-4 col-12" v-show="showCheckboxDelete">                        
+                        <div class="text-center p-4">
                             <h5 class="mb-3 d-inline-block mr-2">Matched List(s) with these Contacts</h5>
-                            <button @click="deMSelectAll" class="btn-btn-sm btn-warning theme-btn" type="button" v-if="isMListExist == true"> Deselect All </button>
-                            <button @click="selectMAll" class="btn-btn-sm btn-primary theme-btn" type="button" v-else> Select All </button>
+                            <button @click="deMSelectAllDelete" class="btn-btn-sm btn-warning theme-btn" type="button" v-if="isMListExistDelete == true"> Deselect All </button>
+                            <button @click="selectMAllDelete" class="btn-btn-sm btn-primary theme-btn" type="button" v-else> Select All </button>
                             <div v-if="loader">
                                 <p class="text-center">
                                     <img :src="loader_url" alt="loading.."><br>
@@ -154,27 +184,11 @@
                                 </p>
                             </div>
                             <div class="" style="margin:auto;height: calc(75vh - 135px); overflow-y: auto;    overflow-x: hidden; padding-right:20px" v-else>
-                                <button type="button" class="text-left btn theme-btn btn-block" style="margin:2px" :class="[(form.ac_list.indexOf(lname) >= 0)?'btn-warning':'btn-outline-primary']" @click="setList(lname)" v-for="(lname, lk) in five9_mlist" :key="'listid'+lk">
+                                <button type="button" class="text-left btn theme-btn btn-block" style="margin:2px" :class="[(form.ac_listDelete.indexOf(lname) >= 0)?'btn-warning':'btn-outline-primary']" @click="setListDelete(lname)" v-for="(lname, lk) in deleteableList" :key="'listid'+lk">
                                 {{ lname.name }} 
                                 <span class="float-right"> 
                                     (<b>{{ lname.matched }}</b> matched out of <b>{{ lname.size }}</b>)
                                 </span>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="col-sm-6 col-12">
-                            <h5 class="mb-3 d-inline-block mr-2">Unmatched List(s) with these Contacts</h5>
-                            <button @click="deUmSelectAll" class="btn-btn-sm btn-warning theme-btn" type="button" v-if="isUmListExist == true"> Deselect All </button>
-                            <button @click="selectUmAll" class="btn-btn-sm btn-primary theme-btn" type="button" v-else> Select All </button>
-                            <div v-if="loader">
-                                <p class="text-center">
-                                    <img :src="loader_url" alt="loading.."><br>
-                                    Please wait, we are getting Five9 Lists
-                                </p>
-                            </div>
-                            <div class="" style="margin:auto;height: calc(75vh - 135px); overflow-y: auto;    overflow-x: hidden; padding-right:20px" v-else>
-                                <button type="button" class="text-left btn theme-btn btn-block" style="margin:2px" :class="[(form.ac_list.indexOf(lname) >= 0)?'btn-warning':'btn-outline-primary']" @click="setList(lname)" v-for="(lname, lk) in five9_umlist" :key="'listid'+lk">
-                                {{ lname.name }} ({{ lname.size }})
                                 </button>
                             </div>
                         </div>
@@ -340,6 +354,22 @@
                                     </span>
                                 </td>
                             </tr>
+                            <tr v-for="(aclst, ak) in  form.ac_listDelete" :key="'faca'+ak">
+                                <td class="text-left">
+                                    <h5>{{ aclst.name }}</h5>
+                                </td>
+                                <td> 
+                                    <span v-if="donelistsDelete.indexOf(aclst.name) >= 0" class="btn btn-sm btn-success theme-btn">
+                                        Updated
+                                    </span>
+                                    <span v-else-if="plistDelete == aclst" class="btn btn-sm btn-primary theme-btn">
+                                        Processing
+                                    </span>
+                                    <span v-else class="btn btn-sm btn-danger theme-btn">
+                                        Awaiting
+                                    </span>
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -445,8 +475,14 @@ export default {
     },
     data() {
         return {
+            ac_list:[],
+            showCheckboxDelete : false,
             five9_mlist:'',
+            five9_mlistTest:'',
+            five9_mlistDelete:'',
+            five9_mlistDeleteTest:'',
             five9_umlist:'',
+            five9_umlistTest:'',
             active_step:1,
             done_steps:[],
             next_step:2,
@@ -456,16 +492,21 @@ export default {
             loading:false,
             loader_url: '/img/spinner.gif',
             donelists:[],
+            donelistsDelete:[],
             meltNumbers:[],
             plist:'',
+            plistDelete:'',
             refinedview:false,
             comparable_list:[],
             time:0,
             prospect:'',
             form: new Form({
+                ulist : [],
+                dlist : [],
                 records:[],
                 action: '',
                 ac_list:[],
+                ac_listDelete:[],
                 acp_list:'',
                 list_name:'',
                 code : '',
@@ -494,17 +535,24 @@ export default {
             return this.donelists.length
         },
         isMListExist() {
-            let cmr = 0;
-            let $this = this;
-            if(this.five9_mlist == '') { return false} 
-            else {
-                this.five9_mlist.forEach((ele) => {
-                    if($this.form.ac_list.indexOf(ele) >= 0) {
-                        cmr++
-                    }
-                })
+            if(this.form.dlist.length + this.form.ulist.length == this.ac_list.length){
+                if(this.form.ulist.length > 0){
+                    return true
+                }
+                return false
+            }else{
+                return false
             }
-            return (this.five9_mlist.length == cmr)?true:false
+        },
+        isMListExistDelete() {
+            if(this.form.dlist.length + this.form.ulist.length == this.ac_list.length){
+                if(this.form.dlist.length > 0){
+                    return true
+                }
+                return false
+            }else{
+                return false
+            }
         },
         isUmListExist() {
             let cmr = 0;
@@ -518,7 +566,31 @@ export default {
                 })
             }
             return (this.five9_umlist.length == cmr)?true:false
-        }
+        },
+        updateableList() {
+            let $this = this;
+            return this.ac_list.filter(function(element){
+                if($this.form.dlist.length > 0){
+                    if($this.form.dlist.indexOf(element.name) == -1){
+                        return element
+                    }
+                }else{
+                    return element
+                }
+            })
+        },
+        deleteableList() {
+            let $this = this;
+            return this.ac_list.filter(function(element){
+                if($this.form.ulist.length > 0){
+                    if($this.form.ulist.indexOf(element.name) == -1){
+                        return element
+                    }
+                }else{
+                    return element
+                }
+            })
+        },
     },
     methods: {
         deleteRecord(rkey) {
@@ -575,10 +647,10 @@ export default {
                     Vue.$toast.error('Please enter list name to continue.');
                     return false;
                 }
-                else if(this.form.action != 'create' && this.form.ac_list.length == 0) {
+                else if(this.form.action != 'create' && this.form.action != 'update') {
                     Vue.$toast.error('Please select atleast 1 list.');
                     return false;
-                } else if(this.form.action != 'create' && this.form.ac_list.length != 0) {
+                } else if(this.form.action != 'create' && this.form.ac_list.length != 0 ||  this.form.ac_listDelete.length == 0) {
                     this.checkMatchedRecords()
                     return true
                 } else {
@@ -597,13 +669,14 @@ export default {
             let newRecords = [];
             this.form.records.forEach((ele) => {
                 subrec = ele;
-                if(this.meltNumbers.indexOf(parseInt(subrec.number1)) >= 0) {
+                
+                if(this.meltNumbers.indexOf(parseInt(subrec.number1)) >= 0 || this.meltNumbers.indexOf(subrec.number1) >= 0) {
                     subrec.number1 = '';
                 }
-                if(this.meltNumbers.indexOf(parseInt(subrec.number2)) >= 0) {
+                if(this.meltNumbers.indexOf(parseInt(subrec.number2)) >= 0 || this.meltNumbers.indexOf(subrec.number2) >= 0) {
                     subrec.number2 = '';
                 }
-                if(this.meltNumbers.indexOf(parseInt(subrec.number3)) >= 0) {
+                if(this.meltNumbers.indexOf(parseInt(subrec.number3)) >= 0 || this.meltNumbers.indexOf(subrec.number3) >= 0) {
                     subrec.number3 = '';
                 }
                 if(subrec.number1 == '' && subrec.number2 != '') {
@@ -659,7 +732,7 @@ export default {
         },
         setAction(act) {
             this.form.action = act
-            if((act == 'update' || act == 'delete') && (this.five9_mlist == '' || this.five9_mlist.length == 0)) {
+            if((act == 'create' || act == 'update' || act == 'delete') && (this.five9_mlist == '' || this.five9_mlist.length == 0)) {
                 this.getList();
             }
         },
@@ -669,30 +742,65 @@ export default {
         setList(lname) {
             if(this.form.ac_list.indexOf(lname) >= 0) {
                this.form.ac_list.splice(this.form.ac_list.indexOf(lname), 1)
+               this.form.ulist.splice(this.form.ulist.indexOf(lname.name), 1)
             } else {
                 this.form.ac_list.push(lname)
+                this.form.ulist.push(lname.name)
+            }
+        },
+        setListDelete(lname) {
+            if(this.form.ac_listDelete.indexOf(lname) >= 0) {
+               this.form.ac_listDelete.splice(this.form.ac_listDelete.indexOf(lname), 1)
+               this.form.dlist.splice(this.form.dlist.indexOf(lname.name), 1)
+            } else {
+                this.form.ac_listDelete.push(lname)
+                this.form.dlist.push(lname.name)
             }
         },
         getList() {
             this.loader = true
             this.form.post('/api/get-list-matched-data').then((response) => {
                 this.five9_mlist = response.data.matched
+                this.five9_mlistTest = response.data.matched
+                this.five9_mlistDelete = response.data.matched
+                this.five9_mlistDeleteTest = response.data.matched
                 this.five9_umlist = response.data.notMatched
+                this.five9_umlistTest = response.data.notMatched
+                this.ac_list = response.data.matched
                 this.loader = false
             })
         },
         StartExport() {
             this.startnow = true
             if(this.form.action == "create"){
+                let $this = this;
                 this.form.post('/api/export-graph-data-to-fivenine').then((response) => {
                     if(response.data.status == "success"){
-                       this.active_step = 5;
-                       this.done_steps.push(4);
-                       this.done_steps.push(5);
-                       this.next_step = 6;
-                       this.prev_step = 4;
+                        if(this.showCheckboxDelete){
+                            this.form.action = 'delete'
+                            $this.form.ac_listDelete.forEach((ele) => {
+                                $this.form.acp_listDelete = ele.name
+                                $this.plistDelete = ele.name
+                                this.form.post('/api/export-graph-data-to-fivenine').then((response) => {
+                                    if(response.data.status == "success"){
+                                        $this.donelistsDelete.push(response.data.list_name)
+                                        if($this.form.ac_listDelete.length == $this.donelistsDelete.length) {
+                                            this.endSteps()
+                                            axios.get('/api/run-queue');
+                                        }
+                                    }
+                                })
+                            })
+                        }else{
+                            this.active_step = 5;
+                            this.done_steps.push(4);
+                            this.done_steps.push(5);
+                            this.next_step = 6;
+                            this.prev_step = 4;
+                        }
                     }
                 })
+                
             }else {
                 let $this = this;
                 $this.form.ac_list.forEach((ele) => {
@@ -702,12 +810,30 @@ export default {
                         if(response.data.status == "success"){
                             $this.donelists.push(response.data.list_name)
                             if($this.form.ac_list.length == $this.donelists.length) {
-                                this.endSteps()
-                                axios.get('/api/run-queue');
+                                if(!this.showCheckboxDelete){
+                                    this.endSteps()
+                                    axios.get('/api/run-queue');
+                                }
                             }
                         }
                     })
-                })              
+                })
+                if(this.showCheckboxDelete){
+                    this.form.action = 'delete'
+                    $this.form.ac_listDelete.forEach((ele) => {
+                        $this.form.acp_listDelete = ele.name
+                        $this.plistDelete = ele.name
+                        this.form.post('/api/export-graph-data-to-fivenine').then((response) => {
+                            if(response.data.status == "success"){
+                                $this.donelistsDelete.push(response.data.list_name)
+                                if($this.form.ac_listDelete.length == $this.donelistsDelete.length) {
+                                    this.endSteps()
+                                    axios.get('/api/run-queue');
+                                }
+                            }
+                        })
+                    })
+                }
             }
         },
         checkMatchedRecords() {
@@ -720,18 +846,40 @@ export default {
         deMSelectAll() {
             let $this = this
             this.five9_mlist.forEach((ele) => {
-                if($this.form.ac_list.indexOf(ele) != -1) {
+                if($this.form.ulist.indexOf(ele.name) != -1) {
                     this.form.ac_list.splice($this.form.ac_list.indexOf(ele), 1)
+                    this.form.ulist.splice(this.form.ulist.indexOf(ele.name), 1)
+                }
+            })
+        },
+        deMSelectAllDelete() {
+            let $this = this
+            this.five9_mlistDelete.forEach((ele) => {
+                if($this.form.dlist.indexOf(ele.name) != -1) {
+                    this.form.ac_listDelete.splice($this.form.ac_listDelete.indexOf(ele), 1)
+                    this.form.dlist.splice(this.form.dlist.indexOf(ele.name),1)
                 }
             })
         },
         selectMAll() {
             let $this = this
             this.five9_mlist.forEach((ele) => {
-                if($this.form.ac_list.indexOf(ele) == -1) {
+                if($this.form.ac_list.indexOf(ele) == -1 && $this.form.dlist.indexOf(ele.name) == -1) {
                     this.form.ac_list.push(ele)
+                    this.form.ulist.push(ele.name)
                 }
             })
+            
+        },
+        selectMAllDelete() {
+            let $this = this
+            this.five9_mlistDelete.forEach((ele) => {
+                if($this.form.ac_listDelete.indexOf(ele) == -1 && $this.form.ulist.indexOf(ele.name) == -1) {
+                    this.form.ac_listDelete.push(ele)
+                    this.form.dlist.push(ele.name)
+                }
+            })
+            // $this.form.ac_list = []
         },
         deUmSelectAll() {
             let $this = this
@@ -775,6 +923,16 @@ export default {
             if(dcount.length >= 2) {
                 return true
             } else { return false }
+        },
+        deleteCheckbox(){
+            if(document.getElementById('delete-checkbox').checked){
+                this.showCheckboxDelete = true
+                if(this.ac_list.length == 0){
+                    this.getList();
+                }
+            }else{
+                this.showCheckboxDelete = false
+            }
         }
     },
     mounted() {

@@ -7,43 +7,87 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use App\Models\Contacts;
+use App\Models\ContactCustoms;
 
 class UpdateDatabaseController extends Controller
 {
     function getNullFields(Request $request){
         $nullFields = [];
-        if(DB::table("temp_contacts")->count() == 0){
-            $fields = DB::getSchemaBuilder()->getColumnListing("contact_customs");
-            foreach($fields as $field){
-                $count = DB::table("contact_customs")->whereNotNull($field)->count();
-                if($count == 0){
-                    $nullFields[] = $field;
-                    DB::table("temp_contacts")->insert([ "field" =>  $field]);
-                }
+        $fields = DB::getSchemaBuilder()->getColumnListing('contact_customs');
+        foreach($fields as $field)
+        {
+            $count = DB::table('contact_customs')->whereNotNull($field)->count();
+            if($count == 0) {
+                $nullFields[] = $field;
             }
         }
-        $nullFields = DB::table("temp_contacts")->pluck("field")->toArray();
+        $nullFields = DB::table('contact_fields')->whereIn('field', $nullFields)->get()->groupBy('group_name');
         return $nullFields;
+    }
+    function getNullFieldsAll(Request $request){
+        $nullFields = DB::table('contact_fields')->get()->groupBy('group_name');
+        return $nullFields;
+    }
+    function getOverwriteInfo(Request $request){
+        //dd($request->all());
+        $allRecordsContainer = $request->input('allRecordsContainer');
+        $nullField = $request->input('nullField');
+        $field = $request->input('field');
+        $fields01 = DB::getSchemaBuilder()->getColumnListing('contacts');
+        if(in_array($nullField, $fields01)){
+            $records = Contacts::whereIn($field, $allRecordsContainer)->select('record_id')->get();
+            $recordIds = $records->pluck('record_id');
+            $nullValues = Contacts::whereIn('record_id', $recordIds)->whereNull($nullField)->count();
+            $overwrite = Contacts::whereIn('record_id', $recordIds)->whereNotNull($nullField)->count();
+        }
+        $fields02 = DB::getSchemaBuilder()->getColumnListing('contact_customs');
+        if(in_array($nullField, $fields02)){
+            $records = Contacts::whereIn($field, $allRecordsContainer)->select('record_id')->get();
+            $recordIds = $records->pluck('record_id'); //dd($recordIds);
+            $nullValues = ContactCustoms::whereIn('contact_id', $recordIds)->whereNull($nullField)->count();
+            $overwrite = ContactCustoms::whereIn('contact_id', $recordIds)->whereNotNull($nullField)->count();
+            
+        }
+        return ["nullValues" => $nullValues, "overwrite" => $overwrite];
     }
     function index(Request $request){
         $fields = DB::getSchemaBuilder()->getColumnListing($request->input("tableName"));
-        $non_changable = ['id', 'record_id', 'account_id', 'first_name', 'last_name', 'mobilePhones', 'homePhones', 'workPhones', 'voipPhones', 'otherPhones', 'emails', 'hnumber', 'mnumber', 'wnumber', 'old_stage', 'name', 'created_at', 'updated_at', 'email_opened', 'email_replied', 'email_bounced', 'email_clicked', 'email_delivered', 'dataset', 'mcall_attempts', 'mcall_received', 'hcall_attempts', 'hcall_received', 'wcall_attempts', 'wcall_received', 'last_outreach_email', "last_outreach_activity", "last_campaign", "last_export", "last_agent_dispo_time", "last_agent", "last_dispo", "dial_attempts", "last_update_at", "fivenine_created_at", "outreach_touched_at", "outreach_created_at", "websiteUrl1", "linkedInUrl"];
+        $non_changable = ['id', 'record_id', 'account_id', 'first_name', 'last_name', 'f_first_name', 'f_last_name', 'mobilePhones', 'homePhones', 'workPhones', 'voipPhones', 'otherPhones', 'emails', 'hnumber', 'mnumber', 'wnumber', 'old_stage', 'name', 'created_at', 'updated_at', 'email_opened', 'email_replied', 'email_bounced', 'email_clicked', 'email_delivered', 'dataset', 'mcall_attempts', 'mcall_received', 'hcall_attempts', 'hcall_received', 'wcall_attempts', 'wcall_received', 'last_outreach_email', 'number1', 'number2', 'number3', 'number1type', 'number2type', 'number3type', 'number1call', 'number2call', 'number3call', 'ext1', 'ext2', 'ext3', "last_outreach_activity", "last_campaign", "last_export", "last_agent_dispo_time", "last_agent", "last_dispo", "dial_attempts", "last_update_at", "fivenine_created_at", "outreach_touched_at", "outreach_created_at", "websiteUrl1", "linkedInUrl"];
         return array_diff($fields, $non_changable);
     }
     function getTableData(Request $request){
         $field = $request->input("field");
         $tableName = $request->input("tableName");
-        $nullRecords = DB::table($tableName)
-        ->whereNull($field)
-        ->count();
-        $emptyRecords = DB::table($tableName)
-        ->where($field, "=", "")
-        ->count();
-        $records = DB::table($tableName)
-        ->selectRaw("$field as field, count($field) as total")
-        ->groupBy($field)
-        ->orderBy('field', 'asc')
-        ->get();
+        $allStage = $request->input('allStage');
+        if($allStage && $field != 'stage'){
+            $nullRecords = DB::table($tableName)
+                ->whereNull($field)
+                ->where('stage', $allStage)
+                ->count();
+            $emptyRecords = DB::table($tableName)
+                ->where($field, "=", "")
+                ->where('stage', $allStage)
+                ->count();
+            $records = DB::table($tableName)
+                ->selectRaw("$field as field, count($field) as total")
+                ->where('stage', $allStage)
+                ->groupBy($field)
+                ->orderBy('field', 'asc')
+                ->get();
+        }else{
+            $nullRecords = DB::table($tableName)
+                ->whereNull($field)
+                ->count();
+            $emptyRecords = DB::table($tableName)
+                ->where($field, "=", "")
+                ->count();
+            $records = DB::table($tableName)
+                ->selectRaw("$field as field, count($field) as total")
+                ->groupBy($field)
+                ->orderBy('field', 'asc')
+                ->get();
+        }
+        
         $nrecords = [];
         foreach($records as $key => $value){
             $value = get_object_vars($value);
@@ -66,7 +110,7 @@ class UpdateDatabaseController extends Controller
                 $value = get_object_vars($value);
                 $stage[$value["oid"]] = $value["name"];
             }
-        return ['results' => $nrecords, 'stage' => $stage];
+            return ['results' => $nrecords, 'stage' => $stage];
         }
         return ['results' => $nrecords];
     }
@@ -133,12 +177,20 @@ class UpdateDatabaseController extends Controller
         $tableName = $request->input("tableName");
         $field = $request->input("field");
         $meargRecords = $request->input("meargRecords");
-        $nullField = $request->input("nullField");
-        $newNullField = $request->input("newNullField");
+        $nullField = $request->input("nullField");//dropdown field data
+        $newNullField = $request->input("newNullField");//input field data
+        $emptySet = $request->input("emptySet");
+        $allSet = $request->input("allSet");
+        $emptySet = $request->input("emptySet");
+        $allSet = $request->input("allSet");
+        $newSet = $request->input("newSet");
+        $copyMoveType = $request->input("copyMoveType"); // move copy        
+        $transferActionType = $request->input("transferActionType"); // overwrite skip
         $fields = DB::getSchemaBuilder()->getColumnListing("contact_customs");
         if(in_array($newNullField, $fields)){
             return ["status" => "exists"];
         }
+
         if($newNullField){
             $result = DB::statement("ALTER TABLE 'contact_customs' ADD $newNullField VARCHAR(250) NULL DEFAULT NULL");
             foreach($meargRecords as $value){
@@ -158,14 +210,102 @@ class UpdateDatabaseController extends Controller
         if(in_array("Empty", $meargRecords)){
             unset($meargRecords[array_search("Empty", $meargRecords)]);
         }
+        $fields01 = DB::getSchemaBuilder()->getColumnListing('contacts');
+        $fields02 = DB::getSchemaBuilder()->getColumnListing('contact_customs');
         foreach($meargRecords as $value){
             $records = DB::table($tableName)->select("record_id")->where($field, "LIKE", $value)->pluck("record_id");
-            DB::table($tableName)->whereIn('record_id', $records)->update([ 
-                $field => null
-            ]);
-            DB::table("contact_customs")->whereIn('contact_id', $records)->update([ 
-                $nullField => $value,
-            ]);
+            if($emptySet){
+                DB::table($tableName)->whereIn('record_id', $records)->update([ 
+                    $field => null
+                ]);
+                DB::table("contact_customs")->whereIn('contact_id', $records)->update([ 
+                    $nullField => $value,
+                ]);
+            }elseif($allSet){
+                if($transferActionType == 'overwrite'){
+                    if($copyMoveType == 'copy'){
+                        if(in_array($nullField, $fields01)){
+                            DB::table($tableName)->whereIn('record_id', $records)->update([ 
+                                $nullField => $value,
+                            ]);
+                        }elseif(in_array($nullField, $fields02)){
+                            DB::table("contact_customs")->whereIn('contact_id', $records)->update([ 
+                                $nullField => $value,
+                            ]);
+                        }
+                    }
+                    if($copyMoveType == 'move'){
+                        if(in_array($nullField, $fields01)){
+                            DB::table($tableName)->whereIn('record_id', $records)->update([ 
+                                $field => null
+                            ]);
+                            DB::table($tableName)->whereIn('record_id', $records)->update([ 
+                                $nullField => $value,
+                            ]);
+                        }elseif(in_array($nullField, $fields02)){
+                            DB::table($tableName)->whereIn('record_id', $records)->update([ 
+                                $field => null
+                            ]);
+                            DB::table($tableName)->whereIn('record_id', $records)->update([ 
+                                $nullField => $value,
+                            ]);
+                        }
+                    }
+                }elseif($transferActionType == 'skip'){
+                    if($copyMoveType == 'copy'){
+
+                        $rids = Contacts::where($field, "LIKE", $value)->select("record_id")->get();
+                        $rids = $rids->pluck('record_id');
+                        
+                        if(in_array($nullField, $fields01)){
+                            foreach($rids as $rid){
+                                $c = DB::table("contacts")->where('record_id', $rid)->first();
+                                if(is_null($c->$nullField)){
+                                    DB::table("contacts")->where('record_id', $rid)->update([ 
+                                        $nullField => $value,
+                                    ]);
+                                }
+                            }
+                        }elseif(in_array($nullField, $fields02)){
+                            foreach($rids as $rid){
+                                $cc = DB::table("contact_customs")->where('contact_id', $rid)->first();
+                                if(is_null($cc->$nullField)){
+                                    DB::table("contact_customs")->where('contact_id', $rid)->update([ 
+                                        $nullField => $value,
+                                    ]);
+                                }
+                            }
+                        }
+                    }elseif($copyMoveType == 'move'){
+                        $rids = Contacts::where($field, "LIKE", $value)->select("record_id")->get();
+                        $rids = $rids->pluck('record_id');
+                        DB::table($tableName)->whereIn('record_id', $records)->update([ 
+                            $field => null
+                        ]);
+
+                        if(in_array($nullField, $fields01)){
+                            foreach($rids as $rid){
+                                $c = DB::table("contacts")->where('record_id', $rid)->first();
+                                if(is_null($c->$nullField)){
+                                    DB::table("contacts")->where('record_id', $rid)->update([ 
+                                        $nullField => $value,
+                                    ]);
+                                }
+                            }
+                        }elseif(in_array($nullField, $fields02)){
+                            foreach($rids as $rid){
+                                $cc = DB::table("contact_customs")->where('contact_id', $rid)->first();
+                                if(is_null($cc->$nullField)){
+                                    DB::table("contact_customs")->where('contact_id', $rid)->update([ 
+                                        $nullField => $value,
+                                    ]);
+                                }
+                            }
+                        }
+                    }
+                }
+
+            }
         }
         DB::table("temp_contacts")->where('field', "LIKE", $nullField)->delete();
         return ["status" => "success"];
@@ -182,19 +322,39 @@ class UpdateDatabaseController extends Controller
                 'custom29' => 'Timezone Group'
             ];
     }
-
     function getFieldBasedData(Request $request){
         $fieldName = $request->input("fieldName");
         $field = $request->input("field");
-        if($fieldName == 'Null' || $fieldName == 'Empty'){
-            return DB::table('contacts')->select('company', 'first_name', 'last_name', 'emails', 'mobilePhones', 'homePhones', 'workPhones')->whereNull($field)->get();    
-        }
-        return DB::table('contacts')->select('company', 'first_name', 'last_name', 'emails', 'mobilePhones', 'homePhones', 'workPhones')->where($field, "LIKE", $fieldName)->get();
-    }
+        $allStage = $request->input('allStage');
 
+        if($fieldName == 'Null' || $fieldName == 'Empty'){
+            return DB::table('contacts')->select('company', 'first_name', 'last_name', 'emails', 'mobilePhones', 'homePhones', 'workPhones')->whereNull($field)->when($allStage, function($query, $allStage){
+                return $query->where('stage', $allStage);
+            })->get();
+        }
+        if($field == 'stage'){
+            $stage = get_object_vars(DB::table('stages')->where('name', 'LIKE', $fieldName)->first());
+            return DB::table('contacts')->select('company', 'first_name', 'last_name', 'emails', 'mobilePhones', 'homePhones', 'workPhones')->where($field, "=", $stage["oid"])->get();
+        }
+        return DB::table('contacts')->select('company', 'first_name', 'last_name', 'emails', 'mobilePhones', 'homePhones', 'workPhones')->where($field, "LIKE", $fieldName)->when($allStage, function($query, $allStage){
+            return $query->where('stage', $allStage);
+        })->get();
+    }
     function getCountBasedData(Request $request){
         $fieldNameContainer = $request->input("fieldNameContainer");
+        $fieldName = $request->input("fieldName");
         $field = $request->input("field");
-        return DB::table('contacts')->select('company', 'first_name', 'last_name', 'emails', 'mobilePhones', 'homePhones', 'workPhones')->whereIn($field, $fieldNameContainer)->get();
+        $allStage = $request->input('allStage');
+
+        if($field == 'stage'){
+            if(count($fieldNameContainer) > 0){
+                return DB::table('contacts')->select('id', 'company', 'first_name', 'last_name', 'emails', 'mobilePhones', 'homePhones', 'workPhones')->whereIn($field, $fieldNameContainer)->get();
+            }
+            $stage = get_object_vars(DB::table('stages')->where('name', 'LIKE', $fieldName)->first());
+            return DB::table('contacts')->select('company', 'first_name', 'last_name', 'emails', 'mobilePhones', 'homePhones', 'workPhones')->where($field, "=", $stage["oid"])->get();
+        }
+        return DB::table('contacts')->select('company', 'first_name', 'last_name', 'emails', 'mobilePhones', 'homePhones', 'workPhones')->whereIn($field, $fieldNameContainer)->when($allStage, function($query, $allStage){
+            return $query->where('stage', $allStage);
+        })->get();
     }
 }

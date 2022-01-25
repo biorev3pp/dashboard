@@ -16,7 +16,7 @@
                         </date-range-picker>
                     </div>
                      <div class="col-md-7 col-12">
-                        <span class="filter-btns row" v-for="seq in sequence" :key="seq">
+                         <span class="filter-btns row" v-for="seq in sequence" :key="seq">
                             <span  class="text-dark mx-1 pointer-hand wf-180"> 
                                 <b v-if="seq == 'agentName'">AGENT: {{ form.agentName }}</b>
                                 <b v-else-if="seq == 'disposition'">DISPO: {{ form.disposition }}</b>
@@ -47,186 +47,151 @@
                 </div>
             </div>
             <div class="calls-chart-div border-top p-1">
-                <!-- <div class="chart-box"> -->
-                    <div class="row m-0">
-                        <div class="col-lg-4 col-md-6  col-sm-12 col-12 p-a-2">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="text-capitalize m-0">
-                                        List Call Status
-                                        <span class="float-right">
-                                            <toggle-button v-model="form.only_list" @change="getGraphData" :margin="3" :width="130" :height="20" :labels="{checked: 'Lists Only', unchecked: 'Lists & None'}" :switch-color="{checked: '#800080', unchecked: '#27408B'}" :color="{checked: '#E599E5', unchecked: '#4E9FFE'}" />
-                                            <router-link target="_blank" class="btn btn-secondary btn-sm theme-btn" :to="'/dashboard/call-details?'+JSON.stringify({sequence:sequence,talk_time_plus:form.talk_time_plus, acw_plus:form.acw_plus,agentName:form.agentName,disposition:form.disposition,talk_time:form.talk_time,acw:form.acw,stime:stime,etime: etime,sdate:sdate,edate:edate}) ">
-                                                <i class="bi bi-eye"></i> View
-                                            </router-link>
-                                        </span>
-                                    </h5>
-                                </div> 
-                                <div class="card-body">
-                                    <div id="chart-disposition-status">
-                                        <apexchart 
-                                        v-if="labelAgentListStatus.length > 0" 
-                                        type="pie" 
-                                        width="98%" 
-                                        :options="chartOptionsListStatus" 
-                                        :series="seriesListStatus"
-                                        @dataPointSelection="dataPointSelectionHandlerList">
-                                        </apexchart>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-lg-4 col-md-6  col-sm-12 col-12 p-a-2">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="text-capitalize m-0">
-                                        Agent Call Status
-                                        <span class="float-right">
-                                            <toggle-button v-model="form.only_agent" @change="getGraphData" :margin="3" :width="130" :height="20" :labels="{checked: 'Agents Only', unchecked: 'Agents & None'}" :switch-color="{checked: '#800080', unchecked: '#27408B'}" :color="{checked: '#E599E5', unchecked: '#4E9FFE'}" />
-                                            <router-link target="_blank" class="btn btn-secondary btn-sm theme-btn" :to="'/dashboard/call-details?'+JSON.stringify({sequence:sequence,talk_time_plus:form.talk_time_plus, acw_plus:form.acw_plus,agentName:form.agentName,disposition:form.disposition,talk_time:form.talk_time,acw:form.acw,stime:stime,etime: etime,sdate:sdate,edate:edate}) ">
-                                                <i class="bi bi-eye"></i> View
-                                            </router-link>
-                                        </span>
-                                    </h5>
-                                </div> 
-                                <div class="card-body">
-                                    <div id="chart-agent-call-status">
-                                        <apexchart 
-                                        v-if="labelAgentCallStatus.length > 0" 
-                                        type="pie" 
-                                        width="98%" 
-                                        :options="chartOptionsAgentCallStatus" 
-                                        :series="seriesAgentCallStatus" 
-                                        @dataPointSelection="dataPointSelectionHandlerAgentInfo">
-                                        </apexchart>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-lg-4 col-md-6  col-sm-12 col-12 p-a-2">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="text-capitalize m-0">
-                                        Agent Occupancy
-                                    </h5>
-                                </div> 
-                                <div class="card-body">
-                                    <div>
-                                        <apexchart 
-                                        v-if="labelAgentOccupancy.length > 0" 
-                                        type="pie" 
-                                        width="98%" 
-                                        :options="chartOptionsAgentOccupancy" 
-                                        :series="seriesAgentOccupancy">
-                                        </apexchart>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-lg-4 col-md-6  col-sm-12 col-12 p-a-2">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="text-capitalize m-0">
-                                        Dispositions Status
-                                        <span class="float-right">
-                                            <!-- <router-link target="_blank" class="btn btn-secondary btn-sm theme-btn" :to="'/dashboard/call-details?'+JSON.stringify({sequence:sequence,talk_time_plus:form.talk_time_plus,acw_plus:form.acw_plus,agentName:form.agentName,disposition:form.disposition,talk_time:form.talk_time,acw:form.acw,stime:stime,etime:etime,sdate:sdate,edate:edate})">
-                                                <i class="bi bi-eye"></i> View
-                                            </router-link> -->
-                                            <button @click="filterDispo" class="btn btn-sm btn-secondary theme-btn" type="button">
-                                                <i class="bi bi-eye"></i> View
-                                            </button>
-                                        </span>
-                                    </h5>
-                                </div> 
-                                <div class="card-body">
-                                    <div id="chart-disposition-status">
-                                        <apexchart 
-                                        v-if="labelAgentDispositionStatus.length > 0" 
-                                        type="pie" 
-                                        width="98%" 
-                                        :options="chartOptionsDispositionStatus" 
-                                        :series="seriesDispositionStatus"
-                                        @dataPointSelection="dataPointSelectionHandlerAgentBasedDisposition">
-                                        </apexchart>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-lg-4 col-md-6  col-sm-12 col-12 p-a-2">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="text-capitalize m-0">
-                                        Agent Based Talktime
-                                        <span class="float-right">
-                                            <router-link target="_blank" class="btn btn-secondary btn-sm theme-btn" :to="'/dashboard/call-details?'+JSON.stringify({sequence:sequence,talk_time_plus:form.talk_time_plus,acw_plus:form.acw_plus,agentName:form.agentName,disposition:form.disposition,talk_time:form.talk_time,acw:form.acw,stime:stime,etime:etime,sdate:sdate,edate:edate})">
-                                                <i class="bi bi-eye"></i> View
-                                            </router-link>
-                                        </span>
-                                    </h5>
-                                </div> 
-                                <div class="card-body">
-                                    <div id="chart-agent-based-talk-time">
-                                        <apexchart 
-                                        v-if="labelAgentBasedTalkTime.length > 0" 
-                                        type="pie" 
-                                        width="98%" 
-                                        :options="chartOptionsAgentBasedTalkTime" 
-                                        :series="seriesAgentBasedTalkTime"
-                                        @dataPointSelection="dataPointSelectionHandlerAgentBasedTalkTime"
-                                        ></apexchart>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-lg-4 col-md-6  col-sm-12 col-12 p-a-2">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="text-capitalize m-0">
-                                        Agent Based ACW
-                                        <span class="float-right">
-                                            <router-link target="_blank" class="btn btn-secondary btn-sm theme-btn" :to="'/dashboard/call-details?'+JSON.stringify({sequence:sequence,talk_time_plus:form.talk_time_plus,acw_plus:form.acw_plus,agentName:form.agentName,disposition:form.disposition,talk_time:form.talk_time,acw:form.acw,stime:stime,etime:etime,sdate:sdate,edate:edate})">
-                                                <i class="bi bi-eye"></i> View
-                                            </router-link>
-                                        </span>
-                                    </h5>
-                                </div> 
-                                <div class="card-body">
-                                    <div id="chart-agent-based-ACW">
-                                        <apexchart 
-                                        v-if="labelAgentBasedACW.length > 0" 
-                                        type="pie" 
-                                        width="98%" 
-                                        :options="chartOptionsAgentBasedACW" 
-                                        :series="seriesAgentBasedACW"
-                                        @dataPointSelection="dataPointSelectionHandlerAgentBasedACW"
-                                        ></apexchart>
-                                    </div>
+                <div class="row m-0">
+                    <div class="col-lg-4 col-md-6  col-sm-12 col-12 p-a-2">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="text-capitalize m-0">
+                                    Agent Call Status
+                                    <span class="float-right">
+                                        <toggle-button v-model="form.only_agent" @change="getGraphData" :margin="3" :width="130" :height="20" :labels="{checked: 'Agents Only', unchecked: 'Agents & None'}" :switch-color="{checked: '#800080', unchecked: '#27408B'}" :color="{checked: '#E599E5', unchecked: '#4E9FFE'}" />
+                                        <router-link target="_blank" class="btn btn-secondary btn-sm theme-btn" :to="'/dashboard/call-details?'+JSON.stringify({sequence:sequence,talk_time_plus:form.talk_time_plus, acw_plus:form.acw_plus,agentName:form.agentName,disposition:form.disposition,talk_time:form.talk_time,acw:form.acw,stime:stime,etime: etime,sdate:sdate,edate:edate}) ">
+                                            <i class="bi bi-eye"></i> View
+                                        </router-link>
+                                    </span>
+                                </h5>
+                            </div> 
+                            <div class="card-body">
+                                <div id="chart-agent-call-status">
+                                    <apexchart 
+                                    v-if="labelAgentCallStatus.length > 0" 
+                                    type="pie" 
+                                    width="98%" 
+                                    :options="chartOptionsAgentCallStatus" 
+                                    :series="seriesAgentCallStatus" 
+                                    @dataPointSelection="dataPointSelectionHandlerAgentInfo">
+                                    </apexchart>
                                 </div>
                             </div>
                         </div>
                     </div>
-                <!-- </div> -->
-            </div>
-        </div>
-        <div class="modal fade" id="dispoModal" aria-hidden="true" data-backdrop="static" data-keyboard="false">
-            <div class="modal-dialog modal-dialog-centered" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="exampleModalLabel">Select Dispositions</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                        </button>
+                    <div class="col-lg-4 col-md-6  col-sm-12 col-12 p-a-2">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="text-capitalize m-0">
+                                    Agent Occupancy
+                                </h5>
+                            </div> 
+                            <div class="card-body">
+                                <div>
+                                    <apexchart 
+                                    v-if="labelAgentOccupancy.length > 0" 
+                                    type="pie" 
+                                    width="98%" 
+                                    :options="chartOptionsAgentOccupancy" 
+                                    :series="seriesAgentOccupancy">
+                                    </apexchart>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="modal-body">
-                        <ul class="list-group dispo-list">
-                            <li class="list-group-item cursor-pointer" :class="[(form.dispoMul.indexOf(disposition) >= 0)?'active':'']" v-for="(disposition, index) in dispositins" :key="'disposition-' + index" @click="ToggleDispoInForm(disposition)">{{ disposition }}
-                                <i class="bi cursor-pointer float-right" :class="[(form.dispoMul.indexOf(disposition) >= 0)?'bi-check-square-fill text-white':'bi-x-square-fill text-danger']"></i>
-                            </li>
-                        </ul>
+                    <div class="col-lg-4 col-md-6  col-sm-12 col-12 p-a-2">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="text-capitalize m-0">
+                                    Highlights
+                                </h5>
+                            </div> 
+                            <div class="card-body">
+                                <div id="agent-info">
+                                    <apexchart 
+                                    v-if="labelAgentInfo.length > 0" 
+                                    type="pie" 
+                                    width="98%" 
+                                    :options="chartOptionsAgentInfo" 
+                                    :series="seriesAgentInfo">
+                                    </apexchart>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="modal-footer d-block">
-                        <button type="button" class="btn btn-danger theme-btn float-left" data-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-primary theme-btn float-right" @click="gotoList()">View List</button>
+                    <div class="col-lg-4 col-md-6  col-sm-12 col-12 p-a-2">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="text-capitalize m-0">
+                                    Dispositions Status
+                                    <span class="float-right">
+                                        <router-link target="_blank" class="btn btn-secondary btn-sm theme-btn" :to="'/dashboard/call-details?'+JSON.stringify({sequence:sequence,talk_time_plus:form.talk_time_plus,acw_plus:form.acw_plus,agentName:form.agentName,disposition:form.disposition,talk_time:form.talk_time,acw:form.acw,stime:stime,etime:etime,sdate:sdate,edate:edate})">
+                                            <i class="bi bi-eye"></i> View
+                                        </router-link>
+                                    </span>
+                                </h5>
+                            </div> 
+                            <div class="card-body">
+                                <div id="chart-disposition-status">
+                                    <apexchart 
+                                    v-if="labelAgentDispositionStatus.length > 0" 
+                                    type="pie" 
+                                    width="98%" 
+                                    :options="chartOptionsDispositionStatus" 
+                                    :series="seriesDispositionStatus"
+                                    @dataPointSelection="dataPointSelectionHandlerAgentBasedDisposition">
+                                    </apexchart>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-md-6  col-sm-12 col-12 p-a-2">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="text-capitalize m-0">
+                                    Agent Based Talktime
+                                    <span class="float-right">
+                                        <router-link target="_blank" class="btn btn-secondary btn-sm theme-btn" :to="'/dashboard/call-details?'+JSON.stringify({sequence:sequence,talk_time_plus:form.talk_time_plus,acw_plus:form.acw_plus,agentName:form.agentName,disposition:form.disposition,talk_time:form.talk_time,acw:form.acw,stime:stime,etime:etime,sdate:sdate,edate:edate})">
+                                            <i class="bi bi-eye"></i> View
+                                        </router-link>
+                                    </span>
+                                </h5>
+                            </div> 
+                            <div class="card-body">
+                                <div id="chart-agent-based-talk-time">
+                                    <apexchart 
+                                    v-if="labelAgentBasedTalkTime.length > 0" 
+                                    type="pie" 
+                                    width="98%" 
+                                    :options="chartOptionsAgentBasedTalkTime" 
+                                    :series="seriesAgentBasedTalkTime"
+                                    @dataPointSelection="dataPointSelectionHandlerAgentBasedTalkTime"
+                                    ></apexchart>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-md-6  col-sm-12 col-12 p-a-2">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="text-capitalize m-0">
+                                    Agent Based ACW
+                                    <span class="float-right">
+                                        <router-link target="_blank" class="btn btn-secondary btn-sm theme-btn" :to="'/dashboard/call-details?'+JSON.stringify({sequence:sequence,talk_time_plus:form.talk_time_plus,acw_plus:form.acw_plus,agentName:form.agentName,disposition:form.disposition,talk_time:form.talk_time,acw:form.acw,stime:stime,etime:etime,sdate:sdate,edate:edate})">
+                                            <i class="bi bi-eye"></i> View
+                                        </router-link>
+                                    </span>
+                                </h5>
+                            </div> 
+                            <div class="card-body">
+                                <div id="chart-agent-based-ACW">
+                                    <apexchart 
+                                    v-if="labelAgentBasedACW.length > 0" 
+                                    type="pie" 
+                                    width="98%" 
+                                    :options="chartOptionsAgentBasedACW" 
+                                    :series="seriesAgentBasedACW"
+                                    @dataPointSelection="dataPointSelectionHandlerAgentBasedACW"
+                                    ></apexchart>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -248,7 +213,6 @@ export default {
             sequence : [],
             loader:false,
             records:{},
-            lists : [],
             form: new Form({
                 dateRange:{},
                 agentName : null,
@@ -257,10 +221,7 @@ export default {
                 talk_time_plus : 0,
                 acw : null,
                 acw_plus : 0,
-                only_agent:false,
-                only_list:false,
-                list_name : '',
-                dispoMul : []
+                only_agent:false
             }),
             loader_url: '/img/spinner.gif',
             stime : null,
@@ -284,9 +245,6 @@ export default {
             labelAgentCallStatus : [],
             sAgentCallStatus : [],
 
-            labelAgentListStatus : [],
-            sAgentListStatus : [],
-
             labelAgentDispositionStatus : [],
             sAgentDispositionStatus : [],
 
@@ -301,51 +259,6 @@ export default {
         }
     },
     computed: {
-        seriesListStatus(){
-            if(this.sAgentListStatus.length > 0){
-                return this.sAgentListStatus
-            }else{
-                return []
-            }
-        },
-        chartOptionsListStatus(){
-            if(this.labelAgentListStatus.length > 0){
-                return {
-                    tooltip: {
-                        custom: function({ series, seriesIndex, dataPointIndex, w }) {
-                            return (
-                                w.globals.labels[seriesIndex]
-                            );
-                        }
-                    },
-                    stroke: {
-                        show: false,
-                        curve: 'stepline',
-                        lineCap: 'butt',
-                        width: 2,
-                        dashArray: 0,      
-                    },
-                    chart: {
-                    width: '98%',
-                    type: 'pie',
-                    },
-                    labels: this.labelAgentListStatus,
-                    responsive: [{
-                        breakpoint: 480,
-                        options: {
-                            chart: {
-                            width: 200
-                            },
-                            legend: {
-                            position: 'bottom'
-                            }
-                        }
-                    }]
-                }
-            }else{
-                return  []
-            }
-        },
         seriesAgentInfo(){
             if(this.sAgentInfo.length > 0){
                 return this.sAgentInfo
@@ -662,32 +575,6 @@ export default {
         },
     },
     methods: {
-        filterDispo() {
-            $('#dispoModal').modal('show');
-        },
-        ToggleDispoInForm(dis) {
-            if(this.form.dispoMul.indexOf(dis) >= 0) {
-                this.form.dispoMul.splice(this.form.dispoMul.indexOf(dis), 1);
-            } else {
-                this.form.dispoMul.push(dis);
-            }
-        },
-        gotoList() {
-            $('#dispoModal').modal('hide');
-            let CURL = '/dashboard/call-details?'+JSON.stringify({
-                        sequence:this.sequence,
-                        talk_time_plus:this.form.talk_time_plus,
-                        acw_plus:this.form.acw_plus,
-                        agentName:this.form.agentName,
-                        disposition:this.form.dispoMul,
-                        talk_time:this.form.talk_time,
-                        acw:this.form.acw,
-                        stime:this.stime,
-                        etime:this.etime,
-                        sdate:this.sdate,
-                        edate:this.edate});
-            window.open(CURL, '_blank');
-        },
         removeAgentName(typ){
             if(this.sequence.indexOf("agentName") != -1){
                 this.sequence.splice(this.sequence.indexOf("agentName"), 1)
@@ -742,33 +629,12 @@ export default {
             this.sAgentInfo = []
             this.labelAgentOccpancy = []
             this.sAgentOccpancy = []
-            this.agentListStatus()
             this.agentOccupancy()
             this.agentCallStatus()
             this.agentDispositionStatus()
             this.agentBasedTalkTime()
             this.agentBasedACW()
-            // this.agentBasedWaitingTime()
-        },
-        dataPointSelectionHandlerList(e, chartContext, config){
-            this.labelAgentListStatus = []
-            this.sAgentListStatus = []
-            this.form.list_name = this.lists[config.dataPointIndex]
-            this.removeAgentName()
-            this.removeDisposition()
-            this.removeTalkTime()
-            this.removeACW()
-            this.labelAgentInfo = []
-            this.sAgentInfo = []
-            this.labelAgentOccpancy = []
-            this.sAgentOccpancy = []
-            this.agentListStatus()
-            this.agentOccupancy()
-            this.agentCallStatus()
-            this.agentDispositionStatus()
-            this.agentBasedTalkTime()
-            this.agentBasedACW()
-            // this.agentBasedWaitingTime()
+            this.agentBasedWaitingTime()
         },
         dataPointSelectionHandlerAgentInfo(e, chartContext, config) {
             if(this.sequence.indexOf("agentName") != -1){
@@ -777,6 +643,10 @@ export default {
             if(this.sequence.indexOf("agentName") == -1){
                 this.sequence.push("agentName")
             }
+            
+            this.removeDisposition()
+            this.removeTalkTime()
+            this.removeACW()
             this.labelAgentInfo = []
             this.sAgentInfo = []
             this.form.agentName = this.agentName[config.dataPointIndex]
@@ -828,17 +698,6 @@ export default {
             }
             this.form.disposition = this.dispositins[config.dataPointIndex]
             this.runAll()
-        },
-        agentListStatus(){
-            this.loader = false
-            this.labelAgentListStatus = []
-            this.sAgentListStatus = []
-            this.form.post("/api/get-agent-list-status").then( (response) => {
-                this.labelAgentListStatus = response.data.label
-                this.sAgentListStatus = response.data.series
-                this.lists = response.data.list_names
-                this.loader = false
-            })
         },
         agentDispositionStatus(){
             this.loader = false
@@ -954,7 +813,6 @@ export default {
                 this.agentBasedACW()
             }
         },
-        
     },
     created() {
         

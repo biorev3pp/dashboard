@@ -48,19 +48,19 @@
             </div>
             <ul class="side-menu-list">
                 <li class="side-menu-item">
-                    <router-link  to="/dashboard/" class="side-menu-link"> 
+                    <router-link to="/dashboard/" class="side-menu-link"> 
                         <i class="bi bi-speedometer2 mr-1"></i>
                         <span v-show="fullmenu">Dashboard</span>
                     </router-link>
                 </li>
                 <li class="side-menu-item">
-                    <router-link  to="/universal-dashboard" class="side-menu-link"> 
+                    <router-link to="/universal-dashboard" class="side-menu-link"> 
                         <i class="bi bi-view-list mr-1"></i>
                         <span v-show="fullmenu">All-In Dashboard</span>
                     </router-link>
                 </li>
                  <li class="side-menu-item">
-                    <router-link  to="/datasets" class="side-menu-link"> 
+                    <router-link to="/datasets" class="side-menu-link"> 
                         <i class="bi bi-grid mr-1"></i>
                         <span v-show="fullmenu">Dataset Groups</span>
                     </router-link>
@@ -72,89 +72,82 @@
                     </a>
                     <ul class="side-submenu" v-show="submenu == 1">
                         <li>
-                            <router-link  to="/five9/campaigns" class="side-menu-link"> 
-                                <i class="bi bi-arrow-right mr-1"></i>
+                            <router-link to="/five9/campaigns" class="side-menu-link" @click="ToggleSubmenu(1)"> 
+                                <i class="bi bi-arrow-right-short mr-1"></i>
                                 <span>Campaigns</span>
                             </router-link>
                         </li>
                         <li>
-                            <router-link  to="/five9/dispositions" class="side-menu-link"> 
-                                <i class="bi bi-arrow-right mr-1"></i>
+                            <router-link to="/five9/dispositions" class="side-menu-link" @click="ToggleSubmenu(1)"> 
+                                <i class="bi bi-arrow-right-short mr-1"></i>
                                 <span>Dispositions</span>
                             </router-link>
                         </li>
                         <li>
-                            <router-link  to="/five9/skills" class="side-menu-link"> 
-                                <i class="bi bi-arrow-right mr-1"></i>
+                            <router-link to="/five9/skills" class="side-menu-link" @click="ToggleSubmenu(1)"> 
+                                <i class="bi bi-arrow-right-short mr-1"></i>
                                 <span>Skills</span>
                             </router-link>
                         </li>
                         <li>
-                            <router-link  to="/five9/lists" class="side-menu-link"> 
-                                <i class="bi bi-arrow-right mr-1"></i>
+                            <router-link to="/five9/lists" class="side-menu-link" @click="ToggleSubmenu(1)"> 
+                                <i class="bi bi-arrow-right-short mr-1"></i>
                                 <span>List</span>
                             </router-link>
                         </li>
                         <li>
-                            <router-link  to="/five9/modify-contacts" class="side-menu-link"> 
-                                <i class="bi bi-arrow-right mr-1"></i>
+                            <router-link to="/five9/modify-contacts" class="side-menu-link" @click="ToggleSubmenu(1)"> 
+                                <i class="bi bi-arrow-right-short mr-1"></i>
                                 <span>Modify Contacts</span>
                             </router-link>
                         </li>
                         <li>
-                            <router-link  to="/five9/call-report" class="side-menu-link"> 
-                                <i class="bi bi-arrow-right mr-1"></i>
+                            <router-link to="/five9/call-report" class="side-menu-link" @click="ToggleSubmenu(1)"> 
+                                <i class="bi bi-arrow-right-short mr-1"></i>
                                 <span>Call Reports</span>
                             </router-link>
                         </li>
                     </ul>
                 </li>
-                <!-- <li class="side-menu-item">
-                    <router-link  to="/outreach-accounts" class="side-menu-link"> 
-                        <i class="bi bi-bag-dash"></i>
-                        <span v-show="fullmenu">Accounts</span>
-                    </router-link>
-                </li> -->
-                
                 <li class="side-menu-item">
-                    <router-link  to="/exports" class="side-menu-link"> 
+                    <router-link to="/exports" class="side-menu-link"> 
                         <i class="bi bi-arrow-bar-right mr-1"></i>
                         <span v-show="fullmenu"> Export &amp; Import</span>
                     </router-link>
                 </li>
                 <li class="side-menu-item">
-                    <router-link  to="/export-history" class="side-menu-link"> 
+                    <router-link to="/export-history" class="side-menu-link"> 
                         <i class="bi bi-clock-history mr-1"></i>
                         <span v-show="fullmenu"> Export History</span>
                     </router-link>
                 </li>
                 <li>
-                    <router-link  to="/job-history" class="side-menu-link"> 
+                    <router-link to="/job-history" class="side-menu-link"> 
                         <i class="bi bi-clock-history mr-1"></i>
                         <span v-show="fullmenu"> Scheduled Jobs</span>
                     </router-link>
                 </li>
                 <li>
-                    <router-link  to="/log/sync-logs" class="side-menu-link"> 
-                        <i class="bi bi-layout-text-window-reverse"></i>
+                    <router-link to="/log/sync-logs" class="side-menu-link"> 
+                        <i class="bi bi-layout-text-window-reverse  mr-1"></i>
                         <span v-show="fullmenu"> Sync Log</span>
                     </router-link>
                 </li>
                 <li>
-                    <router-link  to="/cron-jobs" class="side-menu-link"> 
-                        <i class="bi bi-hourglass-split"></i>
+                    <router-link to="/cron-jobs" class="side-menu-link"> 
+                        <i class="bi bi-hourglass-split  mr-1"></i>
                         <span v-show="fullmenu"> Cron Jobs</span>
                     </router-link>
                 </li>
                 <li>
-                    <router-link  to="/data-enrichment" class="side-menu-link"> 
-                        <i class="bi bi-clipboard-data"></i>
+                    <router-link to="/data-enrichment" class="side-menu-link"> 
+                        <i class="bi bi-clipboard-data  mr-1"></i>
                         <span v-show="fullmenu"> Data enrichment</span>
                     </router-link>
                 </li>
                 
                 <li class="side-menu-item">
-                    <router-link  to="/settings" class="side-menu-link"> 
+                    <router-link to="/settings" class="side-menu-link"> 
                         <i class="bi bi-gear mr-1"></i>
                         <span v-show="fullmenu">Settings</span>
                     </router-link>

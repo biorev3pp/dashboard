@@ -8,13 +8,13 @@ Route::get('/run-queue', function(){
     Artisan::call('queue:work --stop-when-empty', []);
     echo "queue is stoped";
 });
+Route::get("/set-columns", [App\Http\Controllers\TestController::class, 'setColumn']);
 Route::get("/get-state/{id}", [App\Http\Controllers\API\ProspectsLocationController::class, 'states']);
 Route::get("/fetchNxx/{id}", [App\Http\Controllers\API\ProspectsLocationController::class, 'fetchNxx']);
 Route::get('/updateStateCity', [App\Http\Controllers\API\ProspectsLocationController::class, 'updateStateCity']);
 Route::get('/timezoneUpdate', [App\Http\Controllers\API\ProspectsLocationController::class, 'timezoneUpdate']);
 Route::get('/update-outreach-country-state-city-timezone/{id}', [App\Http\Controllers\API\ProspectsLocationController::class, 'updateOutreachContactsOnOutreachServer']);
 Route::get('/update-timezone-on-outreach-server/{id}', [App\Http\Controllers\API\ProspectsLocationController::class, 'updateTimezoneOnOutreachServer']);
-
 
 Route::get('/dataFromFiveNineReport', [App\Http\Controllers\API\FiveNineController::class, 'dataFromFiveNineReport']);
 Route::get('/udateEmailCounter/{i}', [App\Http\Controllers\LogReportsController::class, 'udateEmailCounter']);

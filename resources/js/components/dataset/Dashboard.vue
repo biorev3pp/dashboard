@@ -199,33 +199,19 @@
                     </div>
                 </div>
             </div>
-            <div class="divtable border-top">
+            <div class="divtable border-top"  v-show="!showProgress">
                 <div class="divthead">
                     <div class="divthead-row">
                         <div class="divthead-elem wf-45 text-center">
                             <input type="checkbox" name="" id="check-all" value="0" aria-label="..." @click="addAndRemoveAllRecordToContainer">
                         </div>
-                        <div class="divthead-elem wf-125">
-                            Dataset                        
-                        </div>
-                        <div class="divthead-elem mwf-200">
-                            Name                            
-                        </div>
-                        <div class="divthead-elem wf-175">
-                            Tag                        
-                        </div>
-                        <div class="divthead-elem wf-175">
-                            Stage                        
-                        </div>
-                        <div class="divthead-elem wf-150">
-                            Call Stack  
-                        </div>
-                        <div class="divthead-elem wf-220">
-                            Email Stack                   
-                        </div>
-                        <div class="divthead-elem wf-150">
-                            Time Stack
-                        </div>
+                        <div class="divthead-elem wf-125">Dataset</div>
+                        <div class="divthead-elem mwf-200">Name</div>
+                        <div class="divthead-elem wf-175">Tag</div>
+                        <div class="divthead-elem wf-175">Stage</div>
+                        <div class="divthead-elem wf-150">Call Stack</div>
+                        <div class="divthead-elem wf-220">Email Stack</div>
+                        <div class="divthead-elem wf-150">Time Stack</div>
                     </div>
                 </div>
                 <div class="divtbody  fit-divt-content2">
@@ -266,7 +252,7 @@
                             </span>
                         </div>
                         <div class="divtbody-elem wf-220">
-                            <span class="stack-box email-log">
+                            <span class="stack-box email-log cursor-pointer" @click="showProspect(record.record_id)">
                                 <label for="email">
                                     <i class="bi bi-envelope-fill text-primary"></i>
                                 </label>
@@ -302,9 +288,21 @@
                     </div>                    
                 </div>
             </div>
+            <div class="center" v-show="showProgress">
+                <radial-progress-bar 
+                    :startColor="startColor"
+                    :innerStrokeWidth="5"
+                    :stopColor="stopColor"
+                    :diameter="200"
+                    :completed-steps="completedSteps"
+                    :total-steps="totalSteps">
+                    <h1>{{ completedSteps }}/{{ totalSteps }}</h1>
+                    <!-- <button type="button" class="btn btn-primary btn-sm" @click="completedSteps = completedSteps + 1">Next</button> -->
+                </radial-progress-bar>
+            </div>
         </div>
         <div v-else-if="step >= 1">
-            <export-wizard :selection="exportForm.exports.length" :step="step" :data="fivenineData" />
+            <export-wizard :step="step" :data="fivenineData" />
         </div>
         <div v-else>
         </div>
@@ -350,6 +348,165 @@
                 </div>
             </div>
         </div>
+        <div class="fullsidebar2" id="prospectModal">
+            <div class="sidebar-content">
+                <div class="sidebar-header">
+                    <h5 class="sidebar-title">Email Details For Prospect - {{ prospect }}</h5>
+                    <button type="button" class="close" @click="closeSideBar()">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </div>
+                <div class="sidebar-body">
+                    
+                    <p class="text-center p-4" v-if="loading">
+                        <img :src="loader_url" alt="loading...">
+                    </p>
+                    <div v-else>
+                        <ul class="nav nav-tabs">
+                            <li class="nav-item">
+                                <a class="nav-link" :class="[(emailShow == 1)?'active':'']" aria-current="page" href="#" @click="emailShow = 1">All</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" :class="[(emailShow == 2)?'active':'']" aria-current="page" href="#" @click="emailShow = 2">Single</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" :class="[(emailShow == 3)?'active':'']" aria-current="page" href="#" @click="emailShow = 3">Sequence</a>
+                            </li>
+                            <!-- 
+                            <li class="nav-item">
+                                <a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Disabled</a>
+                            </li> -->
+                        </ul>
+                    <br>
+                        <div>
+                            <table class="table table-striped table-bordered mb-2 table-condensed" v-show="emailShow == 1">
+                                <tbody>
+                                    <tr>
+                                        <th>Sno</th>
+                                        <th>Sender</th>
+                                        <th>Subject</th>
+                                        <th>Type</th>
+                                        <th>Delivered At</th>
+                                        <th>Opene At</th>
+                                        <th>Clicked At</th>
+                                        <th>Replied At</th>
+                                        <th>Bounced At</th>
+                                    </tr>
+                                    <tr v-for="(mail, mk) in allemails" :key="'mk'+mk">
+                                        <td>{{ mk + 1 }}</td>
+                                        <td>{{ mail.mailboxAddress }}</td>
+                                        <td>{{ mail.subject }}</td>
+                                        <td>{{ mail.mailingType }}</td>
+                                        <td>
+                                            <span v-if="mail.deliveredAt">{{ mail.deliveredAt | setFulldate }}</span>
+                                            <span v-else>---</span>
+                                        </td>
+                                        <td>
+                                            <span v-if="mail.openedAt" >{{ mail.openedAt | setFulldate }}</span>
+                                            <span v-else>---</span>
+                                        </td>
+                                        <td>
+                                            <span v-if="mail.clickedAt">{{ mail.clickedAt | setFulldate }}</span>
+                                            <sapn v-else>---</sapn>
+                                        </td>
+                                        <td>
+                                            <span v-if="mail.repliedAt">{{ mail.repliedAt | setFulldate }}</span>
+                                            <span v-else></span>
+                                        </td>                                        
+                                        <td>
+                                            <span v-if="mail.bouncedAt">{{ mail.bouncedAt | setFulldate }}</span>
+                                            <span v-else>---</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>  
+                            <table class="table table-striped table-bordered mb-2 table-condensed" v-show="emailShow == 2">
+                                <tbody>
+                                    <tr>
+                                        <th>Sno</th>
+                                        <th>Sender</th>
+                                        <th>Subject</th>
+                                        <th>Type</th>
+                                        <th>Delivered At</th>
+                                        <th>Opene At</th>
+                                        <th>Clicked At</th>
+                                        <th>Replied At</th>
+                                        <th>Bounced At</th>
+                                    </tr>
+                                    <tr v-for="(mail, mk) in singleemails" :key="'mk'+mk">
+                                        <td>{{ mk + 1 }}</td>
+                                        <td>{{ mail.mailboxAddress }}</td>
+                                        <td>{{ mail.subject }}</td>
+                                        <td>{{ mail.mailingType }}</td>
+                                        <td>
+                                            <span v-if="mail.deliveredAt">{{ mail.deliveredAt | setFulldate }}</span>
+                                            <span v-else>---</span>
+                                        </td>
+                                        <td>
+                                            <span v-if="mail.openedAt" >{{ mail.openedAt | setFulldate }}</span>
+                                            <span v-else>---</span>
+                                        </td>
+                                        <td>
+                                            <span v-if="mail.clickedAt">{{ mail.clickedAt | setFulldate }}</span>
+                                            <sapn v-else>---</sapn>
+                                        </td>
+                                        <td>
+                                            <span v-if="mail.repliedAt">{{ mail.repliedAt | setFulldate }}</span>
+                                            <span v-else></span>
+                                        </td>                                        
+                                        <td>
+                                            <span v-if="mail.bouncedAt">{{ mail.bouncedAt | setFulldate }}</span>
+                                            <span v-else>---</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>  
+                            <table class="table table-striped table-bordered mb-2 table-condensed" v-show="emailShow == 3">
+                                <tbody>
+                                    <tr>
+                                        <th>Sno</th>
+                                        <th>Sender</th>
+                                        <th>Subject</th>
+                                        <th>Type</th>
+                                        <th>Delivered At</th>
+                                        <th>Opene At</th>
+                                        <th>Clicked At</th>
+                                        <th>Replied At</th>
+                                        <th>Bounced At</th>
+                                    </tr>
+                                    <tr v-for="(mail, mk) in sequenceemails" :key="'mk'+mk">
+                                        <td>{{ mk + 1 }}</td>
+                                        <td>{{ mail.mailboxAddress }}</td>
+                                        <td>{{ mail.subject }}</td>
+                                        <td>{{ mail.mailingType }}</td>
+                                        <td>
+                                            <span v-if="mail.deliveredAt">{{ mail.deliveredAt | setFulldate }}</span>
+                                            <span v-else>---</span>
+                                        </td>
+                                        <td>
+                                            <span v-if="mail.openedAt" >{{ mail.openedAt | setFulldate }}</span>
+                                            <span v-else>---</span>
+                                        </td>
+                                        <td>
+                                            <span v-if="mail.clickedAt">{{ mail.clickedAt | setFulldate }}</span>
+                                            <sapn v-else>---</sapn>
+                                        </td>
+                                        <td>
+                                            <span v-if="mail.repliedAt">{{ mail.repliedAt | setFulldate }}</span>
+                                            <span v-else></span>
+                                        </td>
+                                        <td>
+                                            <span v-if="mail.bouncedAt">{{ mail.bouncedAt | setFulldate }}</span>
+                                            <span v-else>---</span>
+                                        </td>                                        
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 <script>
@@ -362,11 +519,18 @@ import 'vue2-daterange-picker/dist/vue2-daterange-picker.css';
 import { ToggleButton } from 'vue-js-toggle-button';
 import 'vue-select/dist/vue-select.css';
 import ExportWizard from './FiveNineWizard';
+import RadialProgressBar from 'vue-radial-progress';
 
 export default {
-    components:{CallLog, EmailLog, DatasetGroup, DatasetCount, DateRangePicker, ToggleButton, ExportWizard},
+    components:{CallLog, EmailLog, DatasetGroup, DatasetCount, DateRangePicker, ToggleButton, ExportWizard, RadialProgressBar},
     data() {
         return {
+            callDiff : 100,
+            showProgress : false,
+            startColor: "#3490dc",
+            stopColor: "#f8f9fa",
+            completedSteps: 0,
+            totalSteps: 0,
             fivenineData : [],
             recordContainer:[],
             dispo_data:[],
@@ -385,6 +549,10 @@ export default {
             exportForm : new Form({
                 exports : []
             }),
+            emailShow : 1,
+            allemails : [],
+            singleemails : [],
+            sequenceemails : [],
             form: new Form({
                 sortType:'outreach_touched_at',
                 sortBy:'desc',
@@ -409,6 +577,7 @@ export default {
                 sharing : 'private',
             }),
             showView : false, //control appearance of view controls
+            loading:false,
             loader_url: '/img/spinner.gif',
             totalNumberOfRecords:'',
             filter : false,
@@ -427,7 +596,8 @@ export default {
             selectedOptionsId : [],
             filterItemsIds : [],
             showInputTextOrDropdown : true,
-            filter_keyword:''
+            filter_keyword:'',
+            prospect:''
         }
     },
     filters: {
@@ -465,7 +635,7 @@ export default {
         addAndRemoveAllRecordToContainer(){
             var a = document.getElementById('check-all');
             var aa = document.querySelectorAll("input[type=checkbox]");
-            if(document.getElementById("check-all").checked == true){
+            if(document.getElementById("check-all").checked == true){ 
                 for (var i = 0; i < aa.length; i++){
                     if(parseInt(aa[i].value) > 0){
                         if((this.recordContainer.indexOf(parseInt(aa[i].value)) == -1)){
@@ -974,7 +1144,7 @@ export default {
                     for(var i = 0; i <= records.length; i++){
                         var id = records[i]["id"]
                         if(this.recordContainer.indexOf(id) > -1){
-                            if(document.getElementById('record-'+id).checked == false) {
+                            if(document.getElementById('record-'+id).checked == false){
                                 document.getElementById('record-'+id).checked = true
                             }
                         }
@@ -1015,13 +1185,31 @@ export default {
             })
         },
         StartExport(){
-            this.loader = true
+            this.totalSteps = this.recordContainer.length
+            this.completedSteps = 1
+            this.showProgress = true
+            window.setInterval(() => {
+                this.incCompledSteps();
+            }, 800)
             this.exportForm.exports = this.recordContainer
             this.exportForm.post('/api/get-record-container-info').then((response) => {
+                this.completedSteps = 0
+                this.totalSteps = 0
+                this.showProgress = false
                 this.fivenineData = response.data
                 this.step = 1
                 this.loader = false
             })
+            
+            
+
+        },
+        incCompledSteps(){
+            if(this.completedSteps < this.totalSteps - 2){
+                this.completedSteps =  this.completedSteps  + 1
+            }else{
+                return false;
+            }
         },
         selectAllRecords()
         {
@@ -1030,7 +1218,6 @@ export default {
             this.form.page = 1
             this.form.post('/api/dataset-values-data-all').then((response) => {
                 var records = response.data
-                //console.log(records)
                 for(var i = 0; i < records.length; i++){
                     if( (this.recordContainer.indexOf(parseInt(records[i])) == -1) ){
                         this.recordContainer.push(records[i]);
@@ -1039,6 +1226,21 @@ export default {
                 this.loader = false;
                 this.$Progress.finish();
             });
+        },
+        showProspect(record_id) {
+            this.loading = true;
+            $('#prospectModal').addClass('show-sidebar');
+            axios.get('/api/get-prospect-email-details/'+record_id).then((response) => { 
+                this.prospect = response.data.contact.first_name + ' ' + response.data.contact.last_name
+                this.allemails = response.data.allemails,
+                this.singleemails = response.data.singleemails,
+                this.sequenceemails = response.data.sequenceemails,
+                this.loading = false;
+            })
+        },
+        closeSideBar() {
+            this.prospect = '';
+            $('#prospectModal').removeClass('show-sidebar');
         },
     },
     beforeMount() {
@@ -1067,3 +1269,11 @@ export default {
     }
 }
 </script>
+<style>
+.center {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+</style>

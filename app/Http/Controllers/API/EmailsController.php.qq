@@ -770,13 +770,18 @@ class EmailsController extends Controller
         if($request->input("dateRange")){
             $startDate = $request->input('dateRange.startDate');
             $endDate = $request->input('dateRange.endDate');
-
-            $startDate = date("Y-m-d 00:00:00", strtotime($startDate));
-            $endDate = date("Y-m-d 23:59:59", strtotime($endDate));
-            
+            $startTime = date("H:i:s", strtotime($startDate));
+            $endTime = date("H:i:s", strtotime($endDate));
+            if($startTime == $endTime){
+                $startDate = date("Y-m-d", strtotime($startDate));
+                $endDate = date("Y-m-d", strtotime($endDate));
+            }else{
+                $startDate = date("Y-m-d", strtotime($startDate)+5*3600+30*60);
+                $endDate = date("Y-m-d", strtotime($endDate)-(5*3600+29*60+59));
+            }
         }else{           
-            $startDate = date('Y-m-d 00:00:00', strtotime('first day of last month'));
-            $endDate  = date('Y-m-d 23:59:59', strtotime('last day of last month'));
+            $startDate = date('Y-m-d', strtotime('first day of last month'));
+            $endDate  = date('Y-m-d', strtotime('last day of last month'));
         }
         return ["startDate" => $startDate, "endDate" => $endDate];
     }

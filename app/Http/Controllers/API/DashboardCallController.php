@@ -25,9 +25,12 @@ class DashboardCallController extends Controller
         $etime = $gt["etime"];
         $records = FivenineCallLogs::select(DB::raw("count(fivenine_call_logs.id) as count, fivenine_call_logs.agent_name"))
         ->groupBy("fivenine_call_logs.agent_name")
-        ->whereBetween("n_timestamp", [$stime, $etime])
-        ->get();
-        //echo "<pre>"; print_r($records); echo "</pre>";
+        ->whereBetween("n_timestamp", [$stime, $etime]);
+        if($request->input('list_name')){
+            $list_name = $request->input('list_name');
+            $records = $records->where('list_name', 'LIKE', $list_name);
+        }
+        $records = $records->get();
         $label = [];
         $series = [];
         $agentName = [];
@@ -59,7 +62,7 @@ class DashboardCallController extends Controller
         $etime = $gt["etime"];
         
         if(($request->input("talk_time") || $request->input("acw")) && is_null($request->input("disposition")) ){
-            return $this->__getTalkTimeBasedDisposition($request->input("only_agent"), $request->input("agentName"), $request->input("disposition"), $stime, $etime, $request->input("talk_time"), $request->input("talk_time_plus"), $request->input("acw"), $request->input("acw_plus"));
+            return $this->__getTalkTimeBasedDisposition($request->input("only_agent"), $request->input("agentName"), $request->input("disposition"), $stime, $etime, $request->input("talk_time"), $request->input("talk_time_plus"), $request->input("acw"), $request->input("acw_plus"), $request->input("list_name"));
         }
         $records = FivenineCallLogs::select(DB::raw("count(fivenine_call_logs.id) as count, fivenine_call_logs.disposition"))
         ->groupBy("fivenine_call_logs.disposition");
@@ -79,6 +82,10 @@ class DashboardCallController extends Controller
                 $records = $records->where("agent_name", "=", $agentName);
             }
         }
+        if($request->input('list_name')){
+            $list_name = $request->input('list_name');
+            $records = $records->where('list_name', 'LIKE', $list_name);
+        }
         $records = $records->whereBetween("n_timestamp", [$stime, $etime])->get();
         $label = [];
         $series = [];
@@ -92,8 +99,63 @@ class DashboardCallController extends Controller
         }
         return ["label" => $label, "series" => $series, "dispositins" => $dispositins, "stime" => $stime, "etime" => $etime, "sdate" => date("Y-m-d", $stime), "edate" => date("Y-m-d", $etime)];
     }
-    private function __getTalkTimeBasedDisposition($only_agent, $agentName, $disposition, $stime, $etime, $talk_time, $talk_time_plus, $acw, $acw_plus){ 
+    public function getAgentListStatus(Request $request){
+        //current month
+        $gt = $this->__getTimeInStrtottime($request->input("dateRange"));
+        $stime = $gt["stime"];
+        $etime = $gt["etime"];
+        
+        if(($request->input("talk_time") || $request->input("acw")) && is_null($request->input("disposition")) ){
+            return $this->__getTalkTimeBasedList($request->input("only_agent"), $request->input("agentName"), $request->input("disposition"), $stime, $etime, $request->input("talk_time"), $request->input("talk_time_plus"), $request->input("acw"), $request->input("acw_plus"));
+        }
+        $records = FivenineCallLogs::select(DB::raw("count(fivenine_call_logs.id) as count, fivenine_call_logs.list_name"))
+        ->groupBy("fivenine_call_logs.list_name");
+        if($request->input("only_agent")){
+            if($request->input("agentName")){
+                $agentName = $request->input("agentName");
+                $records = $records->where("agent_name", "=", $agentName);
+            }else{
+                $records = $records->whereNotNull("agent_name");
+            }
+        }elseif($request->input("agentName")){
+            if($request->input("agentName") == "None"){
+                $agentName = null;
+                $records = $records->whereNull("agent_name");
+            }else{
+                $agentName = $request->input("agentName");
+                $records = $records->where("agent_name", "=", $agentName);
+            }
+        }
+        $records = $records->whereBetween("n_timestamp", [$stime, $etime])->get();
+        $label = [];
+        $series = [];
+        $list_names = [];
+        foreach($records as $value){
+            if($request->input('only_list')){
+                if($value["list_name"] != ""){
+                    $list_names[]= $value["list_name"];
+                    $label[] = substr($value["list_name"],0,10)." : ".$value["count"];
+                    $series[] = $value["count"];
+                }
+            }else{
+                if($value["list_name"] != ""){
+                    $list_names[]= $value["list_name"];
+                    $label[] = substr($value["list_name"],0,10)." : ".$value["count"];
+                    $series[] = $value["count"];
+                }else{
+                    $list_names[]= 'Manual';
+                    $label[] = "Manual : ".$value["count"];
+                    $series[] = $value["count"];
+                }
+            }
+        }
+        return ["label" => $label, "series" => $series, "list_names" => $list_names, "stime" => $stime, "etime" => $etime, "sdate" => date("Y-m-d", $stime), "edate" => date("Y-m-d", $etime)];
+    }
+    private function __getTalkTimeBasedDisposition($only_agent, $agentName, $disposition, $stime, $etime, $talk_time, $talk_time_plus, $acw, $acw_plus, $list_name){ 
         $records = DB::table('fivenine_call_logs')->whereBetween("n_timestamp", [$stime, $etime]);
+        if($list_name){
+            $records = $records->where('list_name', 'LIKE', $list_name);
+        }
         if($only_agent){
             if($agentName){
                 if($agentName == "None"){
@@ -183,12 +245,105 @@ class DashboardCallController extends Controller
         return ["label" => $label, "series" => $series, "dispositins" => $ndispo, "stime" => $stime, "etime" => $etime, "sdate" => date("Y-m-d", $stime), "edate" => date("Y-m-d", $etime)];
         //return [];
     }
+    private function __getTalkTimeBasedList($only_agent, $agentName, $disposition, $stime, $etime, $talk_time, $talk_time_plus, $acw, $acw_plus){ 
+        $records = DB::table('fivenine_call_logs')->whereBetween("n_timestamp", [$stime, $etime]);
+        if($only_agent){
+            if($agentName){
+                if($agentName == "None"){
+                    $records = $records->whereNull("agent_name");
+                }else{
+                    $records = $records->where("agent_name", "=", $agentName);
+                }
+            }else{
+                $records = $records->whereNotNull("agent_name");
+            }
+        }else{
+            if($agentName){
+                if($agentName == "None"){
+                    $records = $records->whereNull("agent_name");
+                }else{
+                    $records = $records->where("agent_name", "=", $agentName);
+                }
+            }
+        }
+        if($talk_time_plus == 1){
+            $records
+            ->where(function($query){
+                $query
+                ->whereRaw('((MINUTE(`talk_time`) = 0')
+                ->whereRaw('SECOND(`talk_time`) > 20)');
+            })
+            ->orWhere(function($query){
+                $query->whereRaw('MINUTE(`talk_time`) > 0)');
+            });
+        }elseif($talk_time > 0){
+            if($talk_time == 5){
+                $records
+                ->whereRaw('MINUTE(`talk_time`) = 0')
+                ->whereRaw('SECOND(`talk_time`) <= 5');
+            }elseif($talk_time == 10){
+                $records
+                ->whereRaw('MINUTE(`talk_time`) = 0')
+                ->whereRaw('SECOND(`talk_time`) > 5')
+                ->whereRaw('SECOND(`talk_time`) <= 10');
+            }elseif($talk_time == 20){
+                $records
+                ->whereRaw('MINUTE(`talk_time`) = 0')
+                ->whereRaw('SECOND(`talk_time`) > 10')
+                ->whereRaw('SECOND(`talk_time`) <= 20');
+            }
+        }
+        $acw = $acw;
+        if($acw_plus == 1){
+            $records
+            ->whereNotNull('after_call_work_time')
+            ->whereRaw('(MINUTE(`after_call_work_time`) > 3')
+            ->orWhere(function($query){
+                $query->whereRaw('MINUTE(`after_call_work_time`) = 3')->whereRaw('SECOND(`after_call_work_time`) > 0)');
+            });
+        }elseif($acw_plus == 0 && $acw){
+            $records
+            ->whereNotNull('after_call_work_time')
+            ->where(function($query) use ($acw){
+                $query->whereRaw('(MINUTE(`after_call_work_time`) = ?', [$acw])->whereRaw('SECOND(`after_call_work_time`) = 0');
+            })            
+            ->orWhere(function($query) use ($acw){
+                $query->whereRaw('MINUTE(`after_call_work_time`) = ?', [$acw-1])->whereRaw('SECOND(`after_call_work_time`) > 0)');
+            });
+        }
+        $records = $records->get();
+               
+        // dd($nrecords);
+        $label = [];
+        $series = [];
+        $list_names = [];
+        $ndispo = [];
+        foreach($records as $value){
+            $value = get_object_vars($value);
+            if($value["list_name"] != ''){
+                if(array_key_exists($value["list_name"], $list_names)){
+                    $list_names[$value["list_name"]] += 1;
+                }else{
+                    $list_names[$value["list_name"]] = 1;
+                }
+            }else{
+
+            }
+        }
+        foreach ($list_names as $key => $value) {
+            $label[] = $key." : ".$value;
+            $series[] = $value;
+            $ndispo[] = $key;
+        }
+        return ["label" => $label, "series" => $series, "list_name" => $ndispo, "stime" => $stime, "etime" => $etime, "sdate" => date("Y-m-d", $stime), "edate" => date("Y-m-d", $etime)];
+        //return [];
+    }
     public function getAgentBasedTalkTime(Request $request){
         $gt = $this->__getTimeInStrtottime($request->input("dateRange"));
         $stime = $gt["stime"];
         $etime = $gt["etime"];
         if($request->input("agentName") || $request->input("disposition")){
-            return $this->__getAgentAndDispositionBasedTalkTime($request->input("only_agent"), $request->input("agentName"), $request->input("disposition"), $stime, $etime, $request->input("acw"), $request->input("acw_plus"));
+            return $this->__getAgentAndDispositionBasedTalkTime($request->input("only_agent"), $request->input("agentName"), $request->input("disposition"), $stime, $etime, $request->input("acw"), $request->input("acw_plus"), $request->input("list_name"), $request->input("dispoMul"));
         }
         $agents = DB::table('fivenine_call_logs')->select('agent_name')->distinct()->get();
         $agentsName = [];
@@ -203,8 +358,26 @@ class DashboardCallController extends Controller
             }
         }
         $records = DB::table('fivenine_call_logs');
+        $dispositions = [];
+        if($request->input("dispoMul")){
+            $dispositions = $request->input("dispoMul");
+        }
         if($request->input("disposition")){
-            $records = $records->where("disposition", "=", $request->input("disposition"));
+            if(count($dispositions) > 0){
+                if(!in_array($request->input("disposition"), $dispositions)){
+                    $dispositions[count($dispositions)] = $request->input("disposition");
+                }
+                $records = $records->whereIn("disposition", $dispositions);
+            }else{
+                $records = $records->where("disposition", "=", $request->input("disposition"));
+            }
+        }else{
+            if(count($dispositions) > 0){
+                $records = $records->whereIn("disposition", $dispositions);
+            }
+        }
+        if($request->input("list_name")){
+            $records = $records->where("list_name", "=", $request->input("list_name"));
         }
         $record = $records->whereBetween("n_timestamp", [$stime, $etime])->get();
         $data = [];
@@ -277,7 +450,7 @@ class DashboardCallController extends Controller
         $stime = $gt["stime"];
         $etime = $gt["etime"];
         if($request->input("agentName") || $request->input("disposition")){
-            return $this->__getAgentAndDispositionBasedACW($request->input("only_agent"), $request->input("agentName"), $request->input("disposition"), $stime, $etime, $request->input("talk_time"), $request->input("talk_time_plus"));
+            return $this->__getAgentAndDispositionBasedACW($request->input("only_agent"), $request->input("agentName"), $request->input("disposition"), $stime, $etime, $request->input("talk_time"), $request->input("talk_time_plus"), $request->input("list_name"), $request->input("dispoMul"));
         }
         $agents = DB::table('fivenine_call_logs')->select('agent_name')->distinct()->get();
         $agentsName = [];
@@ -292,8 +465,26 @@ class DashboardCallController extends Controller
             }
         }
         $records = DB::table('fivenine_call_logs');
+        if($request->input("list_name")){
+            $records = $records->where("list_name", "=", $request->input("list_name"));
+        }
+        $dispositions = [];
+        if($request->input("dispoMul")){
+            $dispositions = $request->input("dispoMul");
+        }
         if($request->input("disposition")){
-            $records = $records->where("disposition", "=", $request->input("disposition"));
+            if(count($dispositions) > 0){
+                if(!in_array($request->input("disposition"), $dispositions)){
+                    $dispositions[count($dispositions)] = $request->input("disposition");
+                }
+                $records = $records->whereIn("disposition", $dispositions);
+            }else{
+                $records = $records->where("disposition", "=", $request->input("disposition"));
+            }
+        }else{
+            if(count($dispositions) > 0){
+                $records = $records->whereIn("disposition", $dispositions);
+            }
         }
         $records = $records->whereBetween("n_timestamp", [$stime, $etime])->get();
         $data = [];
@@ -361,7 +552,7 @@ class DashboardCallController extends Controller
                 $nagentName[] = $key;
             }
         }
-        return ["label" => $label, "series" => $series, "agentsName" => $nagentName, "stime" => $stime, "etime" => $etime, "sdate" => date("Y-m-d", $stime), "edate" => date("Y-m-d", $etime)];
+        return ["label" => $label, "series" => $series, "agentsName" => $nagentName, "stime" => $stime, "etime" => $etime, "sdate" => date("Y-m-d", $stime), "edate" => date("Y-m-d", $etime), 'dispositions' => $dispositions];
     }
     public function getAgentBasedWaitingTime(Request $request){
         $gt = $this->__getTimeInStrtottime($request->input("dateRange"));
@@ -676,12 +867,32 @@ class DashboardCallController extends Controller
     public function getDashboardTime(Request $request){
         return $this->__getTimeInStrtottime($request->input("dateRange"));
     }
-    private function __getAgentAndDispositionBasedACW($only_agent, $agentName, $disposition, $stime, $etime, $talk_time, $talk_time_plus){
+    private function __getAgentAndDispositionBasedACW($only_agent, $agentName, $disposition, $stime, $etime, $talk_time, $talk_time_plus, $list_name, $dispoMul){
         $records = DB::table("fivenine_call_logs");
-        if($disposition){
-            $records->where("disposition", "=", $disposition);
+        // if($disposition){
+        //     $records->where("disposition", "=", $disposition);
+        // }
+        if($list_name){
+            $records->where("list_name", "LIKE", $list_name);
         }
-
+        $dispositions = [];
+        if($dispoMul){
+            $dispositions = $dispoMul;
+        }
+        if($disposition){
+            if(count($dispositions) > 0){
+                if(!in_array($disposition, $dispositions)){
+                    $dispositions[count($dispositions)] = $disposition;
+                }
+                $records = $records->whereIn("disposition", $dispositions);
+            }else{
+                $records = $records->where("disposition", "=", $disposition);
+            }
+        }else{
+            if(count($dispositions) > 0){
+                $records = $records->whereIn("disposition", $dispositions);
+            }
+        }
         if($agentName){
             if($only_agent){
                 $records = $records->where("agent_name", "=", $agentName);
@@ -758,12 +969,31 @@ class DashboardCallController extends Controller
                 $talkTime[1] += 1;
             }
         }
-        return ["label" => ["0-1min : ".$talkTime[1], "1-2min : ".$talkTime[2], "2-3min : ".$talkTime[3], "3+min : ".$talkTime[4]], "series" => [$talkTime[1], $talkTime[2], $talkTime[3], $talkTime[4]], "agentsName" => [], "stime" => $stime, "etime" => $etime, "sdate" => date("Y-m-d", $stime), "edate" => date("Y-m-d", $etime), 'acw' => [1, 2, 3, '3+']];
+        return ["label" => ["0-1min : ".$talkTime[1], "1-2min : ".$talkTime[2], "2-3min : ".$talkTime[3], "3+min : ".$talkTime[4]], "series" => [$talkTime[1], $talkTime[2], $talkTime[3], $talkTime[4]], "agentsName" => [], "stime" => $stime, "etime" => $etime, "sdate" => date("Y-m-d", $stime), "edate" => date("Y-m-d", $etime), 'acw' => [1, 2, 3, '3+'], 'dispositions' => $dispositions, 'dispoMul' => $dispoMul];
     }
-    private function __getAgentAndDispositionBasedTalkTime($only_agent, $agentName, $disposition, $stime, $etime, $acw, $acw_plus){        
+    private function __getAgentAndDispositionBasedTalkTime($only_agent, $agentName, $disposition, $stime, $etime, $acw, $acw_plus, $list_name, $dispoMul){        
+        
         $records = DB::table("fivenine_call_logs");
+        if($list_name){
+            $records = $records->where('list_name', "LIKE", $list_name);
+        }
+        $dispositions = [];
+        if($dispoMul){
+            $dispositions = $dispoMul;
+        }
         if($disposition){
-            $records->where("disposition", "=", $disposition);
+            if(count($dispositions) > 0){
+                if(!in_array($disposition, $dispositions)){
+                    $dispositions[count($dispositions)] = $disposition;
+                }
+                $records = $records->whereIn("disposition", $dispositions);
+            }else{
+                $records = $records->where("disposition", "=", $disposition);
+            }
+        }else{
+            if(count($dispositions) > 0){
+                $records = $records->whereIn("disposition", $dispositions);
+            }
         }
         if($agentName){
             if($only_agent){
@@ -831,7 +1061,7 @@ class DashboardCallController extends Controller
                 $talkTime[1] += 1;
             }
         }
-        return ["label" => ["0-5sec : ".$talkTime[1], "6-10sec : ".$talkTime[2], "11-20sec : ".$talkTime[3], "20+sec : ".$talkTime[4]], "series" => [$talkTime[1], $talkTime[2], $talkTime[3], $talkTime[4]], "agentsName" => [], "stime" => $stime, "etime" => $etime, "sdate" => date("Y-m-d", $stime), "edate" => date("Y-m-d", $etime), "talk_time" => [5, 10, 20,'20+']];
+        return ["label" => ["0-5sec : ".$talkTime[1], "6-10sec : ".$talkTime[2], "11-20sec : ".$talkTime[3], "20+sec : ".$talkTime[4]], "series" => [$talkTime[1], $talkTime[2], $talkTime[3], $talkTime[4]], "agentsName" => [], "stime" => $stime, "etime" => $etime, "sdate" => date("Y-m-d", $stime), "edate" => date("Y-m-d", $etime), "talk_time" => [5, 10, 20,'20+'], 'dispositions' => $dispositions];
     }
     private function __getTimeInStrtottime($dateRange){
         if($dateRange){

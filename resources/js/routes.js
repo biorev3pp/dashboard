@@ -23,8 +23,9 @@ import SyncReport from './components/reports/Sync.vue';
 import SyncReportDetail from './components/reports/SyncDetail.vue';
 import Tasks from './components/tasks/index.vue';
 import ProspectsLocation from './components/ProspectsLocation.vue';
-import DatabaseUpdate from './components/UpdateDatabaseFields.vue';
 import EmailDetailDashboard from './components/dashboard/DashboardEmail.vue';
+import DatabaseUpdate from './components/dataenrich/UpdateDatabaseFields.vue';
+import ColumnAnalysis from './components/dataenrich/ColumnAnalysis.vue';
 
 export const routes = [{
         path: '/',
@@ -264,4 +265,12 @@ export const routes = [{
             title: 'Data Enrichment',
         }
     },
+		{
+			path: '/column-analysis',
+			component: ColumnAnalysis,
+			meta: {
+					requiresAuth: true,
+					title: 'Column Analysis and Parameters Validation',
+			}
+	},
 ];
