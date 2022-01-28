@@ -77,7 +77,7 @@ export default {
             rstatus:false,
             emptyData : [],
             empty_fields:['first name', 'last name', 'Business Email', 'Company', 'Title', 'Mobile Phone', 'Work Phone', 'Home Phone', 'Country', 'State', 'City', 'Zipcode', 'Timezone', 'Timezone Group', 'Purchase Authorization', 'Stage', 'Industry', 'Primary Industry', 'Department'],
-            duplicate_fields:['first name', 'last name', 'Business Email', 'Mobile Phone', 'Work Phone', 'Home Phone'],
+            duplicate_fields:['name', 'Business Email', 'Mobile Phone', 'Work Phone', 'Home Phone'],
             loader:false,
             ddata:[],
         }
@@ -100,13 +100,13 @@ export default {
                 this.loader = true
                 if(this.active_filter == 'empty'){
                     axios.post("/api/get-non-empty-column-health", {fields:this.fields, qtype:this.qtype}).then((response) => {
-                        this.ddata = response.data
+                        this.ddata = (response.data)?response.data:[]
                         this.loader = false
                         this.rstatus = false
                     })
                 } else if(this.active_filter == 'duplicate') {
                     axios.post('/api/get-duplicate-column-health', {fields:this.fields, qtype:this.qtype}).then((response) => {
-                        this.ddata = response.data
+                        this.ddata = (response.data)?response.data:[]
                         this.loader = false
                         this.rstatus = false
                     })

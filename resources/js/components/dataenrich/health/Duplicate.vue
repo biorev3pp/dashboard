@@ -44,7 +44,7 @@
                     <div class="dhb-item-group" v-for="(dd, dk) in ddata.data" :key="'ddata'+dk" :class="[(active_data_key == dk)?'active':'']">
                         <div class="dhb-item-group-heading">
                             <span class="fixwidth mr-2">
-                                <span v-for="(dvalue, dvk) in ddata.fields" :key="'dfval'+dvk" v-show="dvk <= 1">
+                                <span v-for="(dvalue, dvk) in ddata.fields" :key="'dfval'+dvk" v-show="dvk == 0">
                                     {{ (dd[dvalue])?dd[dvalue]:'[Empty]' }}
                                 </span> 
                             </span> <span class="fixcount">({{ dd.count | freeNumber }}) </span>
@@ -53,7 +53,7 @@
                         </div>
                         <div class="dhb-item-group-content">
                             <p v-for="(dvalue, dvk) in ddata.fields" :key="'dfval'+dvk">
-                                {{fields[dvk] | capitalize }}
+                                {{(fields[dvk])?fields[dvk]:'company' | capitalize }}
                                 <b class="float-right">{{ (dd[dvalue])?dd[dvalue]:'[Empty]' }}</b>
                             </p>
                         </div>
@@ -157,24 +157,33 @@
                                             </div>
                                         </span>
                                         <span v-else>
-                                            <h5>Select One record to keep:</h5>
+                                            <h5>Prospects with priorities:</h5>
                                             <div style="max-height:calc(50vh); overflow:auto">
                                                 <table class="table table-bordered table-striped table-condensed">
                                                     <thead>
                                                         <tr>
-                                                            <th>SNo</th>
-                                                            <th>Record ID</th>
-                                                            <th>Calls</th>
-                                                            <th>Emails</th>
-                                                            <th>Select</th>
+                                                            <th class="wf-50">Score</th>
+                                                            <th>Name (Record ID)</th>
+                                                            <th class="wf-80">Action</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
                                                         <tr v-for="(selrec, sk) in selectedProspectData" :key="'sl-'+sk">
-                                                            <td> {{ sk+1 }} </td>
-                                                            <td>{{ selrec.record_id }}</td>
-                                                            <td>{{ selrec.calls }}</td>
-                                                            <td>{{ selrec.emails }}</td>
+                                                            <td>{{ selrec.score }}</td>
+                                                            <td>
+                                                                <p class="fw-600 mb-2">{{ selrec.name }} - ({{ selrec.record_id }} ) </p>
+                                                                <p class="p-0 m-0">
+                                                                    <i class="opacity-6 bi bi-square-fill" v-title="'Company: '+selrec.company" :class="[(selrec.company)?'text-success':'text-muted']"></i>
+                                                                    <i class="opacity-6 bi bi-square-fill" v-title="'Business Email: '+selrec.emails" :class="[(selrec.emails)?'text-success':'text-muted']"></i>
+                                                                    <i class="opacity-6 bi bi-square-fill" v-title="'Purchase Authorization: '+selrec.custom10" :class="[(selrec.custom10)?'text-success':'text-muted']"></i>
+                                                                    <i class="opacity-6 bi bi-square-fill" v-title="'Company Industry: '+selrec.companyIndustry" :class="[(selrec.companyIndustry)?'text-success':'text-muted']"></i>
+                                                                    <i class="opacity-6 bi bi-square-fill" v-title="'Mobile Phones: '+selrec.mobilePhones" :class="[(selrec.mobilePhones)?'text-success':'text-muted']"></i>
+                                                                    <i class="opacity-6 bi bi-square-fill" v-title="'Home Phones: '+selrec.homePhones" :class="[(selrec.homePhones)?'text-success':'text-muted']"></i>
+                                                                    <i class="opacity-6 bi bi-square-fill" v-title="'Work Phones: '+selrec.workPhones" :class="[(selrec.workPhones)?'text-success':'text-muted']"></i>
+                                                                    <i class="opacity-6 bi bi-square-fill" v-title="'Supplemental Email: '+selrec.custom4" :class="[(selrec.custom4)?'text-success':'text-muted']"></i>
+                                                                    
+                                                                </p>
+                                                            </td>
                                                             <td>
                                                                 <i class="bi cursor-pointer fs-15" :class="[(selectedProspectPrimary == selrec.record_id)?'bi-check-circle-fill text-success':'bi-circle ']" @click="selectedProspectPrimary = selrec.record_id"></i>
                                                             </td>
@@ -184,6 +193,9 @@
                                             </div>
                                             <p class="fs-12 p-1 alert-danger alert" style="line-height:18px">
                                                 <em>Records which are not selected, will be merged with the selected record and removed from database.</em>
+                                            </p>
+                                            <p class="p-1 alert-warning alert" style="line-height:18px" v-show="usernote">
+                                                User Attention required
                                             </p>
                                             
                                             <div class="text-center p-4" v-if="running_Action">
@@ -672,6 +684,7 @@ export default {
             first_filter:'',
             allFilterOptions:{},
             running_Action:false,
+            usernote:false,
             search_sort_filter:{
                 stage_name:'',
                 first_name:'',
@@ -917,8 +930,20 @@ export default {
         },
         getCallEmailStatus() {
             this.gce = true;            
-            axios.post('/api/get-call-email-status', {data:this.selectedProspect}).then((response) => {
+            axios.post('/api/check-priority', {data:this.selectedProspect}).then((response) => {
                 this.selectedProspectData = response.data
+                if(this.action_status == 'mergeBtn') {
+                    if((response.data.length >= 2) && (response.data[0].score != response.data[1].score)) {
+                        this.selectedProspectPrimary = response.data[0].record_id
+                        this.usernote = false
+                    } else {
+                        this.selectedProspectPrimary = ''
+                        this.usernote = true
+                    }
+                } else {
+                    this.selectedProspectPrimary = ''
+                    this.usernote = false
+                }
                 this.gce = false
             })
         },

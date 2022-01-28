@@ -251,7 +251,12 @@ Route::get('/get-five-nine-all-list-report', [App\Http\Controllers\API\FiveNineC
 Route::get('/get-five-nine-all-list-report-results/{id}', [App\Http\Controllers\API\FiveNineController::class, 'getAllListResults']);
 Route::post('/outreach-records', [App\Http\Controllers\API\OutreachController::class, 'getOutreachRecords']);
 
-Route::post('/get-call-email-status', [App\Http\Controllers\API\SettingsController::class, 'getCallEmailStatus']);
+Route::post('/check-priority', [App\Http\Controllers\API\MergerController::class, 'CheckPriority']);
 
 Route::post('/merge-selected-prospects', [App\Http\Controllers\API\MergerController::class, 'recordMerging']);
 Route::post('/delete-selected-prospects', [App\Http\Controllers\API\MergerController::class, 'recordDeleting']);
+
+Route::post('/get-related-prospectsA', [App\Http\Controllers\API\ColumnAnalysisController::class, 'getRelatedProspectsA']);
+Route::post('/get-related-and-prospectsA', [App\Http\Controllers\API\ColumnAnalysisController::class, 'getRelatedAndProspectsA']);
+Route::post('/update-empty-prospects', [App\Http\Controllers\API\ColumnAnalysisController::class, 'updateEmptyProspects']);
+Route::post('/get-uploaded-prospects', [App\Http\Controllers\API\ColumnAnalysisController::class, 'getUploadedProspects']);

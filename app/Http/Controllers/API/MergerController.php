@@ -53,4 +53,28 @@ class MergerController extends Controller
         return ['status' => 'success'];
     }
 
+    public function CheckPriority(Request $request)
+    {
+        $return = [];
+        foreach ($request->data as $value) {
+            $data = Contacts::select('contacts.name', 'contacts.company', 'contacts.mobilePhones', 'contacts.workPhones', 'contacts.homePhones', 'contacts.emails', 'contacts.companyIndustry', 'contacts.custom10')->addSelect(['custom4' => DB::table('contact_customs')->selectRaw('custom4')->whereColumn('contact_customs.contact_id', 'contacts.record_id')])->where('contacts.record_id', $value)->first();
+            $score = 0;
+            if($data->company): $score++; endif;
+
+            
+            if($data->mobilePhones): $score++; endif;
+            if($data->workPhones): $score++; endif;
+            if($data->homePhones): $score++; endif;
+            if($data->emails): $score++; endif;
+            if($data->companyIndustry): $score++; endif;
+            if($data->custom10): $score++; endif;
+            if($data->custom4): $score++; endif;
+            
+            $return[] = ['record_id' => $value, 'name' => $data->name, 'score' => $score, 'company' => $data->company, 'mobilePhones' => $data->mobilePhones, 'workPhones' => $data->workPhones, 'homePhones' => $data->homePhones, 'emails' => $data->emails, 'companyIndustry' => $data->companyIndustry, 'custom10' => $data->custom10, 'custom4' => $data->custom4];
+        }
+        $scores = array_column($return, 'score');
+        array_multisort($scores, SORT_DESC, $return);
+        return $return;
+    }
+
 }
